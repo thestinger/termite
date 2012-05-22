@@ -49,6 +49,9 @@ int main(int argc, char **argv) {
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
     vte_terminal_set_scroll_on_output(VTE_TERMINAL(vte), scroll_on_output);
     vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(vte), scroll_on_keystroke);
+    vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
+    vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
+    vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
 
     // set colors
     GdkColor foreground, background;

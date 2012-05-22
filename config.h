@@ -31,6 +31,11 @@ static const char *colors[16] = {
 static const bool scroll_on_output = false;
 static const bool scroll_on_keystroke = true;
 
+static const bool audible_bell = false;
+static const bool visible_bell = false;
+
+static const bool mouse_autohide = false;
+
 static const char *term = "xterm-256color";
 
 #endif
