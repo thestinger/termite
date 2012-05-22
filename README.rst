@@ -3,6 +3,8 @@ A simple VTE-based terminal.
 KEYBINDINGS
 ===========
 
+Scrollback search:
+
 * ``ctrl-/``: start search (forward)
 * ``ctrl-?``: start search (backward)
 * ``ctrl-shift-n``: search forward
