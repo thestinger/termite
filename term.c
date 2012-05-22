@@ -1,7 +1,60 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+#include <gdk/gdkkeysyms.h>
+#include <stdlib.h>
 
 #include "config.h"
+
+typedef struct search_dialog_info {
+    GtkWidget *vte;
+    GtkWidget *entry;
+} search_dialog_info;
+
+static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
+    GRegex *regex = vte_terminal_search_get_gregex(VTE_TERMINAL(info->vte));
+    if (!regex) regex = g_regex_new(gtk_entry_get_text(GTK_ENTRY(info->entry)), 0, 0, NULL);
+    vte_terminal_search_set_gregex(VTE_TERMINAL(info->vte), regex);
+
+    free(info);
+    gtk_widget_destroy(GTK_WIDGET(dialog));
+}
+
+static void open_search_dialog(GtkWidget *vte) {
+    search_dialog_info *info = malloc(sizeof (info));
+    info->vte = vte;
+    info->entry = gtk_entry_new();
+
+    GtkWidget *dialog, *content_area;
+    dialog = gtk_dialog_new_with_buttons("Search",
+                                         GTK_WINDOW(gtk_widget_get_toplevel(vte)),
+                                         GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         GTK_STOCK_OK,
+                                         GTK_RESPONSE_NONE,
+                                         NULL);
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+    g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
+
+    gtk_container_add(GTK_CONTAINER(content_area), info->entry);
+    gtk_widget_show_all(dialog);
+    gtk_widget_grab_focus(GTK_WIDGET(info->entry));
+}
+
+static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
+    if (event->state == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
+        switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_p:
+                vte_terminal_search_find_previous(VTE_TERMINAL(vte));
+                return TRUE;
+            case GDK_n:
+                vte_terminal_search_find_next(VTE_TERMINAL(vte));
+                return TRUE;
+            case GDK_f:
+                open_search_dialog(vte);
+                return TRUE;
+        }
+    }
+    return FALSE;
+}
 
 int main(int argc, char **argv) {
     GError *error = NULL;
@@ -70,6 +123,7 @@ int main(int argc, char **argv) {
     gtk_widget_grab_focus(vte);
 
     g_signal_connect(G_OBJECT (window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
 
     gtk_widget_show_all(window);
     gtk_main();
