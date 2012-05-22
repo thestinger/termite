@@ -29,10 +29,13 @@ static void open_search_dialog(GtkWidget *vte) {
                                          GTK_WINDOW(gtk_widget_get_toplevel(vte)),
                                          GTK_DIALOG_DESTROY_WITH_PARENT,
                                          GTK_STOCK_OK,
-                                         GTK_RESPONSE_NONE,
+                                         GTK_RESPONSE_ACCEPT,
                                          NULL);
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
+
+    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
+    gtk_entry_set_activates_default(GTK_ENTRY(info->entry), TRUE);
 
     gtk_container_add(GTK_CONTAINER(content_area), info->entry);
     gtk_widget_show_all(dialog);
