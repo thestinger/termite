@@ -16,22 +16,22 @@ static const char *foreground_color = "#dcdccc";
 static const char *background_color = "#3f3f3f";
 
 static const char *colors[16] = {
-    "#3f3f3f",
-    "#705050",
-    "#60b48a",
-    "#dfaf8f",
-    "#506070",
-    "#dc8cc3",
-    "#8cd0d3",
-    "#dcdccc",
-    "#709080",
-    "#dca3a3",
-    "#c3bf9f",
-    "#f0dfaf",
-    "#94bff3",
-    "#ec93d3",
-    "#93e0e3",
-    "#ffffff",
+    "#3f3f3f", // black
+    "#705050", // red
+    "#60b48a", // green
+    "#dfaf8f", // yellow
+    "#506070", // blue
+    "#dc8cc3", // magenta
+    "#8cd0d3", // cyan
+    "#dcdccc", // white
+    "#709080", // bright black
+    "#dca3a3", // bright red
+    "#c3bf9f", // bright green
+    "#f0dfaf", // bright yellow
+    "#94bff3", // bright blue
+    "#ec93d3", // bright magenta
+    "#93e0e3", // bright cyan
+    "#ffffff", // bright white
 };
 
 static const bool scroll_on_output = false;
