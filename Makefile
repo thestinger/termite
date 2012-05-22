@@ -1,14 +1,13 @@
 PREFIX = /usr/local
 
-CC = gcc
-CFLAGS = -std=c99 -O3 \
-	 -Wall -Wextra -pedantic \
-	 -Winit-self \
-	 -Wshadow \
-	 -Wformat=2 \
-	 -Wmissing-declarations
+CFLAGS += -std=c99 -O3 \
+	  -Wall -Wextra -pedantic \
+	  -Winit-self \
+	  -Wshadow \
+	  -Wformat=2 \
+	  -Wmissing-declarations \
+	  $(shell pkg-config --cflags gtk+-2.0 vte)
 
-CFLAGS += $(shell pkg-config --cflags gtk+-2.0 vte)
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs gtk+-2.0 vte)
 
 term: term.c config.h
