@@ -1,7 +1,8 @@
+#include <stdlib.h>
+
+#include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
-#include <gdk/gdkkeysyms.h>
-#include <stdlib.h>
 
 #include "config.h"
 
