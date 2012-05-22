@@ -19,7 +19,8 @@ typedef struct search_dialog_info {
 
 static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
     GRegex *regex = vte_terminal_search_get_gregex(VTE_TERMINAL(info->vte));
-    if (!regex) regex = g_regex_new(gtk_entry_get_text(GTK_ENTRY(info->entry)), 0, 0, NULL);
+    if (regex) g_regex_unref(regex);
+    regex = g_regex_new(gtk_entry_get_text(GTK_ENTRY(info->entry)), 0, 0, NULL);
     vte_terminal_search_set_gregex(VTE_TERMINAL(info->vte), regex);
 
     if (info->direction == search_forward) {
