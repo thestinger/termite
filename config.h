@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
+static const char *url_command = "/usr/bin/firefox";
 
 static const char *font = "Monospace 9";
 static const long scrollback_lines = 1000;

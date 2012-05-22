@@ -82,6 +82,48 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
     return FALSE;
 }
 
+#if VTE_CHECK_VERSION(0, 24, 0)
+static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
+    GtkBorder *border = NULL;
+
+    gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
+    if (border == NULL) {
+        g_warning("VTE's inner-border property unavailable");
+        *w = *h = 0;
+    } else {
+        *w = border->left + border->right;
+        *h = border->top + border->bottom;
+        gtk_border_free(border);
+    }
+}
+#else
+#define get_vte_padding vte_terminal_get_padding
+#endif
+
+static char *check_match(VteTerminal *vte, int event_x, int event_y) {
+    int xpad, ypad, tag;
+
+    get_vte_padding(vte, &xpad, &ypad);
+    char *ret = vte_terminal_match_check(vte,
+                                    (event_x - ypad) / vte_terminal_get_char_width(vte),
+                                    (event_y - ypad) / vte_terminal_get_char_height(vte),
+                                    &tag);
+    return ret;
+}
+
+static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
+    char *match = check_match(vte, event->x, event->y);
+
+    if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
+        const char *argv[3] = {url_command, match, NULL};
+        g_spawn_async(NULL, (char **)argv, NULL, 0, NULL, NULL, NULL, NULL);
+        g_free(match);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -158,7 +200,8 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
 
-    g_signal_connect(G_OBJECT (window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
 
     gtk_widget_show_all(window);
