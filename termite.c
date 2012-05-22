@@ -148,9 +148,7 @@ int main(int argc, char **argv) {
 
     gtk_init(&argc, &argv);
 
-    GtkWidget *window;
-
-    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     /*gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);*/
 
     GtkWidget *vte = vte_terminal_new();
@@ -217,8 +215,6 @@ int main(int argc, char **argv) {
 
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
 
-    gtk_widget_grab_focus(vte);
-
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
@@ -234,6 +230,7 @@ int main(int argc, char **argv) {
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
 #endif
 
+    gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
     gtk_main();
     return 0;
