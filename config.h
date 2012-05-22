@@ -5,7 +5,7 @@
 
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 
-static const char *font = "Consolas 9";
+static const char *font = "Monospace 9";
 static const long scrollback_lines = 1000;
 
 static const char *foreground_color = "#dcdccc";
