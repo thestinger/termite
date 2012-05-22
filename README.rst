@@ -1,3 +1,5 @@
+A simple VTE-based terminal.
+
 TODO
 ====
 
