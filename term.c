@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), 0, &error);
 
     if (!pty) {
-        fprintf(stderr, "Failed to create pty: %s", error->message);
+        fprintf(stderr, "Failed to create pty: %s\n", error->message);
         return 1;
     }
 
@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
                       &ppid, &error)) {
         vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
     } else {
+        fprintf(stderr, "The new terminal's command failed to run: %s\n", error->message);
         return 1;
     }
 
