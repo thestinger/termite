@@ -230,6 +230,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef DYNAMIC_TITLE
+    window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
 #endif
 
