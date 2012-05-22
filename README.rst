@@ -22,3 +22,4 @@ TODO
 * click to open urls
 * keyboard binding for opening urls
 * configurable keybindings for the above functionality
+* urgent_on_bell setting
