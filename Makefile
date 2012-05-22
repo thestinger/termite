@@ -1,7 +1,12 @@
 PREFIX = /usr/local
 
 CC = gcc
-CFLAGS = -std=c99 -O3 -Wall -Wextra -pedantic -Wformat=2
+CFLAGS = -std=c99 -O3 \
+	 -Wall -Wextra -pedantic \
+	 -Winit-self \
+	 -Wshadow \
+	 -Wformat=2 \
+	 -Wmissing-declarations
 
 CFLAGS += $(shell pkg-config --cflags gtk+-2.0 vte)
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs gtk+-2.0 vte)
