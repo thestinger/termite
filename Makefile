@@ -10,15 +10,15 @@ CFLAGS += -std=c99 -O3 \
 
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs gtk+-2.0 vte)
 
-term: term.c config.h
+termite: termite.c config.h
 	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS}
 
-install: term
+install: termite
 	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f term ${DESTDIR}${PREFIX}/bin
-	chmod 755 ${DESTDIR}${PREFIX}/bin/term
+	cp -f termite ${DESTDIR}${PREFIX}/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/termite
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/term
+	rm -f ${DESTDIR}${PREFIX}/bin/termite
 
 .PHONY: install uninstall

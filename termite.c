@@ -139,7 +139,7 @@ static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWidget *wi
 #ifdef DYNAMIC_TITLE
 static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     const char *t = vte_terminal_get_window_title(vte);
-    gtk_window_set_title(window, t ? t : "term");
+    gtk_window_set_title(window, t ? t : "termite");
 }
 #endif
 
