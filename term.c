@@ -134,6 +134,15 @@ int main(int argc, char **argv) {
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
     vte_terminal_set_backspace_binding(VTE_TERMINAL(vte), VTE_ERASE_ASCII_BACKSPACE);
 
+    // url matching
+    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                            g_regex_new(url_regex,
+                                                G_REGEX_CASELESS,
+                                                G_REGEX_MATCH_NOTEMPTY,
+                                                NULL),
+                                            0);
+    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+
     // set colors
     GdkColor foreground, background;
     gdk_color_parse(foreground_color, &foreground);
