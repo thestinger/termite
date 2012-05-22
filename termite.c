@@ -3,13 +3,13 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "config.h"
-
 #if GTK_CHECK_VERSION (2, 90, 7)
 #include <gdk/gdkkeysyms-compat.h>
 #else
 #include <gdk/gdkkeysyms.h>
 #endif
+
+#include "config.h"
 
 #ifndef __GNUC__
 #  define  __attribute__(x)
