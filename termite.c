@@ -7,10 +7,9 @@
 #include "config.h"
 
 #if GTK_CHECK_VERSION (2, 90, 7)
-#define GDK_KEY(symbol) GDK_KEY_##symbol
+#include <gdk/gdkkeysyms-compat.h>
 #else
 #include <gdk/gdkkeysyms.h>
-#define GDK_KEY(symbol) GDK_##symbol
 #endif
 
 #ifndef __GNUC__
@@ -80,18 +79,18 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
 
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY(p):
+            case GDK_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY(n):
+            case GDK_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY(question):
+            case GDK_question:
                 open_search_dialog(vte, search_backward, info);
                 return TRUE;
         }
     }
-    if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY(slash)) {
+    if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_slash) {
         open_search_dialog(vte, search_forward, info);
         return TRUE;
     }
