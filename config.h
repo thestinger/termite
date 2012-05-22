@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define URGENT_ON_BEEP
+
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 static const char *url_command = "/usr/bin/firefox";
 

@@ -6,6 +6,10 @@
 
 #include "config.h"
 
+#ifndef __GNUC__
+#  define  __attribute__(x)
+#endif
+
 enum search_direction {
     search_forward,
     search_backward
@@ -123,6 +127,15 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     return FALSE;
 }
 
+#ifdef URGENT_ON_BEEP
+static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWidget *window) {
+    GtkWindow *gwin = GTK_WINDOW(window);
+    if (!gtk_window_is_active(gwin)) {
+        gtk_window_set_urgency_hint(gwin, TRUE);
+    }
+}
+#endif
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -202,6 +215,12 @@ int main(int argc, char **argv) {
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
+
+#ifdef URGENT_ON_BEEP
+    if (g_signal_lookup("beep", G_TYPE_FROM_INSTANCE(G_OBJECT(vte)))) {
+        g_signal_connect(vte, "beep", G_CALLBACK(beep_handler), window);
+    }
+#endif
 
     gtk_widget_show_all(window);
     gtk_main();
