@@ -6,9 +6,15 @@
 
 #include "config.h"
 
+enum search_direction {
+    search_forward,
+    search_backward
+};
+
 typedef struct search_dialog_info {
     GtkWidget *vte;
     GtkWidget *entry;
+    enum search_direction direction;
 } search_dialog_info;
 
 static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
@@ -16,14 +22,21 @@ static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialo
     if (!regex) regex = g_regex_new(gtk_entry_get_text(GTK_ENTRY(info->entry)), 0, 0, NULL);
     vte_terminal_search_set_gregex(VTE_TERMINAL(info->vte), regex);
 
+    if (info->direction == search_forward) {
+        vte_terminal_search_find_next(VTE_TERMINAL(info->vte));
+    } else {
+        vte_terminal_search_find_previous(VTE_TERMINAL(info->vte));
+    }
+
     free(info);
     gtk_widget_destroy(GTK_WIDGET(dialog));
 }
 
-static void open_search_dialog(GtkWidget *vte) {
+static void open_search_dialog(GtkWidget *vte, enum search_direction direction) {
     search_dialog_info *info = malloc(sizeof (info));
     info->vte = vte;
     info->entry = gtk_entry_new();
+    info->direction = direction;
 
     GtkWidget *dialog, *content_area;
     dialog = gtk_dialog_new_with_buttons("Search",
@@ -44,7 +57,9 @@ static void open_search_dialog(GtkWidget *vte) {
 }
 
 static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
-    if (event->state == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
+    const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
+
+    if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
@@ -52,10 +67,14 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
             case GDK_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_f:
-                open_search_dialog(vte);
+            case GDK_question:
+                open_search_dialog(vte, search_backward);
                 return TRUE;
         }
+    }
+    if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_slash) {
+        open_search_dialog(vte, search_forward);
+        return TRUE;
     }
     return FALSE;
 }
