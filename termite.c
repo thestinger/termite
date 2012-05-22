@@ -133,10 +133,9 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
 }
 
 #ifdef URGENT_ON_BEEP
-static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWidget *window) {
-    GtkWindow *gwin = GTK_WINDOW(window);
-    if (!gtk_window_is_active(gwin)) {
-        gtk_window_set_urgency_hint(gwin, TRUE);
+static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWindow *window) {
+    if (!gtk_window_is_active(window)) {
+        gtk_window_set_urgency_hint(window, TRUE);
     }
 }
 #endif
