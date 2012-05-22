@@ -136,6 +136,13 @@ static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWidget *wi
 }
 #endif
 
+#ifdef DYNAMIC_TITLE
+static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
+    const char *t = vte_terminal_get_window_title(vte);
+    gtk_window_set_title(window, t ? t : "term");
+}
+#endif
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -220,6 +227,10 @@ int main(int argc, char **argv) {
     if (g_signal_lookup("beep", G_TYPE_FROM_INSTANCE(G_OBJECT(vte)))) {
         g_signal_connect(vte, "beep", G_CALLBACK(beep_handler), window);
     }
+#endif
+
+#ifdef DYNAMIC_TITLE
+    g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
 #endif
 
     gtk_widget_show_all(window);
