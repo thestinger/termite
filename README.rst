@@ -1,5 +1,12 @@
 A simple VTE-based terminal.
 
+DEPENDENCIES
+============
+
+Either vte (default) or vte3, including the vte dependencies.
+
+You can use vte3 by building with ``make GTK3=1``.
+
 KEYBINDINGS
 ===========
 
