@@ -82,6 +82,12 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
 
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_c:
+                vte_terminal_copy_clipboard(VTE_TERMINAL(vte));
+                return TRUE;
+            case GDK_v:
+                vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
+                return TRUE;
             case GDK_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
                 return TRUE;

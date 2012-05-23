@@ -14,6 +14,9 @@ You can use vte3 by building with ``make GTK3=1``.
 KEYBINDINGS
 ===========
 
+* ``ctrl-shift-c``: copy to CLIPBOARD (useful for yanking search matches)
+* ``ctrl-shift-v``: paste from CLIPBOARD
+
 Scrollback search:
 
 * ``ctrl-/``: start forward search
