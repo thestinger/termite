@@ -12,10 +12,12 @@ KEYBINDINGS
 
 Scrollback search:
 
-* ``ctrl-/``: start search (forward)
-* ``ctrl-?``: start search (backward)
+* ``ctrl-/``: start forward search
+* ``ctrl-?``: start backward search
 * ``ctrl-shift-n``: search forward
 * ``ctrl-shift-p``: search backward
+* ``ctrl-shift-u``: start forward url search
+* ``ctrl-shift-i``: start backward url search
 
 While typing search pattern:
 
