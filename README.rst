@@ -26,5 +26,5 @@ TODO
 ====
 
 * saner scrollback search widget
-* keyboard binding for opening urls
+* better keyboard url selection/opening
 * configurable keybindings

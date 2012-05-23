@@ -27,18 +27,22 @@ typedef struct search_dialog_info {
     bool open;
 } search_dialog_info;
 
+static void search(VteTerminal *vte, const char *pattern, enum search_direction direction) {
+    GRegex *regex = vte_terminal_search_get_gregex(vte);
+    if (regex) g_regex_unref(regex);
+    regex = g_regex_new(pattern, 0, 0, NULL);
+    vte_terminal_search_set_gregex(vte, regex);
+
+    if (direction == search_forward) {
+        vte_terminal_search_find_next(vte);
+    } else {
+        vte_terminal_search_find_previous(vte);
+    }
+}
+
 static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
     if (response_id == GTK_RESPONSE_ACCEPT) {
-        GRegex *regex = vte_terminal_search_get_gregex(VTE_TERMINAL(info->vte));
-        if (regex) g_regex_unref(regex);
-        regex = g_regex_new(gtk_entry_get_text(GTK_ENTRY(info->entry)), 0, 0, NULL);
-        vte_terminal_search_set_gregex(VTE_TERMINAL(info->vte), regex);
-
-        if (info->direction == search_forward) {
-            vte_terminal_search_find_next(VTE_TERMINAL(info->vte));
-        } else {
-            vte_terminal_search_find_previous(VTE_TERMINAL(info->vte));
-        }
+        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->direction);
     }
 
     gtk_widget_destroy(GTK_WIDGET(dialog));
@@ -83,6 +87,12 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 return TRUE;
             case GDK_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
+                return TRUE;
+            case GDK_u:
+                search(VTE_TERMINAL(vte), url_regex, search_backward);
+                return TRUE;
+            case GDK_i:
+                search(VTE_TERMINAL(vte), url_regex, search_backward);
                 return TRUE;
             case GDK_question:
                 open_search_dialog(vte, search_backward, info);
