@@ -95,7 +95,7 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 return TRUE;
             case GDK_u:
-                search(VTE_TERMINAL(vte), url_regex, search_backward);
+                search(VTE_TERMINAL(vte), url_regex, search_forward);
                 return TRUE;
             case GDK_i:
                 search(VTE_TERMINAL(vte), url_regex, search_backward);
