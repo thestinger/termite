@@ -27,4 +27,4 @@ TODO
 
 * saner scrollback search widget
 * keyboard binding for opening urls
-* configurable keybindings for the above functionality
+* configurable keybindings
