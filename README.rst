@@ -1,5 +1,9 @@
 A simple VTE-based terminal.
 
+The goal is a keyboard-centric terminal without GUI frills. Features will be
+configurable at compile-time (enable/disable) in ``config.h``, along with
+keybindings.
+
 DEPENDENCIES
 ============
 
