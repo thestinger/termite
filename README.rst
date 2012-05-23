@@ -38,3 +38,5 @@ TODO
 * better keyboard url selection/opening
 * configurable keybindings
 * keyword autocompletion for words in scrollback (ctrl-tab and ctrl-shift-tab)
+* ``ctrl-shift-n`` and ``ctrl-shift-p`` should be next/prev match in the
+  direction of the current search, like ``n`` and ``N`` in vim.
