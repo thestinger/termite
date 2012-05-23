@@ -1,4 +1,5 @@
 PREFIX = /usr/local
+TERMINFO = ${PREFIX}/share/terminfo
 
 ifeq (${GTK3}, 1)
 	GTK = gtk+-3.0
@@ -25,6 +26,8 @@ install: termite
 	mkdir -p ${DESTDIR}${PREFIX}/bin
 	cp -f termite ${DESTDIR}${PREFIX}/bin
 	chmod 755 ${DESTDIR}${PREFIX}/bin/termite
+	mkdir -p ${DESTDIR}${TERMINFO}
+	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/termite

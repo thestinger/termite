@@ -42,6 +42,6 @@ static const bool visible_bell = false;
 
 static const bool mouse_autohide = false;
 
-static const char *term = "xterm-256color";
+static const char *term = "termite";
 
 #endif

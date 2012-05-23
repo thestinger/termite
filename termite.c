@@ -216,7 +216,6 @@ int main(int argc, char **argv) {
     vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
-    vte_terminal_set_backspace_binding(VTE_TERMINAL(vte), VTE_ERASE_ASCII_BACKSPACE);
 
     // url matching
     int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
