@@ -30,3 +30,4 @@ TODO
 * saner scrollback search widget
 * better keyboard url selection/opening
 * configurable keybindings
+* keyword autocompletion for words in scrollback (ctrl-tab and ctrl-shift-tab)
