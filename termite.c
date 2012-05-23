@@ -203,8 +203,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    /*vte_terminal_fork_command_full(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, NULL, command_argv, NULL, 0, NULL, NULL, NULL, NULL);*/
-
     gtk_container_add(GTK_CONTAINER(window), vte);
 
     g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
