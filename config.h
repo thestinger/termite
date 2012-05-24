@@ -5,9 +5,12 @@
 
 #define URGENT_ON_BEEP
 #define DYNAMIC_TITLE
+#define CLICKABLE_URL
 
+#ifdef CLICKABLE_URL
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 static const char *url_command = "/usr/bin/firefox";
+#endif
 
 static const char *font = "Monospace 9";
 static const long scrollback_lines = 1000;

@@ -24,6 +24,7 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
     return FALSE;
 }
 
+#ifdef CLICKABLE_URL
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
@@ -39,7 +40,6 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
 
 static char *check_match(VteTerminal *vte, int event_x, int event_y) {
     int xpad, ypad, tag;
-
     get_vte_padding(vte, &xpad, &ypad);
     return vte_terminal_match_check(vte,
                                     (event_x - ypad) / vte_terminal_get_char_width(vte),
@@ -49,16 +49,15 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, event->x, event->y);
-
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
         const char *argv[3] = {url_command, match, NULL};
         g_spawn_async(NULL, (char **)argv, NULL, 0, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
-
     return FALSE;
 }
+#endif
 
 #ifdef URGENT_ON_BEEP
 static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWindow *window) {
@@ -84,7 +83,6 @@ int main(int argc, char **argv) {
     /*gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);*/
 
     GtkWidget *vte = vte_terminal_new();
-
 
     char **command_argv;
     char *default_argv[2] = {NULL, NULL};
@@ -131,15 +129,6 @@ int main(int argc, char **argv) {
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
 
-    // url matching
-    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
-                                            g_regex_new(url_regex,
-                                                G_REGEX_CASELESS,
-                                                G_REGEX_MATCH_NOTEMPTY,
-                                                NULL),
-                                            0);
-    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
-
     // set colors
     GdkColor foreground, background;
     gdk_color_parse(foreground_color, &foreground);
@@ -154,8 +143,18 @@ int main(int argc, char **argv) {
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
 
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
+
+#ifdef CLICKABLE_URL
+    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                            g_regex_new(url_regex,
+                                                G_REGEX_CASELESS,
+                                                G_REGEX_MATCH_NOTEMPTY,
+                                                NULL),
+                                            0);
+    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
+#endif
 
 #ifdef URGENT_ON_BEEP
     if (g_signal_lookup("beep", G_TYPE_FROM_INSTANCE(G_OBJECT(vte)))) {
