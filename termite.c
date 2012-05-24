@@ -1,5 +1,3 @@
-#include <stdbool.h>
-
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
@@ -11,75 +9,8 @@
 
 #include "config.h"
 
-#ifndef __GNUC__
-#  define  __attribute__(x)
-#endif
-
-enum search_direction {
-    search_forward,
-    search_backward
-};
-
-typedef struct search_dialog_info {
-    GtkWidget *vte;
-    GtkWidget *entry;
-    enum search_direction direction;
-    bool open;
-} search_dialog_info;
-
-static void search(VteTerminal *vte, const char *pattern, enum search_direction direction) {
-    GRegex *regex = vte_terminal_search_get_gregex(vte);
-    if (regex) g_regex_unref(regex);
-    regex = g_regex_new(pattern, 0, 0, NULL);
-    vte_terminal_search_set_gregex(vte, regex);
-
-    if (direction == search_forward) {
-        vte_terminal_search_find_next(vte);
-    } else {
-        vte_terminal_search_find_previous(vte);
-    }
-}
-
-static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
-    if (response_id == GTK_RESPONSE_ACCEPT) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->direction);
-    }
-
-    gtk_widget_destroy(GTK_WIDGET(dialog));
-    info->open = false;
-}
-
-static void open_search_dialog(GtkWidget *vte, enum search_direction direction, search_dialog_info *info) {
-    info->direction = direction;
-
-    if (info->open) {
-        return;
-    }
-
-    info->open = true;
-    info->entry = gtk_entry_new();
-
-    GtkWidget *dialog, *content_area;
-    dialog = gtk_dialog_new_with_buttons("Search",
-                                         GTK_WINDOW(gtk_widget_get_toplevel(vte)),
-                                         GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_STOCK_OK,
-                                         GTK_RESPONSE_ACCEPT,
-                                         NULL);
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
-
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-    gtk_entry_set_activates_default(GTK_ENTRY(info->entry), TRUE);
-
-    gtk_container_add(GTK_CONTAINER(content_area), info->entry);
-    gtk_widget_show_all(dialog);
-    gtk_widget_grab_focus(GTK_WIDGET(info->entry));
-}
-
-static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_info *info) {
+static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
-
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_c:
@@ -88,26 +19,7 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
             case GDK_v:
                 vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_p:
-                vte_terminal_search_find_previous(VTE_TERMINAL(vte));
-                return TRUE;
-            case GDK_n:
-                vte_terminal_search_find_next(VTE_TERMINAL(vte));
-                return TRUE;
-            case GDK_u:
-                search(VTE_TERMINAL(vte), url_regex, search_forward);
-                return TRUE;
-            case GDK_i:
-                search(VTE_TERMINAL(vte), url_regex, search_backward);
-                return TRUE;
-            case GDK_question:
-                open_search_dialog(vte, search_backward, info);
-                return TRUE;
         }
-    }
-    if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_slash) {
-        open_search_dialog(vte, search_forward, info);
-        return TRUE;
     }
     return FALSE;
 }
@@ -246,11 +158,9 @@ int main(int argc, char **argv) {
 
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
 
-    search_dialog_info info = { .vte = vte, .open = false };
-
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
-    g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
+    g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), NULL);
 
 #ifdef URGENT_ON_BEEP
     if (g_signal_lookup("beep", G_TYPE_FROM_INSTANCE(G_OBJECT(vte)))) {
