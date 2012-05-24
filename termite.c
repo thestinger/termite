@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     GPid ppid;
 
     if (g_spawn_async(NULL, command_argv, NULL,
-                      G_SPAWN_DO_NOT_REAP_CHILD,
+                      G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
                       (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
                       &ppid, &error)) {
         vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
@@ -148,9 +148,9 @@ int main(int argc, char **argv) {
 #ifdef CLICKABLE_URL
     int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
                                             g_regex_new(url_regex,
-                                                G_REGEX_CASELESS,
-                                                G_REGEX_MATCH_NOTEMPTY,
-                                                NULL),
+                                                        G_REGEX_CASELESS,
+                                                        G_REGEX_MATCH_NOTEMPTY,
+                                                        NULL),
                                             0);
     vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
