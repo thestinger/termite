@@ -24,10 +24,8 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
     return FALSE;
 }
 
-#if VTE_CHECK_VERSION(0, 24, 0)
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
-
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
     if (border == NULL) {
         g_warning("VTE's inner-border property unavailable");
@@ -38,9 +36,6 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
         gtk_border_free(border);
     }
 }
-#else
-#define get_vte_padding vte_terminal_get_padding
-#endif
 
 static char *check_match(VteTerminal *vte, int event_x, int event_y) {
     int xpad, ypad, tag;
