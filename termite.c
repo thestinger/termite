@@ -90,7 +90,11 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         command_argv = &argv[1];
     } else {
+#if GTK_CHECK_VERSION (0, 28, 0)
         default_argv[0] = vte_get_user_shell();
+#else
+        default_argv[0] = g_strdup(g_getenv("SHELL"));
+#endif
         if (!default_argv[0]) default_argv[0] = "/bin/sh";
         command_argv = default_argv;
     }
