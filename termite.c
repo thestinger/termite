@@ -129,6 +129,16 @@ int main(int argc, char **argv) {
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
 
+#ifdef TRANSPARENCY
+    GdkScreen *screen = gtk_widget_get_screen(window);
+    GdkColormap *colormap = gdk_screen_get_rgba_colormap(screen);
+    if (colormap != NULL) {
+        gtk_widget_set_colormap(window, colormap);
+    }
+    vte_terminal_set_background_saturation(VTE_TERMINAL(vte), transparency_level);
+    vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - transparency_level)));
+#endif
+
     // set colors
     GdkColor foreground, background;
     gdk_color_parse(foreground_color, &foreground);
