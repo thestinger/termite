@@ -178,12 +178,8 @@ int main(int argc, char **argv) {
 
     GtkWidget *vte = vte_terminal_new();
 
-    char *command_argv[2] = {NULL, NULL};
-
-    char *shell = vte_get_user_shell();
-    if (!shell) shell = "/bin/sh";
-
-    command_argv[0] = shell;
+    char *command_argv[2] = {vte_get_user_shell(), NULL};
+    if (!command_argv[0]) command_argv[0] = "/bin/sh";
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), 0, &error);
 
