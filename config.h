@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define URGENT_ON_BEEP
 #define DYNAMIC_TITLE
@@ -11,6 +12,9 @@
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 static const char *url_command = "/usr/bin/firefox";
 #endif
+
+// 0 -> completely transparent, 65535 -> completely opaque
+static const uint16_t opacity = 65535;
 
 static const char *font = "Monospace 9";
 static const long scrollback_lines = 1000;
