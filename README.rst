@@ -8,7 +8,7 @@ Configuration is done at compile-time via ``config.h``.
 DEPENDENCIES
 ============
 
-Either vte (default) or vte3. You can use vte3 by building with ``make GTK3=1``.
+A vte version >= 0.28. You can use vte3 by building with ``make GTK3=1``.
 
 KEYBINDINGS
 ===========

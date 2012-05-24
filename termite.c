@@ -25,7 +25,6 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
 }
 
 #ifdef CLICKABLE_URL
-#if VTE_CHECK_VERSION(0, 24, 0)
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
 
@@ -39,9 +38,6 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
         gtk_border_free(border);
     }
 }
-#else
-#define get_vte_padding vte_terminal_get_padding
-#endif
 
 static char *check_match(VteTerminal *vte, int event_x, int event_y) {
     int xpad, ypad, tag;
@@ -95,11 +91,7 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         command_argv = &argv[1];
     } else {
-#if VTE_CHECK_VERSION(0, 28, 0)
         default_argv[0] = vte_get_user_shell();
-#else
-        default_argv[0] = g_strdup(g_getenv("SHELL"));
-#endif
         if (!default_argv[0]) default_argv[0] = "/bin/sh";
         command_argv = default_argv;
     }
