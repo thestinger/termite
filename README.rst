@@ -15,3 +15,4 @@ KEYBINDINGS
 
 * ``ctrl-shift-c``: copy to CLIPBOARD
 * ``ctrl-shift-v``: paste from CLIPBOARD
+* ``ctrl-shift-u``: unicode input (standard GTK binding)
