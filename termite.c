@@ -136,8 +136,8 @@ int main(int argc, char **argv) {
     if (colormap != NULL) {
         gtk_widget_set_colormap(window, colormap);
     }
-    vte_terminal_set_background_saturation(VTE_TERMINAL(vte), transparency_level);
-    vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - transparency_level)));
+    vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
+    vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
 #endif
 
     // set colors
