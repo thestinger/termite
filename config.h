@@ -48,6 +48,6 @@ static const bool visible_bell = false;
 
 static const bool mouse_autohide = false;
 
-static const char *term = "termite";
+static const char *term = "vte-256color";
 
 #endif
