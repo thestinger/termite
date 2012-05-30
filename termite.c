@@ -232,13 +232,11 @@ int main(int argc, char **argv) {
 #endif
 
     // set colors
-    GdkColor foreground, background;
+    GdkColor foreground, background, palette[16];
     gdk_color_parse(foreground_color, &foreground);
     gdk_color_parse(background_color, &background);
 
-    GdkColor palette[16];
-
-    for (size_t i = 0; i < 16; i++) {
+    for (unsigned i = 0; i < 16; i++) {
         gdk_color_parse(colors[i], &palette[i]);
     }
 
