@@ -9,6 +9,10 @@
 
 #include "config.h"
 
+#ifndef __GNUC__
+# define __attribute__(x)
+#endif
+
 static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event) {
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
