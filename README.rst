@@ -1,8 +1,5 @@
 A simple VTE-based terminal.
 
-Features that are available with ``tmux`` or ``screen`` such as tabs,
-scrollback search/completion and keyboard url selection are left out.
-
 Configuration is done at compile-time via ``config.h``.
 
 DEPENDENCIES
