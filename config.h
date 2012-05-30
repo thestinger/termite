@@ -1,6 +1,3 @@
-#ifndef CONFIG_H
-#define CONFIG_H
-
 #include <stdbool.h>
 
 #define URGENT_ON_BEEP
@@ -50,5 +47,3 @@ static const bool visible_bell = false;
 static const bool mouse_autohide = false;
 
 static const char *term = "vte-256color";
-
-#endif
