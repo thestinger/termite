@@ -7,7 +7,7 @@
 
 #ifdef CLICKABLE_URL
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
-static const char *url_command = "/usr/bin/firefox";
+#define URL_COMMAND(URL_MATCH) {"/usr/bin/firefox", URL_MATCH, NULL}
 #endif
 
 // 0.0: opaque, 1.0: transparent
