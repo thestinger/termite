@@ -30,8 +30,10 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
 
     if (!reverse) {
         vte_terminal_search_find_next(vte);
+        vte_terminal_copy_primary(vte);
     } else {
         vte_terminal_search_find_previous(vte);
+        vte_terminal_copy_primary(vte);
     }
 }
 
