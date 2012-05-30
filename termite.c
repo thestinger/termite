@@ -85,11 +85,11 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 return TRUE;
             case GDK_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
-                vte_terminal_copy_primary(vte);
+                vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
             case GDK_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
-                vte_terminal_copy_primary(vte);
+                vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
             case GDK_f:
                 open_search_dialog(vte, false, info);
@@ -98,10 +98,10 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 open_search_dialog(vte, true, info);
                 return TRUE;
             case GDK_j:
-                search(vte, url_regex, false);
+                search(VTE_TERMINAL(vte), url_regex, false);
                 return TRUE;
             case GDK_k:
-                search(vte, url_regex, true);
+                search(VTE_TERMINAL(vte), url_regex, true);
                 return TRUE;
         }
     }
