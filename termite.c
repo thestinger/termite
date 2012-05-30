@@ -97,6 +97,12 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
             case GDK_b:
                 open_search_dialog(vte, true, info);
                 return TRUE;
+            case GDK_j:
+                search(vte, url_regex, false);
+                return TRUE;
+            case GDK_k:
+                search(vte, url_regex, true);
+                return TRUE;
         }
     }
     return FALSE;

@@ -18,6 +18,8 @@ Scrollback search:
 
 * ``ctrl-shift-f``: start forward search
 * ``ctrl-shift-b``: start reverse search
+* ``ctrl-shift-j``: start forward url search
+* ``ctrl-shift-k``: start reverse url search
 * ``ctrl-shift-n``: jump to next search match
 * ``ctrl-shift-p``: jump to previous search match
 
