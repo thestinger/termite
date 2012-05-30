@@ -6,6 +6,7 @@
 #define URGENT_ON_BEEP
 #define DYNAMIC_TITLE
 #define CLICKABLE_URL
+//#define ICON_NAME "terminal"
 
 #ifdef CLICKABLE_URL
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";

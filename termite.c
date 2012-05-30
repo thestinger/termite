@@ -166,10 +166,13 @@ int main(int argc, char **argv) {
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     /*gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);*/
-    GdkPixbuf *icon = gtk_icon_theme_load_icon (gtk_icon_theme_get_default (), "terminal", 48, 0, NULL);
+
+#ifdef ICON_NAME
+    GdkPixbuf *icon = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), ICON_NAME, 48, 0, NULL);
     if (icon) {
-        gtk_window_set_icon (GTK_WINDOW (window), icon);
+        gtk_window_set_icon(GTK_WINDOW(window), icon);
     }
+#endif
 
     GtkWidget *vte = vte_terminal_new();
 
