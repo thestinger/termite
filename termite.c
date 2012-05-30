@@ -15,25 +15,20 @@
 # define __attribute__(x)
 #endif
 
-enum search_direction {
-    search_forward,
-    search_backward
-};
-
 typedef struct search_dialog_info {
     GtkWidget *vte;
     GtkWidget *entry;
-    enum search_direction direction;
+    bool reverse;
     bool open;
 } search_dialog_info;
 
-static void search(VteTerminal *vte, const char *pattern, enum search_direction direction) {
+static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
     regex = g_regex_new(pattern, 0, 0, NULL);
     vte_terminal_search_set_gregex(vte, regex);
 
-    if (direction == search_forward) {
+    if (!reverse) {
         vte_terminal_search_find_next(vte);
     } else {
         vte_terminal_search_find_previous(vte);
@@ -42,15 +37,15 @@ static void search(VteTerminal *vte, const char *pattern, enum search_direction 
 
 static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
     if (response_id == GTK_RESPONSE_ACCEPT) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->direction);
+        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->reverse);
     }
 
     gtk_widget_destroy(GTK_WIDGET(dialog));
     info->open = false;
 }
 
-static void open_search_dialog(GtkWidget *vte, enum search_direction direction, search_dialog_info *info) {
-    info->direction = direction;
+static void open_search_dialog(GtkWidget *vte, bool reverse, search_dialog_info *info) {
+    info->reverse = reverse;
 
     if (info->open) {
         return;
@@ -94,10 +89,10 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 return TRUE;
             case GDK_f:
-                open_search_dialog(vte, search_forward, info);
+                open_search_dialog(vte, false, info);
                 return TRUE;
             case GDK_b:
-                open_search_dialog(vte, search_backward, info);
+                open_search_dialog(vte, true, info);
                 return TRUE;
         }
     }
