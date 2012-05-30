@@ -85,9 +85,11 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 return TRUE;
             case GDK_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
+                vte_terminal_copy_primary(vte);
                 return TRUE;
             case GDK_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
+                vte_terminal_copy_primary(vte);
                 return TRUE;
             case GDK_f:
                 open_search_dialog(vte, false, info);
