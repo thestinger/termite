@@ -16,3 +16,7 @@ KEYBINDINGS
 * ``ctrl-shift-c``: copy to CLIPBOARD
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)
+* ``ctrl-shift-f``: start forward search
+* ``ctrl-shift-b``: start reverse search
+* ``ctrl-shift-n``: jump to next search match
+* ``ctrl-shift-p``: jump to previous search match
