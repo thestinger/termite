@@ -3,7 +3,7 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#if GTK_CHECK_VERSION (2, 90, 7)
+#if GTK_CHECK_VERSION(2, 90, 7)
 #include <gdk/gdkkeysyms-compat.h>
 #else
 #include <gdk/gdkkeysyms.h>
@@ -146,9 +146,12 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
 
 #ifdef URGENT_ON_BEEP
 static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWindow *window) {
-    if (!gtk_window_is_active(window)) {
-        gtk_window_set_urgency_hint(window, TRUE);
-    }
+    gtk_window_set_urgency_hint(window, TRUE);
+}
+
+static gboolean focus_in_handler(GtkWindow *window) {
+    gtk_window_set_urgency_hint(window, FALSE);
+    return FALSE;
 }
 #endif
 
@@ -259,9 +262,8 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef URGENT_ON_BEEP
-    if (g_signal_lookup("beep", G_TYPE_FROM_INSTANCE(G_OBJECT(vte)))) {
-        g_signal_connect(vte, "beep", G_CALLBACK(beep_handler), window);
-    }
+    g_signal_connect(vte, "beep", G_CALLBACK(beep_handler), window);
+    g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
 #endif
 
 #ifdef DYNAMIC_TITLE
