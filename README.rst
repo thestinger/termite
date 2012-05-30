@@ -25,3 +25,9 @@ Scrollback search:
 
 The current selection is changed to the search match and copied to the PRIMARY
 clipboard buffer.
+
+TODO
+====
+
+* saner scrollback search widget (in-window, not a dialog)
+* expose more options in ``config.h``
