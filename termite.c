@@ -227,6 +227,9 @@ int main(int argc, char **argv) {
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
 
+    if (!cursor_blink)
+        vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), VTE_CURSOR_BLINK_OFF);
+
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
     GdkColormap *colormap = gdk_screen_get_rgba_colormap(screen);
