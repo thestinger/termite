@@ -1,7 +1,5 @@
 #include <stdbool.h>
 
-#include <gdk/gdkkeysyms.h>
-
 #define URGENT_ON_BEEP
 #define DYNAMIC_TITLE
 #define CLICKABLE_URL
@@ -51,11 +49,11 @@ static const bool mouse_autohide = false;
 static const char *term = "vte-256color";
 
 // keybindings
-#define KEY_COPY    GDK_KEY_c
-#define KEY_PASTE   GDK_KEY_v
-#define KEY_PREV    GDK_KEY_p
-#define KEY_NEXT    GDK_KEY_n
-#define KEY_SEARCH  GDK_KEY_f
-#define KEY_RSEARCH GDK_KEY_r
-#define KEY_URL     GDK_KEY_j
-#define KEY_RURL    GDK_KEY_k
+#define KEY_COPY    c
+#define KEY_PASTE   v
+#define KEY_PREV    p
+#define KEY_NEXT    n
+#define KEY_SEARCH  f
+#define KEY_RSEARCH r
+#define KEY_URL     j
+#define KEY_RURL    k

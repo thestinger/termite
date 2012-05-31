@@ -6,6 +6,9 @@
 
 #include "config.h"
 
+#define CONCAT(X, Y) X ## Y
+#define KEY(X) CONCAT(GDK_KEY_, X)
+
 #ifndef __GNUC__
 # define __attribute__(x)
 #endif
@@ -77,30 +80,30 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case KEY_COPY:
+            case KEY(KEY_COPY):
                 vte_terminal_copy_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case KEY_PASTE:
+            case KEY(KEY_PASTE):
                 vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case KEY_PREV:
+            case KEY(KEY_PREV):
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case KEY_NEXT:
+            case KEY(KEY_NEXT):
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case KEY_SEARCH:
+            case KEY(KEY_SEARCH):
                 open_search_dialog(vte, false, info);
                 return TRUE;
-            case KEY_RSEARCH:
+            case KEY(KEY_RSEARCH):
                 open_search_dialog(vte, true, info);
                 return TRUE;
-            case KEY_URL:
+            case KEY(KEY_URL):
                 search(VTE_TERMINAL(vte), url_regex, false);
                 return TRUE;
-            case KEY_RURL:
+            case KEY(KEY_RURL):
                 search(VTE_TERMINAL(vte), url_regex, true);
                 return TRUE;
         }
