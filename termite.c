@@ -30,6 +30,8 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
+static const gchar *browser_cmd[3] = { NULL };
+
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
                                   GtkListStore *store) {
@@ -201,11 +203,8 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
-        const gchar *argv[3] = { NULL, match, NULL };
-        argv[0] = g_getenv("BROWSER");
-        if (argv[0] == NULL)
-            argv[0] = default_browser;
-        g_spawn_async(NULL, (gchar **)argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+        browser_cmd[1] = match;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
@@ -292,6 +291,9 @@ int main(int argc, char **argv) {
         if (!default_argv[0]) default_argv[0] = "/bin/sh";
         command_argv = default_argv;
     }
+
+    browser_cmd[0] = g_getenv("BROWSER");
+    if (!browser_cmd[0]) browser_cmd[0] = default_browser;
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
