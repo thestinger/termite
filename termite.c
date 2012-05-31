@@ -44,7 +44,7 @@ static void search_response_cb(GtkWidget *dialog, gint response_id, search_dialo
     info->open = false;
 }
 
-static gboolean search_key_press_cb(__attribute__((unused)) GtkDialog *entry, GdkEventKey *event, GtkDialog *dialog) {
+static gboolean search_key_press_cb(__attribute__((unused)) GtkEntry *entry, GdkEventKey *event, GtkDialog *dialog) {
     if (event->keyval == GDK_KEY_Return) {
         gtk_dialog_response(dialog, GTK_RESPONSE_ACCEPT);
         return TRUE;
@@ -66,6 +66,7 @@ static void open_search_dialog(GtkWidget *vte, bool reverse, search_dialog_info 
     dialog = gtk_dialog_new_with_buttons("Search",
                                          GTK_WINDOW(gtk_widget_get_toplevel(vte)),
                                          GTK_DIALOG_DESTROY_WITH_PARENT,
+                                         NULL,
                                          NULL);
 
     g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
