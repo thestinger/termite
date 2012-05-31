@@ -10,13 +10,6 @@
 # define __attribute__(x)
 #endif
 
-static gchar *role = NULL;
-
-static const GOptionEntry entries[] = {
-    { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE" },
-    { NULL }
-};
-
 typedef struct search_dialog_info {
     GtkWidget *vte;
     GtkWidget *entry;
@@ -171,6 +164,13 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 int main(int argc, char **argv) {
     GError *error = NULL;
     GOptionContext *context = g_option_context_new("[COMMAND]");
+
+    const gchar *role = NULL;
+
+    const GOptionEntry entries[] = {
+        { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE" },
+        { NULL }
+    };
 
     g_option_context_add_main_entries(context, entries, NULL);
     g_option_context_add_group(context, gtk_get_option_group(TRUE));
