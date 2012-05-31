@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
     search_dialog_info info = { .vte = vte, .open = false };
 
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
 
 #ifdef CLICKABLE_URL
