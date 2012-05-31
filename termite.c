@@ -119,7 +119,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
         const gchar *argv[3] = { NULL, match, NULL };
         argv[0] = g_getenv("BROWSER");
         if (argv[0] == NULL)
-            argv[0] = DEFAULT_BROWSER;
+            argv[0] = default_browser;
         g_spawn_async(NULL, (gchar **)argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;

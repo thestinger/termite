@@ -7,7 +7,7 @@
 
 #ifdef CLICKABLE_URL
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
-#define DEFAULT_BROWSER "/usr/bin/firefox"
+static const char *default_browser = "/usr/bin/firefox";
 #endif
 
 // 0.0: opaque, 1.0: transparent
