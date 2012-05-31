@@ -164,6 +164,26 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 }
 #endif
 
+static gboolean position_overlay(GtkOverlay *overlay, GtkWidget *widget, GdkRectangle *alloc) {
+    GtkWidget *main_widget = gtk_bin_get_child(GTK_BIN(overlay));
+
+    GtkAllocation main_alloc;
+    main_alloc.x = 0;
+    main_alloc.y = 0;
+    main_alloc.width  = gtk_widget_get_allocated_width(main_widget);
+    main_alloc.height = gtk_widget_get_allocated_height(main_widget);
+
+    GtkRequisition req;
+    gtk_widget_get_preferred_size(widget, NULL, &req);
+
+    alloc->x = 2 * main_alloc.width / 3 - req.width / 2;
+    alloc->y = 0;
+    alloc->width  = MIN(main_alloc.width, req.width);
+    alloc->height = MIN(main_alloc.height, req.height);
+
+    return TRUE;
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -195,6 +215,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
 
     char **command_argv;
@@ -230,9 +251,16 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    gtk_container_add(GTK_CONTAINER(window), vte);
+    gtk_container_add(GTK_CONTAINER(overlay), vte);
+    gtk_container_add(GTK_CONTAINER(window), overlay);
+
+    GtkWidget *entry = gtk_entry_new();
+    gtk_widget_set_halign(entry, GTK_ALIGN_START);
+    gtk_widget_set_valign(entry, GTK_ALIGN_END);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), entry);
 
     g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay), NULL);
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
