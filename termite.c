@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
 
-#ifdef GTK3
+#if GTK_CHECK_VERSION(2, 90, 7)
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
     if (visual == NULL)
         visual = gdk_screen_get_system_visual(screen);
