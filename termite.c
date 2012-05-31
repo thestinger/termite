@@ -36,12 +36,11 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
-static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialog_info *info) {
+static void search_response_cb(GtkWidget *dialog, gint response_id, search_dialog_info *info) {
     if (response_id == GTK_RESPONSE_ACCEPT) {
         search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->reverse);
     }
-
-    gtk_widget_destroy(GTK_WIDGET(dialog));
+    gtk_widget_destroy(dialog);
     info->open = false;
 }
 
