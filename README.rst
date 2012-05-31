@@ -30,4 +30,7 @@ TODO
 ====
 
 * saner scrollback search widget (in-window, not a dialog)
+* scrollback search needs to be improved upstream [1]_
 * expose more options in ``config.h``
+
+.. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
