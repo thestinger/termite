@@ -45,6 +45,14 @@ static void search_response_cb(GtkDialog *dialog, gint response_id, search_dialo
     info->open = false;
 }
 
+static gboolean search_key_press_cb(__attribute__((unused)) GtkDialog *entry, GdkEventKey *event, GtkDialog *dialog) {
+    if (event->keyval == GDK_KEY_Return) {
+        gtk_dialog_response(dialog, GTK_RESPONSE_ACCEPT);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 static void open_search_dialog(GtkWidget *vte, bool reverse, search_dialog_info *info) {
     info->reverse = reverse;
 
@@ -59,15 +67,12 @@ static void open_search_dialog(GtkWidget *vte, bool reverse, search_dialog_info 
     dialog = gtk_dialog_new_with_buttons("Search",
                                          GTK_WINDOW(gtk_widget_get_toplevel(vte)),
                                          GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         GTK_STOCK_OK,
-                                         GTK_RESPONSE_ACCEPT,
                                          NULL);
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+
     g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
+    g_signal_connect(info->entry, "key-press-event", G_CALLBACK(search_key_press_cb), dialog);
 
-    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_ACCEPT);
-    gtk_entry_set_activates_default(GTK_ENTRY(info->entry), TRUE);
-
+    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
     gtk_container_add(GTK_CONTAINER(content_area), info->entry);
     gtk_widget_show_all(dialog);
     gtk_widget_grab_focus(GTK_WIDGET(info->entry));
