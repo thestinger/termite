@@ -1,13 +1,8 @@
 #include <stdbool.h>
 
+#include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
-
-#if GTK_CHECK_VERSION(2, 90, 7)
-#include <gdk/gdkkeysyms-compat.h>
-#else
-#include <gdk/gdkkeysyms.h>
-#endif
 
 #include "config.h"
 
@@ -82,30 +77,30 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_c:
+            case GDK_KEY_c:
                 vte_terminal_copy_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_v:
+            case GDK_KEY_v:
                 vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_p:
+            case GDK_KEY_p:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_n:
+            case GDK_KEY_n:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_f:
+            case GDK_KEY_f:
                 open_search_dialog(vte, false, info);
                 return TRUE;
-            case GDK_b:
+            case GDK_KEY_b:
                 open_search_dialog(vte, true, info);
                 return TRUE;
-            case GDK_j:
+            case GDK_KEY_j:
                 search(VTE_TERMINAL(vte), url_regex, false);
                 return TRUE;
-            case GDK_k:
+            case GDK_KEY_k:
                 search(VTE_TERMINAL(vte), url_regex, true);
                 return TRUE;
         }
