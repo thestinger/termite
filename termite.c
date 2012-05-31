@@ -18,7 +18,7 @@
 static gchar *role = NULL;
 
 static GOptionEntry entries[] = {
-    { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The terminal's role", NULL },
+    { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE" },
     { NULL }
 };
 
