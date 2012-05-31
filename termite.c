@@ -77,30 +77,30 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_c:
+            case KEY_COPY:
                 vte_terminal_copy_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY_v:
+            case KEY_PASTE:
                 vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY_p:
+            case KEY_PREV:
                 vte_terminal_search_find_previous(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY_n:
+            case KEY_NEXT:
                 vte_terminal_search_find_next(VTE_TERMINAL(vte));
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
-            case GDK_KEY_f:
+            case KEY_SEARCH:
                 open_search_dialog(vte, false, info);
                 return TRUE;
-            case GDK_KEY_b:
+            case KEY_RSEARCH:
                 open_search_dialog(vte, true, info);
                 return TRUE;
-            case GDK_KEY_j:
+            case KEY_URL:
                 search(VTE_TERMINAL(vte), url_regex, false);
                 return TRUE;
-            case GDK_KEY_k:
+            case KEY_RURL:
                 search(VTE_TERMINAL(vte), url_regex, true);
                 return TRUE;
         }
