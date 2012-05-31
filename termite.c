@@ -12,7 +12,7 @@
 
 static gchar *role = NULL;
 
-static GOptionEntry entries[] = {
+static const GOptionEntry entries[] = {
     { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE" },
     { NULL }
 };
@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new("[COMMAND]");
 
     g_option_context_add_main_entries(context, entries, NULL);
-    g_option_context_add_group(context, gtk_get_option_group (TRUE));
+    g_option_context_add_group(context, gtk_get_option_group(TRUE));
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_print("option parsing failed: %s\n", error->message);
