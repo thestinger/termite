@@ -15,6 +15,13 @@
 # define __attribute__(x)
 #endif
 
+static gchar *role = NULL;
+
+static GOptionEntry entries[] = {
+    { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The terminal's role", NULL },
+    { NULL }
+};
+
 typedef struct search_dialog_info {
     GtkWidget *vte;
     GtkWidget *entry;
@@ -164,11 +171,22 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 
 int main(int argc, char **argv) {
     GError *error = NULL;
+    GOptionContext *context = g_option_context_new("[COMMAND]");
 
-    gtk_init(&argc, &argv);
+    g_option_context_add_main_entries(context, entries, NULL);
+    g_option_context_add_group(context, gtk_get_option_group (TRUE));
+
+    if (!g_option_context_parse(context, &argc, &argv, &error)) {
+        g_print("option parsing failed: %s\n", error->message);
+        return 1;
+    }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     /*gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);*/
+
+    if (role) {
+        gtk_window_set_role(GTK_WINDOW(window), role);
+    }
 
 #ifdef ICON_NAME
     GdkPixbuf *icon = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), ICON_NAME, 48, 0, NULL);
