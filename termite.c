@@ -111,9 +111,8 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
 #ifdef CLICKABLE_URL
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
-
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
-    if (border == NULL) {
+    if (!border) {
         g_warning("VTE's inner-border property unavailable");
         *w = *h = 0;
     } else {
@@ -229,13 +228,13 @@ int main(int argc, char **argv) {
 
 #if GTK_CHECK_VERSION(2, 90, 7)
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-    if (visual == NULL)
+    if (!visual) {
         visual = gdk_screen_get_system_visual(screen);
-
+    }
     gtk_widget_set_visual(GTK_WIDGET(window), visual);
 #else
     GdkColormap *colormap = gdk_screen_get_rgba_colormap(screen);
-    if (colormap != NULL) {
+    if (colormap) {
         gtk_widget_set_colormap(window, colormap);
     }
 #endif
