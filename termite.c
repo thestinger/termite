@@ -226,10 +226,20 @@ int main(int argc, char **argv) {
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
+
+#ifdef GTK3
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+    if (visual == NULL)
+        visual = gdk_screen_get_system_visual(screen);
+
+    gtk_widget_set_visual(GTK_WIDGET(window), visual);
+#else
     GdkColormap *colormap = gdk_screen_get_rgba_colormap(screen);
     if (colormap != NULL) {
         gtk_widget_set_colormap(window, colormap);
     }
+#endif
+
     vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
     vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
 #endif
