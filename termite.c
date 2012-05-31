@@ -21,6 +21,8 @@ typedef struct search_panel_info {
     bool reverse;
 } search_panel_info;
 
+static const gchar *browser_cmd[3] = { NULL };
+
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
@@ -117,11 +119,8 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
-        const gchar *argv[3] = { NULL, match, NULL };
-        argv[0] = g_getenv("BROWSER");
-        if (argv[0] == NULL)
-            argv[0] = default_browser;
-        g_spawn_async(NULL, (gchar **)argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+        browser_cmd[1] = match;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
@@ -208,6 +207,9 @@ int main(int argc, char **argv) {
         if (!default_argv[0]) default_argv[0] = "/bin/sh";
         command_argv = default_argv;
     }
+
+    browser_cmd[0] = g_getenv("BROWSER");
+    if (!browser_cmd[0]) browser_cmd[0] = default_browser;
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), 0, &error);
 
