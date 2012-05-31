@@ -135,8 +135,11 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, event->x, event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
-        const char *argv[] = URL_COMMAND(match);
-        g_spawn_async(NULL, (char **)argv, NULL, 0, NULL, NULL, NULL, NULL);
+        const gchar *argv[3] = { NULL, match, NULL };
+        argv[0] = g_getenv("BROWSER");
+        if (argv[0] == NULL)
+            argv[0] = DEFAULT_BROWSER;
+        g_spawn_async(NULL, (gchar **)argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
