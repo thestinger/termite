@@ -7,35 +7,36 @@
 
 #ifdef CLICKABLE_URL
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
-#define URL_COMMAND(URL_MATCH) {"/usr/bin/firefox", URL_MATCH, NULL}
+#define DEFAULT_BROWSER "/usr/bin/firefox"
 #endif
 
 // 0.0: opaque, 1.0: transparent
-//#define TRANSPARENCY 0.2
+/* #define TRANSPARENCY 0.2 */
 
-static const char *font = "Monospace 9";
+static const char *font = "Envy Code R 9";
 static const long scrollback_lines = 1000;
+static const bool cursor_blink = false;
 
-static const char *foreground_color = "#dcdccc";
-static const char *background_color = "#3f3f3f";
+static const char *foreground_color = "#ddccbb";
+static const char *background_color = "#151515";
 
 static const char *colors[16] = {
-    "#3f3f3f", // black
-    "#705050", // red
-    "#60b48a", // green
-    "#dfaf8f", // yellow
-    "#506070", // blue
-    "#dc8cc3", // magenta
-    "#8cd0d3", // cyan
-    "#dcdccc", // white
-    "#709080", // bright black
-    "#dca3a3", // bright red
-    "#c3bf9f", // bright green
-    "#f0dfaf", // bright yellow
-    "#94bff3", // bright blue
-    "#ec93d3", // bright magenta
-    "#93e0e3", // bright cyan
-    "#ffffff", // bright white
+    "#3b3d3e", // black
+    "#f92672", // red
+    "#82b414", // green
+    "#fd971f", // yellow
+    "#56c2d6", // blue
+    "#8c54fe", // magenta
+    "#6664a7", // cyan
+    "#ccccc6", // white
+    "#505354", // bright black
+    "#ff5995", // bright red
+    "#b6e354", // bright green
+    "#feed6c", // bright yellow
+    "#8cedff", // bright blue
+    "#9e6ffe", // bright magenta
+    "#888cb1", // bright cyan
+    "#f8f8f2", // bright white
 };
 
 static const bool scroll_on_output = false;
