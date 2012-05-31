@@ -3,6 +3,7 @@ PREFIX = /usr/local
 ifeq (${GTK3}, 1)
 	GTK = gtk+-3.0
 	VTE = vte-2.90
+	CFLAGS += -DGTK3
 else
 	GTK = gtk+-2.0
 	VTE = vte
