@@ -13,12 +13,12 @@
 # define __attribute__(x)
 #endif
 
-typedef struct search_dialog_info {
+typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
+    GtkBin *panel;
     bool reverse;
-    bool open;
-} search_dialog_info;
+} search_panel_info;
 
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
@@ -34,49 +34,24 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
-static void search_response_cb(GtkWidget *dialog, gint response_id, search_dialog_info *info) {
-    if (response_id == GTK_RESPONSE_ACCEPT) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(info->entry)), info->reverse);
-    }
-    gtk_widget_destroy(dialog);
-    info->open = false;
-}
+static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
+    gboolean ret = FALSE;
 
-static gboolean search_key_press_cb(__attribute__((unused)) GtkEntry *entry, GdkEventKey *event, GtkDialog *dialog) {
-    if (event->keyval == GDK_KEY_Return) {
-        gtk_dialog_response(dialog, GTK_RESPONSE_ACCEPT);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static void open_search_dialog(GtkWidget *vte, bool reverse, search_dialog_info *info) {
-    info->reverse = reverse;
-
-    if (info->open) {
-        return;
+    if (event->keyval == GDK_KEY_Escape) {
+        ret = TRUE;
+    } else if (event->keyval == GDK_KEY_Return) {
+        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(entry)), info->reverse);
+        ret = TRUE;
     }
 
-    info->open = true;
-    info->entry = gtk_entry_new();
-
-    GtkWidget *dialog, *content_area;
-    dialog = gtk_dialog_new_with_buttons("Search",
-                                         GTK_WINDOW(gtk_widget_get_toplevel(vte)),
-                                         GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         NULL,
-                                         NULL);
-
-    g_signal_connect(dialog, "response", G_CALLBACK(search_response_cb), info);
-    g_signal_connect(info->entry, "key-press-event", G_CALLBACK(search_key_press_cb), dialog);
-
-    content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
-    gtk_container_add(GTK_CONTAINER(content_area), info->entry);
-    gtk_widget_show_all(dialog);
-    gtk_widget_grab_focus(GTK_WIDGET(info->entry));
+    if (ret) {
+        gtk_widget_hide(GTK_WIDGET(info->panel));
+        gtk_widget_grab_focus(info->vte);
+    }
+    return ret;
 }
 
-static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_info *info) {
+static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_info *info) {
     const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
@@ -95,10 +70,14 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_dialog_i
                 vte_terminal_copy_primary(VTE_TERMINAL(vte));
                 return TRUE;
             case KEY(KEY_SEARCH):
-                open_search_dialog(vte, false, info);
+                info->reverse = false;
+                gtk_widget_show(GTK_WIDGET(info->panel));
+                gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_RSEARCH):
-                open_search_dialog(vte, true, info);
+                info->reverse = true;
+                gtk_widget_show(GTK_WIDGET(info->panel));
+                gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_URL):
                 search(VTE_TERMINAL(vte), url_regex, false);
@@ -164,6 +143,23 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 }
 #endif
 
+static gboolean position_overlay_cb(GtkOverlay *overlay, GtkWidget *widget, GdkRectangle *alloc) {
+    GtkWidget *vte = gtk_bin_get_child(GTK_BIN(overlay));
+
+    int width  = gtk_widget_get_allocated_width(vte);
+    int height = gtk_widget_get_allocated_height(vte);
+
+    GtkRequisition req;
+    gtk_widget_get_preferred_size(widget, NULL, &req);
+
+    alloc->x = width - req.width - 40;
+    alloc->y = 0;
+    alloc->width  = MIN(width, req.width);
+    alloc->height = MIN(height, req.height);
+
+    return TRUE;
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -195,6 +191,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
 
     char **command_argv;
@@ -230,9 +227,30 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    gtk_container_add(GTK_CONTAINER(window), vte);
+    GtkWidget *alignment = gtk_alignment_new(0, 0, 1, 1);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 5, 5, 5, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), alignment);
 
-    g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
+    GtkWidget *entry = gtk_entry_new();
+    gtk_widget_set_halign(entry, GTK_ALIGN_START);
+    gtk_widget_set_valign(entry, GTK_ALIGN_END);
+
+    gtk_container_add(GTK_CONTAINER(alignment), entry);
+    gtk_container_add(GTK_CONTAINER(overlay), vte);
+    gtk_container_add(GTK_CONTAINER(window), overlay);
+
+    search_panel_info info = {
+        .vte     = vte,
+        .entry   = entry,
+        .panel   = GTK_BIN(alignment),
+        .reverse = false
+    };
+
+    g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
+    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
+    g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
@@ -273,11 +291,6 @@ int main(int argc, char **argv) {
 
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
 
-    search_dialog_info info = { .vte = vte, .open = false };
-
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
-
 #ifdef CLICKABLE_URL
     int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
                                             g_regex_new(url_regex,
@@ -301,6 +314,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
+    gtk_widget_hide(alignment);
     gtk_main();
     return 0;
 }
