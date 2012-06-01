@@ -39,6 +39,9 @@ static const char *colors[16] = {
     "#ffffff", // bright white
 };
 
+// SYSTEM, ON or OFF
+#define CURSOR_BLINK SYSTEM
+
 static const bool resize_grip = false;
 
 static const bool scroll_on_output = false;
