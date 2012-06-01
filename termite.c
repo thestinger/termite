@@ -35,13 +35,20 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
 }
 
 static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
-    if (event->keyval == GDK_KEY_Return) {
+    gboolean ret = FALSE;
+
+    if (event->keyval == GDK_KEY_Escape) {
+        ret = TRUE;
+    } else if (event->keyval == GDK_KEY_Return) {
         search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(entry)), info->reverse);
+        ret = TRUE;
+    }
+
+    if (ret) {
         gtk_widget_hide(GTK_WIDGET(info->panel));
         gtk_widget_grab_focus(info->vte);
-        return TRUE;
     }
-    return FALSE;
+    return ret;
 }
 
 static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_info *info) {
