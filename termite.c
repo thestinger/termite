@@ -261,6 +261,9 @@ int main(int argc, char **argv) {
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
     gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
 
+    if (!cursor_blink)
+        vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), VTE_CURSOR_BLINK_OFF);
+
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
