@@ -155,7 +155,7 @@ static gboolean position_overlay_cb(GtkOverlay *overlay, GtkWidget *widget, GdkR
     GtkRequisition req;
     gtk_widget_get_preferred_size(widget, NULL, &req);
 
-    alloc->x = 2 * main_alloc.width / 3 - req.width / 2;
+    alloc->x = main_alloc.width - req.width - 40;
     alloc->y = 0;
     alloc->width  = MIN(main_alloc.width, req.width);
     alloc->height = MIN(main_alloc.height, req.height);
