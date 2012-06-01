@@ -8,6 +8,7 @@ CFLAGS += -std=c99 -O3 \
 	  -Wshadow \
 	  -Wformat=2 \
 	  -Wmissing-declarations \
+	  -Wconversion \
 	  $(shell pkg-config --cflags ${GTK} ${VTE})
 
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE})
