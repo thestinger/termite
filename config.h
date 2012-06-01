@@ -38,6 +38,8 @@ static const char *colors[16] = {
     "#ffffff", // bright white
 };
 
+static const bool resize_grip = false;
+
 static const bool scroll_on_output = false;
 static const bool scroll_on_keystroke = true;
 

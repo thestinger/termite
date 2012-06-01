@@ -259,6 +259,7 @@ int main(int argc, char **argv) {
     vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
+    gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
