@@ -191,7 +191,6 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
 
     char **command_argv;
@@ -227,15 +226,16 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    GtkWidget *alignment = gtk_alignment_new(0, 0, 1, 1);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), alignment);
-
+    GtkWidget *overlay = gtk_overlay_new();
+    GtkWidget *align = gtk_alignment_new(0, 0, 1, 1);
     GtkWidget *entry = gtk_entry_new();
-    gtk_widget_set_halign(entry, GTK_ALIGN_START);
-    gtk_widget_set_valign(entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(alignment), entry);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(align), 5, 5, 5, 5);
+    gtk_widget_set_halign(align, GTK_ALIGN_START);
+    gtk_widget_set_valign(align, GTK_ALIGN_END);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), align);
+
+    gtk_container_add(GTK_CONTAINER(align), entry);
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
-    gtk_widget_hide(alignment);
+    gtk_widget_hide(align);
     gtk_main();
     return 0;
 }
