@@ -29,7 +29,6 @@ clipboard buffer.
 TODO
 ====
 
-* saner scrollback search widget (in-window, not a dialog)
 * scrollback search needs to be improved upstream [1]_
 * expose more options in ``config.h``
 
