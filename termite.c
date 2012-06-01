@@ -160,6 +160,24 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
+static gboolean draw_cb(GtkWidget *widget, cairo_t *cr) {
+    GdkRGBA color;
+
+    int width  = gtk_widget_get_allocated_width(widget);
+    int height = gtk_widget_get_allocated_height(widget);
+    cairo_arc(cr,
+              width / 2.0, height / 2.0,
+              MIN(width, height) / 2.0,
+              0, 2 * G_PI);
+
+    gtk_style_context_get_color(gtk_widget_get_style_context(widget), 0, &color);
+    gdk_cairo_set_source_rgba (cr, &color);
+
+    cairo_fill (cr);
+
+    return FALSE;
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -226,26 +244,42 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    GtkWidget *overlay = gtk_overlay_new();
+    GdkRGBA transparent = {0, 0, 0, 0};
+
+    GtkWidget *overlay[2] = {
+        gtk_overlay_new(),
+        gtk_overlay_new()
+    };
+
+    GtkWidget *da = gtk_drawing_area_new();
     GtkWidget *align = gtk_alignment_new(0, 0, 1, 1);
     GtkWidget *entry = gtk_entry_new();
+
+    gtk_widget_override_background_color(overlay[1], 0, &transparent);
+    gtk_widget_override_background_color(da, 0, &transparent);
+
+    gtk_widget_set_halign(da, GTK_ALIGN_FILL);
+    gtk_widget_set_valign(da, GTK_ALIGN_FILL);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay[1]), da);
 
     gtk_alignment_set_padding(GTK_ALIGNMENT(align), 5, 5, 5, 5);
     gtk_widget_set_halign(align, GTK_ALIGN_START);
     gtk_widget_set_valign(align, GTK_ALIGN_END);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), align);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay[0]), align);
 
     gtk_container_add(GTK_CONTAINER(align), entry);
-    gtk_container_add(GTK_CONTAINER(overlay), vte);
-    gtk_container_add(GTK_CONTAINER(window), overlay);
+    gtk_container_add(GTK_CONTAINER(overlay[0]), overlay[1]);
+    gtk_container_add(GTK_CONTAINER(overlay[1]), vte);
+    gtk_container_add(GTK_CONTAINER(window), overlay[0]);
 
     search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
 
-    g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
-    g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
+    g_signal_connect(window,     "destroy",            G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), NULL);
+    g_signal_connect(vte,        "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte,        "key-press-event",    G_CALLBACK(key_press_cb), &info);
+    g_signal_connect(entry,      "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
+    g_signal_connect(overlay[0], "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
