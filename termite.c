@@ -51,6 +51,32 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
     return ret;
 }
 
+static void find_urls(VteTerminal *vte) {
+    GError *error = NULL;
+    GMatchInfo *info;
+    GRegex *regex = g_regex_new(url_regex, 0, 0, NULL);
+    gchar *data = vte_terminal_get_text(vte, NULL, NULL, NULL);
+
+    g_regex_match_full(regex, data, -1, 0, 0, &info, &error);
+    while (g_match_info_matches(info)) {
+        gint pos;
+        gchar *word = g_match_info_fetch(info, 0);
+        g_match_info_fetch_pos(info, 0, &pos, NULL);
+
+        g_print("Found@%d: %s\n", pos, word);
+        g_free(word);
+        g_match_info_next(info, &error);
+    }
+
+    g_match_info_free(info);
+    g_regex_unref(regex);
+
+    if (error != NULL) {
+        g_printerr("Error while matching: %s\n", error->message);
+        g_error_free(error);
+    }
+}
+
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
@@ -80,7 +106,8 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_URL):
-                search(vte, url_regex, false);
+                /* search(vte, url_regex, false); */
+                find_urls(vte);
                 return TRUE;
             case KEY(KEY_RURL):
                 search(vte, url_regex, true);
@@ -161,21 +188,21 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 }
 
 static gboolean draw_cb(GtkWidget *widget, cairo_t *cr) {
-    GdkRGBA color;
+    /* GdkRGBA color; */
 
-    int width  = gtk_widget_get_allocated_width(widget);
-    int height = gtk_widget_get_allocated_height(widget);
-    cairo_arc(cr,
-              width / 2.0, height / 2.0,
-              MIN(width, height) / 2.0,
-              0, 2 * G_PI);
+    /* int width  = gtk_widget_get_allocated_width(widget); */
+    /* int height = gtk_widget_get_allocated_height(widget); */
+    /* cairo_arc(cr, */
+    /*           width / 2.0, height / 2.0, */
+    /*           MIN(width, height) / 2.0, */
+    /*           0, 2 * G_PI); */
 
-    gtk_style_context_get_color(gtk_widget_get_style_context(widget), 0, &color);
-    gdk_cairo_set_source_rgba (cr, &color);
+    /* gtk_style_context_get_color(gtk_widget_get_style_context(widget), 0, &color); */
+    /* gdk_cairo_set_source_rgba (cr, &color); */
 
-    cairo_fill (cr);
+    /* cairo_fill (cr); */
 
-    return FALSE;
+    /* return FALSE; */
 }
 
 int main(int argc, char **argv) {
@@ -275,7 +302,7 @@ int main(int argc, char **argv) {
     search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
 
     g_signal_connect(window,     "destroy",            G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), NULL);
+    /* g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), NULL); */
     g_signal_connect(vte,        "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,        "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,      "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
