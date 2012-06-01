@@ -16,9 +16,17 @@
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
+    GtkWidget *da;
     GtkBin *panel;
     bool reverse;
 } search_panel_info;
+
+typedef struct url_data {
+    gchar *url;
+    gint pos;
+} url_data;
+
+GList *list = NULL;
 
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
@@ -54,17 +62,16 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
 static void find_urls(VteTerminal *vte) {
     GError *error = NULL;
     GMatchInfo *info;
-    GRegex *regex = g_regex_new(url_regex, 0, 0, NULL);
-    gchar *data = vte_terminal_get_text(vte, NULL, NULL, NULL);
+    GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
+    gchar *data = vte_terminal_get_text_include_trailing_spaces(vte, NULL, NULL, NULL);
 
     g_regex_match_full(regex, data, -1, 0, 0, &info, &error);
     while (g_match_info_matches(info)) {
-        gint pos;
-        gchar *word = g_match_info_fetch(info, 0);
-        g_match_info_fetch_pos(info, 0, &pos, NULL);
+        url_data *node = g_malloc(sizeof(url_data));
+        node->url = g_match_info_fetch(info, 0);
+        g_match_info_fetch_pos(info, 0, &node->pos, NULL);
 
-        g_print("Found@%d: %s\n", pos, word);
-        g_free(word);
+        list = g_list_append(list, node);
         g_match_info_next(info, &error);
     }
 
@@ -108,6 +115,7 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
             case KEY(KEY_URL):
                 /* search(vte, url_regex, false); */
                 find_urls(vte);
+                gtk_widget_show(info->da);
                 return TRUE;
             case KEY(KEY_RURL):
                 search(vte, url_regex, true);
@@ -187,22 +195,35 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
-static gboolean draw_cb(GtkWidget *widget, cairo_t *cr) {
-    /* GdkRGBA color; */
+static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
+    if (list) {
+        GList *l = list;
 
-    /* int width  = gtk_widget_get_allocated_width(widget); */
-    /* int height = gtk_widget_get_allocated_height(widget); */
-    /* cairo_arc(cr, */
-    /*           width / 2.0, height / 2.0, */
-    /*           MIN(width, height) / 2.0, */
-    /*           0, 2 * G_PI); */
+        glong cols = vte_terminal_get_column_count(vte);
+        glong cw = vte_terminal_get_char_width(vte);
+        glong ch = vte_terminal_get_char_height(vte);
 
-    /* gtk_style_context_get_color(gtk_widget_get_style_context(widget), 0, &color); */
-    /* gdk_cairo_set_source_rgba (cr, &color); */
+        cairo_set_line_width(cr, 1);
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_stroke(cr);
 
-    /* cairo_fill (cr); */
+        for (; l != NULL; l = l->next) {
+            url_data *data = l->data;
 
-    /* return FALSE; */
+            glong x = data->pos % cols * cw;
+            glong y = data->pos / cols * ch;
+
+            g_print("%i/%li (%li,%li) ", data->pos, cols, data->pos % cols, data->pos / cols);
+            cairo_rectangle(cr, x, y, 7, 7);
+            cairo_stroke_preserve(cr);
+            cairo_set_source_rgb(cr, 1, 0, 0);
+            cairo_fill(cr);
+            /* g_print("%s\n", data->url); */
+        }
+        g_print("\n");
+    }
+
+    return FALSE;
 }
 
 int main(int argc, char **argv) {
@@ -251,8 +272,7 @@ int main(int argc, char **argv) {
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
-    if (!pty) {
-        g_printerr("Failed to create pty: %s\n", error->message);
+    if (!pty) { g_printerr("Failed to create pty: %s\n", error->message);
         return 1;
     }
 
@@ -282,8 +302,8 @@ int main(int argc, char **argv) {
     GtkWidget *align = gtk_alignment_new(0, 0, 1, 1);
     GtkWidget *entry = gtk_entry_new();
 
-    gtk_widget_override_background_color(overlay[1], 0, &transparent);
-    gtk_widget_override_background_color(da, 0, &transparent);
+    gtk_widget_override_background_color(overlay[1], GTK_STATE_FLAG_NORMAL, &transparent);
+    gtk_widget_override_background_color(da, GTK_STATE_FLAG_NORMAL, &transparent);
 
     gtk_widget_set_halign(da, GTK_ALIGN_FILL);
     gtk_widget_set_valign(da, GTK_ALIGN_FILL);
@@ -299,10 +319,10 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay[1]), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay[0]);
 
-    search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
+    search_panel_info info = {vte, entry, da, GTK_BIN(align), false};
 
     g_signal_connect(window,     "destroy",            G_CALLBACK(gtk_main_quit), NULL);
-    /* g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), NULL); */
+    g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), vte);
     g_signal_connect(vte,        "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,        "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,      "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
