@@ -144,21 +144,18 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 #endif
 
 static gboolean position_overlay_cb(GtkOverlay *overlay, GtkWidget *widget, GdkRectangle *alloc) {
-    GtkWidget *main_widget = gtk_bin_get_child(GTK_BIN(overlay));
+    GtkWidget *vte = gtk_bin_get_child(GTK_BIN(overlay));
 
-    GtkAllocation main_alloc;
-    main_alloc.x = 0;
-    main_alloc.y = 0;
-    main_alloc.width  = gtk_widget_get_allocated_width(main_widget);
-    main_alloc.height = gtk_widget_get_allocated_height(main_widget);
+    int width  = gtk_widget_get_allocated_width(vte);
+    int height = gtk_widget_get_allocated_height(vte);
 
     GtkRequisition req;
     gtk_widget_get_preferred_size(widget, NULL, &req);
 
-    alloc->x = main_alloc.width - req.width - 40;
+    alloc->x = width - req.width - 40;
     alloc->y = 0;
-    alloc->width  = MIN(main_alloc.width, req.width);
-    alloc->height = MIN(main_alloc.height, req.height);
+    alloc->width  = MIN(width, req.width);
+    alloc->height = MIN(height, req.height);
 
     return TRUE;
 }
