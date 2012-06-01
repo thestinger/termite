@@ -8,6 +8,9 @@ CFLAGS += -std=c99 -O3 \
 	  -Wshadow \
 	  -Wformat=2 \
 	  -Wmissing-declarations \
+	  -Wstrict-overflow=5 \
+	  -Wcast-align \
+	  -Wcast-qual \
 	  -Wconversion \
 	  $(shell pkg-config --cflags ${GTK} ${VTE})
 
