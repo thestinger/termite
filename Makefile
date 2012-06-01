@@ -1,12 +1,6 @@
 PREFIX = /usr/local
-
-ifeq (${GTK3}, 1)
-	GTK = gtk+-3.0
-	VTE = vte-2.90
-else
-	GTK = gtk+-2.0
-	VTE = vte
-endif
+GTK = gtk+-3.0
+VTE = vte-2.90
 
 CFLAGS += -std=c99 -O3 \
 	  -Wall -Wextra -pedantic \
