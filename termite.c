@@ -366,6 +366,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
+    gtk_widget_hide(da);
     gtk_widget_hide(align);
     gtk_main();
     return 0;
