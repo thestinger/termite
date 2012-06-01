@@ -15,6 +15,7 @@
 
 typedef struct search_panel_info {
     GtkWidget *vte;
+    GtkWidget *entry;
     GtkBin *panel;
     bool reverse;
 } search_panel_info;
@@ -37,6 +38,7 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
     if (event->keyval == GDK_KEY_Return) {
         search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(entry)), info->reverse);
         gtk_widget_hide(GTK_WIDGET(info->panel));
+        gtk_widget_grab_focus(info->vte);
         return TRUE;
     }
     return FALSE;
@@ -63,10 +65,12 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_in
             case KEY(KEY_SEARCH):
                 info->reverse = false;
                 gtk_widget_show(GTK_WIDGET(info->panel));
+                gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_RSEARCH):
                 info->reverse = true;
                 gtk_widget_show(GTK_WIDGET(info->panel));
+                gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_URL):
                 search(VTE_TERMINAL(vte), url_regex, false);
@@ -233,6 +237,7 @@ int main(int argc, char **argv) {
 
     search_panel_info info = {
         .vte     = vte,
+        .entry   = entry,
         .panel   = GTK_BIN(alignment),
         .reverse = false
     };
