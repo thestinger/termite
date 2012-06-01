@@ -173,7 +173,7 @@ int main(int argc, char **argv) {
     g_option_context_add_group(context, gtk_get_option_group(TRUE));
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
-        g_print("option parsing failed: %s\n", error->message);
+        g_printerr("option parsing failed: %s\n", error->message);
         return 1;
     }
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), 0, &error);
 
     if (!pty) {
-        fprintf(stderr, "Failed to create pty: %s\n", error->message);
+        g_printerr("Failed to create pty: %s\n", error->message);
         return 1;
     }
 
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
                       &ppid, &error)) {
         vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
     } else {
-        fprintf(stderr, "The new terminal's command failed to run: %s\n", error->message);
+        g_printerr("The new terminal's command failed to run: %s\n", error->message);
         return 1;
     }
 
