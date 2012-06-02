@@ -39,8 +39,8 @@ static const char *colors[16] = {
     "#ffffff", // bright white
 };
 
-// SYSTEM, ON or OFF
-#define CURSOR_BLINK SYSTEM
+#define CURSOR_BLINK SYSTEM // SYSTEM, ON or OFF
+#define CURSOR_SHAPE BLOCK  // BLOCK, UNDERLINE or IBEAM
 
 static const bool resize_grip = false;
 
