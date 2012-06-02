@@ -239,12 +239,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    search_panel_info info = {
-        .vte     = vte,
-        .entry   = entry,
-        .panel   = GTK_BIN(alignment),
-        .reverse = false
-    };
+    search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
