@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
         command_argv = default_argv;
     }
 
-    VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), (VtePtyFlags)0, &error);
+    VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
     if (!pty) {
         g_printerr("Failed to create pty: %s\n", error->message);
