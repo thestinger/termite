@@ -143,8 +143,8 @@ static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 }
 #endif
 
-static gboolean position_overlay_cb(GtkOverlay *overlay, GtkWidget *widget, GdkRectangle *alloc) {
-    GtkWidget *vte = gtk_bin_get_child(GTK_BIN(overlay));
+static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc) {
+    GtkWidget *vte = gtk_bin_get_child(overlay);
 
     int width  = gtk_widget_get_allocated_width(vte);
     int height = gtk_widget_get_allocated_height(vte);
