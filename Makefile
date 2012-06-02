@@ -12,6 +12,8 @@ CFLAGS += -std=c99 -O3 \
 	  -Wcast-align \
 	  -Wcast-qual \
 	  -Wconversion \
+	  -Wc++-compat \
+	  -Wbad-function-cast \
 	  $(shell pkg-config --cflags ${GTK} ${VTE})
 
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE})

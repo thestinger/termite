@@ -23,7 +23,7 @@ typedef struct search_panel_info {
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
-    regex = g_regex_new(pattern, 0, 0, NULL);
+    regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, NULL);
     vte_terminal_search_set_gregex(vte, regex);
 
     if (!reverse) {
@@ -52,7 +52,7 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
 }
 
 static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_info *info) {
-    const GdkModifierType modifiers = event->state & gtk_accelerator_get_default_mod_mask();
+    const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case KEY(KEY_COPY):
@@ -117,7 +117,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
         char *argv[] = URL_COMMAND(match);
-        g_spawn_async(NULL, argv, NULL, 0, NULL, NULL, NULL, NULL);
+        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
         command_argv = default_argv;
     }
 
-    VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), 0, &error);
+    VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), (VtePtyFlags)0, &error);
 
     if (!pty) {
         g_printerr("Failed to create pty: %s\n", error->message);
@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
     GPid ppid;
 
     if (g_spawn_async(NULL, command_argv, NULL,
-                      G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH,
+                      (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
                       (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
                       &ppid, &error)) {
         vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
@@ -286,7 +286,7 @@ int main(int argc, char **argv) {
                                                         G_REGEX_CASELESS,
                                                         G_REGEX_MATCH_NOTEMPTY,
                                                         NULL),
-                                            0);
+                                            (GRegexMatchFlags)0);
     vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
 #endif
