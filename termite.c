@@ -259,6 +259,7 @@ int main(int argc, char **argv) {
     vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
     vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
+    vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
     vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
     gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
 
