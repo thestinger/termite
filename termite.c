@@ -51,23 +51,23 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
     return ret;
 }
 
-static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_info *info) {
+static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case KEY(KEY_COPY):
-                vte_terminal_copy_clipboard(VTE_TERMINAL(vte));
+                vte_terminal_copy_clipboard(vte);
                 return TRUE;
             case KEY(KEY_PASTE):
-                vte_terminal_paste_clipboard(VTE_TERMINAL(vte));
+                vte_terminal_paste_clipboard(vte);
                 return TRUE;
             case KEY(KEY_PREV):
-                vte_terminal_search_find_previous(VTE_TERMINAL(vte));
-                vte_terminal_copy_primary(VTE_TERMINAL(vte));
+                vte_terminal_search_find_previous(vte);
+                vte_terminal_copy_primary(vte);
                 return TRUE;
             case KEY(KEY_NEXT):
-                vte_terminal_search_find_next(VTE_TERMINAL(vte));
-                vte_terminal_copy_primary(VTE_TERMINAL(vte));
+                vte_terminal_search_find_next(vte);
+                vte_terminal_copy_primary(vte);
                 return TRUE;
             case KEY(KEY_SEARCH):
                 info->reverse = false;
@@ -80,10 +80,10 @@ static gboolean key_press_cb(GtkWidget *vte, GdkEventKey *event, search_panel_in
                 gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_URL):
-                search(VTE_TERMINAL(vte), url_regex, false);
+                search(vte, url_regex, false);
                 return TRUE;
             case KEY(KEY_RURL):
-                search(VTE_TERMINAL(vte), url_regex, true);
+                search(vte, url_regex, true);
                 return TRUE;
         }
     }
