@@ -1,4 +1,7 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdbool.h>
+#include <string.h>
 
 #include <gtk/gtk.h>
 #include <vte/vte.h>
@@ -19,6 +22,37 @@ typedef struct search_panel_info {
     GtkBin *panel;
     bool reverse;
 } search_panel_info;
+
+static gboolean always_selected(VteTerminal *vte, glong column, glong row) {
+    return TRUE;
+}
+
+static void complete(VteTerminal *vte) {
+    // TODO: get the full buffer
+    gchar *content = vte_terminal_get_text(vte,
+                                           (VteSelectionFunc)always_selected,
+                                           NULL,
+                                           NULL);
+
+    if (!content) {
+        fputs("no content", stderr);
+        return;
+    }
+
+    char *s_ptr = content, *saveptr;
+
+    for (int j = 1; ; j++, s_ptr = NULL) {
+        char *token = strtok_r(s_ptr, " \n", &saveptr);
+        if (!token) {
+            break;
+        }
+        printf("token %d: %s\n", j, token);
+    }
+
+    // TODO: GtkEntryCompletion widget
+
+    g_free(content);
+}
 
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
@@ -86,6 +120,10 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 search(vte, url_regex, true);
                 return TRUE;
         }
+    }
+    if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
+        complete(vte);
+        return TRUE;
     }
     return FALSE;
 }
