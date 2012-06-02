@@ -40,7 +40,7 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
     if (event->keyval == GDK_KEY_Escape) {
         ret = TRUE;
     } else if (event->keyval == GDK_KEY_Return) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(GTK_ENTRY(entry)), info->reverse);
+        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(entry), info->reverse);
         ret = TRUE;
     }
 
