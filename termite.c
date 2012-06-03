@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -23,11 +24,18 @@ typedef struct search_panel_info {
     bool reverse;
 } search_panel_info;
 
-static gboolean always_selected(VteTerminal *vte, glong column, glong row) {
+static gboolean always_selected(__attribute__((unused)) VteTerminal *vte,
+                                __attribute__((unused)) glong column,
+                                __attribute__((unused)) glong row) {
     return TRUE;
 }
 
-static void complete(VteTerminal *vte) {
+static GtkTreeModel *create_completion_model(VteTerminal *vte) {
+    GtkListStore *store;
+    GtkTreeIter iter;
+
+    store = gtk_list_store_new(1, G_TYPE_STRING);
+
     // TODO: get the full buffer
     gchar *content = vte_terminal_get_text(vte,
                                            (VteSelectionFunc)always_selected,
@@ -36,22 +44,70 @@ static void complete(VteTerminal *vte) {
 
     if (!content) {
         fputs("no content", stderr);
-        return;
+        exit(EXIT_FAILURE);
     }
 
     char *s_ptr = content, *saveptr;
 
+    // TODO: remove duplicates
     for (int j = 1; ; j++, s_ptr = NULL) {
         char *token = strtok_r(s_ptr, " \n", &saveptr);
         if (!token) {
             break;
         }
-        printf("token %d: %s\n", j, token);
+        gtk_list_store_append(store, &iter);
+        gtk_list_store_set(store, &iter, 0, token, -1);
     }
 
-    // TODO: GtkEntryCompletion widget
-
     g_free(content);
+
+    return GTK_TREE_MODEL(store);
+}
+
+static GtkWidget *test_window = NULL;
+
+static GtkWidget *do_entry_completion(VteTerminal *do_widget) {
+    GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(do_widget));
+
+    if (!test_window) {
+        test_window = gtk_dialog_new_with_buttons("GtkEntryCompletion",
+                                                  GTK_WINDOW(window),
+                                                  (GtkDialogFlags)0,
+                                                  NULL,
+                                                  NULL);
+        gtk_window_set_resizable(GTK_WINDOW(test_window), FALSE);
+
+        g_signal_connect(test_window, "response", G_CALLBACK(gtk_widget_destroy), NULL);
+        g_signal_connect(test_window, "destroy", G_CALLBACK(gtk_widget_destroyed), &test_window);
+
+        GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(test_window));
+
+        // Create our entry
+        GtkWidget *entry = gtk_entry_new();
+        gtk_container_add(GTK_CONTAINER(content_area), entry);
+
+        // Create the completion object
+        GtkEntryCompletion *completion = gtk_entry_completion_new();
+
+        // Assign the completion to the entry
+        gtk_entry_set_completion(GTK_ENTRY(entry), completion);
+        g_object_unref(completion);
+
+        // Create a tree model and use it as the completion model
+        GtkTreeModel *completion_model = create_completion_model(do_widget);
+        gtk_entry_completion_set_model(completion, completion_model);
+        g_object_unref(completion_model);
+
+        // Use model column 0 as the text column
+        gtk_entry_completion_set_text_column(completion, 0);
+    }
+
+    if (!gtk_widget_get_visible(test_window))
+        gtk_widget_show_all(test_window);
+    else
+        gtk_widget_destroy(test_window);
+
+    return test_window;
 }
 
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
@@ -122,7 +178,7 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
         }
     }
     if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        complete(vte);
+        do_entry_completion(vte);
         return TRUE;
     }
     return FALSE;
