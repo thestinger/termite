@@ -80,11 +80,8 @@ static GtkWidget *do_entry_completion(VteTerminal *vte) {
     GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(vte));
 
     if (!test_window) {
-        test_window = gtk_dialog_new_with_buttons("GtkEntryCompletion",
-                                                  GTK_WINDOW(window),
-                                                  (GtkDialogFlags)0,
-                                                  NULL,
-                                                  NULL);
+        test_window = gtk_dialog_new();
+        gtk_window_set_transient_for(GTK_WINDOW(test_window), GTK_WINDOW(window));
         gtk_window_set_resizable(GTK_WINDOW(test_window), FALSE);
 
         g_signal_connect(test_window, "response", G_CALLBACK(gtk_widget_destroy), NULL);
@@ -112,10 +109,11 @@ static GtkWidget *do_entry_completion(VteTerminal *vte) {
         gtk_entry_completion_set_text_column(completion, 0);
     }
 
-    if (!gtk_widget_get_visible(test_window))
+    if (!gtk_widget_get_visible(test_window)) {
         gtk_widget_show_all(test_window);
-    else
+    } else {
         gtk_widget_destroy(test_window);
+    }
 
     return test_window;
 }
