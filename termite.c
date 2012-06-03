@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
     if (!visual) {
         visual = gdk_screen_get_system_visual(screen);
     }
-    gtk_widget_set_visual(GTK_WIDGET(window), visual);
+    gtk_widget_set_visual(window, visual);
     vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
     vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
 #endif
