@@ -74,8 +74,8 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     return GTK_TREE_MODEL(store);
 }
 
+// TODO: turn this into an overlay
 static GtkWidget *test_window = NULL;
-
 static GtkWidget *do_entry_completion(VteTerminal *vte) {
     GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(vte));
 
