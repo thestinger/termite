@@ -76,8 +76,8 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
 static GtkWidget *test_window = NULL;
 
-static GtkWidget *do_entry_completion(VteTerminal *do_widget) {
-    GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(do_widget));
+static GtkWidget *do_entry_completion(VteTerminal *vte) {
+    GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(vte));
 
     if (!test_window) {
         test_window = gtk_dialog_new_with_buttons("GtkEntryCompletion",
@@ -104,7 +104,7 @@ static GtkWidget *do_entry_completion(VteTerminal *do_widget) {
         g_object_unref(completion);
 
         // Create a tree model and use it as the completion model
-        GtkTreeModel *completion_model = create_completion_model(do_widget);
+        GtkTreeModel *completion_model = create_completion_model(vte);
         gtk_entry_completion_set_model(completion, completion_model);
         g_object_unref(completion_model);
 
