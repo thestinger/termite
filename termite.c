@@ -30,9 +30,17 @@ static gboolean always_selected(__attribute__((unused)) VteTerminal *vte,
     return TRUE;
 }
 
+static gboolean add_to_list_store(char *key,
+                                  __attribute__((unused)) void *value,
+                                  GtkListStore *store) {
+    GtkTreeIter iter;
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter, 0, key, -1);
+    return FALSE;
+}
+
 static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     GtkListStore *store;
-    GtkTreeIter iter;
 
     store = gtk_list_store_new(1, G_TYPE_STRING);
 
@@ -49,16 +57,18 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     char *s_ptr = content, *saveptr;
 
-    // TODO: remove duplicates
+    GTree *tree = g_tree_new((GCompareFunc)strcmp);
+
     for (int j = 1; ; j++, s_ptr = NULL) {
         char *token = strtok_r(s_ptr, " \n", &saveptr);
         if (!token) {
             break;
         }
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, 0, token, -1);
+        g_tree_insert(tree, token, NULL);
     }
 
+    g_tree_foreach(tree, (GTraverseFunc)add_to_list_store, store);
+    g_tree_destroy(tree);
     g_free(content);
 
     return GTK_TREE_MODEL(store);
