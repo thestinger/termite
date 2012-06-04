@@ -29,6 +29,8 @@ clipboard buffer.
 TODO
 ====
 
+* better url matching regex
+* hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback completion
 * scrollback search needs to be improved upstream [1]_
 * expose more options in ``config.h``
