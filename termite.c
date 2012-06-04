@@ -226,6 +226,8 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
         cairo_stroke(cr);
 
         unsigned offset = 0;
+        char buffer[10];
+
         for (; l != NULL; l = l->next) {
             url_data *data = l->data;
 
@@ -234,10 +236,18 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
             glong y = (data->line + offset) * ch;
 
             /* move this into a function? */
-            cairo_rectangle(cr, x, y, 7, 7);
+            cairo_rectangle(cr, x, y, 8, 8);
             cairo_stroke_preserve(cr);
-            cairo_set_source_rgb(cr, 1, 0, 0);
+            cairo_set_source_rgb(cr, 0, 0, 0);
             cairo_fill(cr);
+
+            cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+            cairo_set_source_rgb(cr, 1, 1, 1);
+            cairo_set_font_size(cr, 9);
+            cairo_move_to(cr, x, y + 7);
+
+            snprintf(buffer, 10, "%d", data->line);
+            cairo_show_text(cr, buffer);
         }
     }
 
