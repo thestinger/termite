@@ -1,4 +1,8 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <gtk/gtk.h>
 #include <vte/vte.h>
@@ -23,6 +27,7 @@ typedef struct search_panel_info {
 
 typedef struct url_data {
     gchar *url;
+    unsigned line;
     gint pos;
 } url_data;
 
@@ -60,28 +65,41 @@ static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_
 }
 
 static void find_urls(VteTerminal *vte) {
-    GError *error = NULL;
-    GMatchInfo *info;
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
-    gchar *data = vte_terminal_get_text_include_trailing_spaces(vte, NULL, NULL, NULL);
+    gchar *content = vte_terminal_get_text(vte, NULL, NULL, NULL);
 
-    g_regex_match_full(regex, data, -1, 0, 0, &info, &error);
-    while (g_match_info_matches(info)) {
-        url_data *node = g_malloc(sizeof(url_data));
-        node->url = g_match_info_fetch(info, 0);
-        g_match_info_fetch_pos(info, 0, &node->pos, NULL);
+    char *s_ptr = content, *saveptr;
 
-        list = g_list_append(list, node);
-        g_match_info_next(info, &error);
+    for (unsigned line = 0; ; line++, s_ptr = NULL) {
+        char *token = strtok_r(s_ptr, "\n", &saveptr);
+
+        if (!token) {
+            break;
+        }
+
+        GError *error = NULL;
+        GMatchInfo *info;
+
+        g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
+        while (g_match_info_matches(info)) {
+            url_data *node = g_malloc(sizeof(url_data));
+
+            node->url = g_match_info_fetch(info, 0);
+            node->line = line;
+            g_match_info_fetch_pos(info, 0, &node->pos, NULL);
+
+            list = g_list_append(list, node);
+            g_match_info_next(info, &error);
+        }
+
+        g_match_info_free(info);
+
+        if (error) {
+            g_printerr("Error while matching: %s\n", error->message);
+            g_error_free(error);
+        }
     }
-
-    g_match_info_free(info);
     g_regex_unref(regex);
-
-    if (error != NULL) {
-        g_printerr("Error while matching: %s\n", error->message);
-        g_error_free(error);
-    }
 }
 
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
@@ -207,20 +225,20 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
+        unsigned offset = 0;
         for (; l != NULL; l = l->next) {
             url_data *data = l->data;
 
             glong x = data->pos % cols * cw;
-            glong y = data->pos / cols * ch;
+            offset += data->pos / cols;
+            glong y = (data->line + offset) * ch;
 
-            g_print("%i/%li (%li,%li) ", data->pos, cols, data->pos % cols, data->pos / cols);
+            /* move this into a function? */
             cairo_rectangle(cr, x, y, 7, 7);
             cairo_stroke_preserve(cr);
             cairo_set_source_rgb(cr, 1, 0, 0);
             cairo_fill(cr);
-            /* g_print("%s\n", data->url); */
         }
-        g_print("\n");
     }
 
     return FALSE;

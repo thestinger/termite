@@ -19,7 +19,7 @@ CFLAGS += -std=c99 -O3 \
 LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE})
 
 termite: termite.c config.h
-	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS}
+	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS} -g
 
 install: termite
 	mkdir -p ${DESTDIR}${PREFIX}/bin
