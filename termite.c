@@ -30,7 +30,9 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
+#ifdef CLICKABLE_URL
 static const gchar *browser_cmd[3] = { NULL };
+#endif
 
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
@@ -292,9 +294,6 @@ int main(int argc, char **argv) {
         command_argv = default_argv;
     }
 
-    browser_cmd[0] = g_getenv("BROWSER");
-    if (!browser_cmd[0]) browser_cmd[0] = default_browser;
-
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
     if (!pty) {
@@ -373,14 +372,17 @@ int main(int argc, char **argv) {
     vte_terminal_set_color_cursor(VTE_TERMINAL(vte), &cursor);
 
 #ifdef CLICKABLE_URL
-    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
-                                            g_regex_new(url_regex,
-                                                        G_REGEX_CASELESS,
-                                                        G_REGEX_MATCH_NOTEMPTY,
-                                                        NULL),
-                                            (GRegexMatchFlags)0);
-    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
-    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
+    browser_cmd[0] = g_getenv("BROWSER");
+    if (browser_cmd[0]) {
+        int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                                g_regex_new(url_regex,
+                                                            G_REGEX_CASELESS,
+                                                            G_REGEX_MATCH_NOTEMPTY,
+                                                            NULL),
+                                                (GRegexMatchFlags)0);
+        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+        g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
+    }
 #endif
 
 #ifdef URGENT_ON_BEEP
