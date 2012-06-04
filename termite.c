@@ -17,16 +17,21 @@
 # define __attribute__(x)
 #endif
 
+enum overlay_mode {
+    OVERLAY_HIDDEN,
+    OVERLAY_SEARCH,
+    OVERLAY_COMPLETION
+};
+
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
     GtkBin *panel;
+    enum overlay_mode mode;
     bool reverse;
 } search_panel_info;
 
-static gboolean always_selected(__attribute__((unused)) VteTerminal *vte,
-                                __attribute__((unused)) glong column,
-                                __attribute__((unused)) glong row) {
+static gboolean always_selected() {
     return TRUE;
 }
 
@@ -74,52 +79,6 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     return GTK_TREE_MODEL(store);
 }
 
-// TODO: turn this into an overlay
-static GtkWidget *test_window = NULL;
-static GtkWidget *do_entry_completion(VteTerminal *vte) {
-    GtkWidget *window = gtk_widget_get_toplevel(GTK_WIDGET(vte));
-
-    if (!test_window) {
-        test_window = gtk_dialog_new_with_buttons("GtkEntryCompletion",
-                                                  GTK_WINDOW(window),
-                                                  (GtkDialogFlags)0,
-                                                  NULL,
-                                                  NULL);
-        gtk_window_set_resizable(GTK_WINDOW(test_window), FALSE);
-
-        g_signal_connect(test_window, "response", G_CALLBACK(gtk_widget_destroy), NULL);
-        g_signal_connect(test_window, "destroy", G_CALLBACK(gtk_widget_destroyed), &test_window);
-
-        GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(test_window));
-
-        // Create our entry
-        GtkWidget *entry = gtk_entry_new();
-        gtk_container_add(GTK_CONTAINER(content_area), entry);
-
-        // Create the completion object
-        GtkEntryCompletion *completion = gtk_entry_completion_new();
-
-        // Assign the completion to the entry
-        gtk_entry_set_completion(GTK_ENTRY(entry), completion);
-        g_object_unref(completion);
-
-        // Create a tree model and use it as the completion model
-        GtkTreeModel *completion_model = create_completion_model(vte);
-        gtk_entry_completion_set_model(completion, completion_model);
-        g_object_unref(completion_model);
-
-        // Use model column 0 as the text column
-        gtk_entry_completion_set_text_column(completion, 0);
-    }
-
-    if (!gtk_widget_get_visible(test_window))
-        gtk_widget_show_all(test_window);
-    else
-        gtk_widget_destroy(test_window);
-
-    return test_window;
-}
-
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
@@ -134,17 +93,31 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
-static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
+static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
     gboolean ret = FALSE;
 
     if (event->keyval == GDK_KEY_Escape) {
         ret = TRUE;
     } else if (event->keyval == GDK_KEY_Return) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(entry), info->reverse);
-        ret = TRUE;
+        const gchar *text = gtk_entry_get_text(entry);
+
+        switch (info->mode) {
+            case OVERLAY_SEARCH:
+                search(VTE_TERMINAL(info->vte), text, info->reverse);
+                ret = TRUE;
+                break;
+            case OVERLAY_COMPLETION:
+                vte_terminal_feed(VTE_TERMINAL(info->vte), text, -1);
+                ret = TRUE;
+                break;
+            default:
+                ret = TRUE;
+                break;
+        }
     }
 
     if (ret) {
+        info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(GTK_WIDGET(info->panel));
         gtk_widget_grab_focus(info->vte);
     }
@@ -170,11 +143,13 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 vte_terminal_copy_primary(vte);
                 return TRUE;
             case KEY(KEY_SEARCH):
+                info->mode = OVERLAY_SEARCH;
                 info->reverse = false;
                 gtk_widget_show(GTK_WIDGET(info->panel));
                 gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_RSEARCH):
+                info->mode = OVERLAY_SEARCH;
                 info->reverse = true;
                 gtk_widget_show(GTK_WIDGET(info->panel));
                 gtk_widget_grab_focus(info->entry);
@@ -186,6 +161,26 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 search(vte, url_regex, true);
                 return TRUE;
         }
+    } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
+        // Create the completion object
+        GtkEntryCompletion *completion = gtk_entry_completion_new();
+
+        // Assign the completion to the entry
+        gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
+        g_object_unref(completion);
+
+        // Create a tree model and use it as the completion model
+        GtkTreeModel *completion_model = create_completion_model(vte);
+        gtk_entry_completion_set_model(completion, completion_model);
+        g_object_unref(completion_model);
+
+        // Use model column 0 as the text column
+        gtk_entry_completion_set_text_column(completion, 0);
+
+        info->mode = OVERLAY_COMPLETION;
+        gtk_widget_show(GTK_WIDGET(info->panel));
+        gtk_widget_grab_focus(info->entry);
+        return TRUE;
     }
     if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
         do_entry_completion(vte);
@@ -343,12 +338,18 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
+    search_panel_info info = {
+        .vte = vte,
+        .entry = entry,
+        .panel = GTK_BIN(alignment),
+        .mode = OVERLAY_HIDDEN,
+        .reverse = false
+    };
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
+    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
