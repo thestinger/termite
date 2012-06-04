@@ -100,6 +100,16 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
+static void launch_url(unsigned id) {
+    url_data *url = g_list_nth_data(list, id);
+    if (url) {
+        char *argv[] = URL_COMMAND(url->url);
+        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
+    } else {
+        g_printerr("url not found\n");
+    }
+}
+
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
     gboolean ret = FALSE;
 
@@ -119,15 +129,7 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
             case OVERLAY_URLSELECT:
-                {
-                    url_data *url = g_list_nth_data(list, (unsigned)atoi(text) - 1);
-                    if (url) {
-                        char *argv[] = URL_COMMAND(url->url);
-                        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
-                    } else {
-                        g_printerr("url not found\n");
-                    }
-                }
+                launch_url((unsigned)atoi(text) - 1);
                 break;
             case OVERLAY_HIDDEN:
                 break;
@@ -321,6 +323,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
     char buffer[3];
 
+    cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_rectangle(cr, x, y, 8, 8);
     cairo_stroke_preserve(cr);
     cairo_set_source_rgb(cr, 0, 0, 0);
