@@ -50,11 +50,10 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     // TODO: get the full buffer
     gchar *content = vte_terminal_get_text(vte,
                                            (VteSelectionFunc)always_selected,
-                                           NULL,
-                                           NULL);
+                                           NULL, NULL);
 
     if (!content) {
-        fputs("no content", stderr);
+        g_printerr("no content");
         exit(EXIT_FAILURE);
     }
 
@@ -103,20 +102,17 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
         switch (info->mode) {
             case OVERLAY_SEARCH:
                 search(VTE_TERMINAL(info->vte), text, false);
-                ret = TRUE;
                 break;
             case OVERLAY_RSEARCH:
                 search(VTE_TERMINAL(info->vte), text, true);
-                ret = TRUE;
                 break;
             case OVERLAY_COMPLETION:
                 vte_terminal_feed(VTE_TERMINAL(info->vte), text, -1);
-                ret = TRUE;
                 break;
-            default:
-                ret = TRUE;
+            case OVERLAY_HIDDEN:
                 break;
         }
+        ret = TRUE;
     }
 
     if (ret) {
