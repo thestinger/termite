@@ -175,6 +175,12 @@ static void find_urls(VteTerminal *vte) {
             node->line = line;
             g_match_info_fetch_pos(info, 0, &node->pos, NULL);
 
+            char c = token[node->pos];
+            token[node->pos] = '\0';
+            size_t len = mbstowcs(NULL, token, 0);
+            token[node->pos] = c;
+            node->pos = len;
+
             list = g_list_append(list, node);
             g_match_info_next(info, &error);
         }
