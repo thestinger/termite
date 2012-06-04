@@ -216,7 +216,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
 #endif
 
 #ifdef URGENT_ON_BEEP
-static void beep_handler(__attribute__((unused)) VteTerminal *vte, GtkWindow *window) {
+static void beep_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, TRUE);
 }
 
@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef URGENT_ON_BEEP
-    g_signal_connect(vte, "beep", G_CALLBACK(beep_handler), window);
+    g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
     g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
 #endif
 
