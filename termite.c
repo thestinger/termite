@@ -108,7 +108,7 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
                 search(VTE_TERMINAL(info->vte), text, true);
                 break;
             case OVERLAY_COMPLETION:
-                vte_terminal_feed(VTE_TERMINAL(info->vte), text, -1);
+                vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
             case OVERLAY_HIDDEN:
                 break;
@@ -136,6 +136,8 @@ static void overlay_show(search_panel_info *info, enum overlay_mode mode, bool c
 
         gtk_entry_completion_set_text_column(completion, 0);
     }
+
+    gtk_entry_set_text(GTK_ENTRY(info->entry), "");
 
     info->mode = mode;
     gtk_widget_show(GTK_WIDGET(info->panel));
