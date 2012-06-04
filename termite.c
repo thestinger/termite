@@ -119,6 +119,15 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
             case OVERLAY_URLSELECT:
+                {
+                    url_data *url = g_list_nth_data(list, (unsigned)atoi(text) - 1);
+                    if (url) {
+                        char *argv[] = URL_COMMAND(url->url);
+                        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
+                    } else {
+                        g_printerr("url not found\n");
+                    }
+                }
                 break;
             case OVERLAY_HIDDEN:
                 break;
@@ -129,7 +138,9 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
     if (ret) {
         if (info->mode == OVERLAY_URLSELECT) {
             gtk_widget_hide(info->da);
+
             /* free list: TODO */
+            list = NULL;
         }
         info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(GTK_WIDGET(info->panel));
