@@ -21,7 +21,8 @@ enum overlay_mode {
     OVERLAY_HIDDEN = 0,
     OVERLAY_SEARCH,
     OVERLAY_RSEARCH,
-    OVERLAY_COMPLETION
+    OVERLAY_COMPLETION,
+    OVERLAY_URLSELECT
 };
 
 typedef struct search_panel_info {
@@ -117,6 +118,8 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
             case OVERLAY_COMPLETION:
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
+            case OVERLAY_URLSELECT:
+                break;
             case OVERLAY_HIDDEN:
                 break;
         }
@@ -124,6 +127,10 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
     }
 
     if (ret) {
+        if (info->mode == OVERLAY_URLSELECT) {
+            gtk_widget_hide(info->da);
+            /* free list: TODO */
+        }
         info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(GTK_WIDGET(info->panel));
         gtk_widget_grab_focus(info->vte);
@@ -217,6 +224,7 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 /* search(vte, url_regex, false); */
                 find_urls(vte);
                 gtk_widget_show(info->da);
+                overlay_show(info, OVERLAY_URLSELECT, false);
                 return TRUE;
             case KEY(KEY_RURL):
                 search(vte, url_regex, true);
