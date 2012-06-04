@@ -29,7 +29,7 @@ clipboard buffer.
 TODO
 ====
 
-* scrollback completion
+* better integration of scrollback completion
 * scrollback search needs to be improved upstream [1]_
 * expose more options in ``config.h``
 
