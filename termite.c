@@ -13,13 +13,71 @@
 # define __attribute__(x)
 #endif
 
+enum overlay_mode {
+    OVERLAY_HIDDEN,
+    OVERLAY_SEARCH,
+    OVERLAY_COMPLETION
+};
+
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
     GtkBin *panel;
+    enum overlay_mode mode;
     bool reverse;
 } search_panel_info;
 
+<<<<<<< HEAD
+=======
+static gboolean always_selected() {
+    return TRUE;
+}
+
+static gboolean add_to_list_store(char *key,
+                                  __attribute__((unused)) void *value,
+                                  GtkListStore *store) {
+    GtkTreeIter iter;
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter, 0, key, -1);
+    return FALSE;
+}
+
+static GtkTreeModel *create_completion_model(VteTerminal *vte) {
+    GtkListStore *store;
+
+    store = gtk_list_store_new(1, G_TYPE_STRING);
+
+    // TODO: get the full buffer
+    gchar *content = vte_terminal_get_text(vte,
+                                           (VteSelectionFunc)always_selected,
+                                           NULL,
+                                           NULL);
+
+    if (!content) {
+        fputs("no content", stderr);
+        exit(EXIT_FAILURE);
+    }
+
+    char *s_ptr = content, *saveptr;
+
+    GTree *tree = g_tree_new((GCompareFunc)strcmp);
+
+    for (int j = 1; ; j++, s_ptr = NULL) {
+        char *token = strtok_r(s_ptr, " \n", &saveptr);
+        if (!token) {
+            break;
+        }
+        g_tree_insert(tree, token, NULL);
+    }
+
+    g_tree_foreach(tree, (GTraverseFunc)add_to_list_store, store);
+    g_tree_destroy(tree);
+    g_free(content);
+
+    return GTK_TREE_MODEL(store);
+}
+
+>>>>>>> e7a4d9a... Move scrollback completion into the overlay.
 static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
@@ -34,17 +92,31 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
-static gboolean search_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
+static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
     gboolean ret = FALSE;
 
     if (event->keyval == GDK_KEY_Escape) {
         ret = TRUE;
     } else if (event->keyval == GDK_KEY_Return) {
-        search(VTE_TERMINAL(info->vte), gtk_entry_get_text(entry), info->reverse);
-        ret = TRUE;
+        const gchar *text = gtk_entry_get_text(entry);
+
+        switch (info->mode) {
+            case OVERLAY_SEARCH:
+                search(VTE_TERMINAL(info->vte), text, info->reverse);
+                ret = TRUE;
+                break;
+            case OVERLAY_COMPLETION:
+                vte_terminal_feed(VTE_TERMINAL(info->vte), text, -1);
+                ret = TRUE;
+                break;
+            default:
+                ret = TRUE;
+                break;
+        }
     }
 
     if (ret) {
+        info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(GTK_WIDGET(info->panel));
         gtk_widget_grab_focus(info->vte);
     }
@@ -70,11 +142,13 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 vte_terminal_copy_primary(vte);
                 return TRUE;
             case KEY(KEY_SEARCH):
+                info->mode = OVERLAY_SEARCH;
                 info->reverse = false;
                 gtk_widget_show(GTK_WIDGET(info->panel));
                 gtk_widget_grab_focus(info->entry);
                 return TRUE;
             case KEY(KEY_RSEARCH):
+                info->mode = OVERLAY_SEARCH;
                 info->reverse = true;
                 gtk_widget_show(GTK_WIDGET(info->panel));
                 gtk_widget_grab_focus(info->entry);
@@ -86,6 +160,26 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 search(vte, url_regex, true);
                 return TRUE;
         }
+    } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
+        // Create the completion object
+        GtkEntryCompletion *completion = gtk_entry_completion_new();
+
+        // Assign the completion to the entry
+        gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
+        g_object_unref(completion);
+
+        // Create a tree model and use it as the completion model
+        GtkTreeModel *completion_model = create_completion_model(vte);
+        gtk_entry_completion_set_model(completion, completion_model);
+        g_object_unref(completion_model);
+
+        // Use model column 0 as the text column
+        gtk_entry_completion_set_text_column(completion, 0);
+
+        info->mode = OVERLAY_COMPLETION;
+        gtk_widget_show(GTK_WIDGET(info->panel));
+        gtk_widget_grab_focus(info->entry);
+        return TRUE;
     }
     return FALSE;
 }
@@ -239,12 +333,18 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    search_panel_info info = {vte, entry, GTK_BIN(alignment), false};
+    search_panel_info info = {
+        .vte = vte,
+        .entry = entry,
+        .panel = GTK_BIN(alignment),
+        .mode = OVERLAY_HIDDEN,
+        .reverse = false
+    };
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(search_key_press_cb), &info);
+    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
