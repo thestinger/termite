@@ -270,15 +270,17 @@ int main(int argc, char **argv) {
 #endif
 
     // set colors
-    GdkColor foreground, background, palette[16];
+    GdkColor foreground, background, cursor, palette[16];
     gdk_color_parse(foreground_color, &foreground);
     gdk_color_parse(background_color, &background);
+    gdk_color_parse(cursor_color, &cursor);
 
     for (unsigned i = 0; i < 16; i++) {
         gdk_color_parse(colors[i], &palette[i]);
     }
 
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
+    vte_terminal_set_color_cursor(VTE_TERMINAL(vte), &cursor);
 
 #ifdef CLICKABLE_URL
     int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
