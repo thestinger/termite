@@ -307,7 +307,24 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
-static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
+static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
+    char buffer[3];
+
+    cairo_rectangle(cr, x, y, 8, 8);
+    cairo_stroke_preserve(cr);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_fill(cr);
+
+    cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_set_font_size(cr, 9);
+    cairo_move_to(cr, x, y + 7);
+
+    snprintf(buffer, 10, "%d", id);
+    cairo_show_text(cr, buffer);
+}
+
+static gboolean draw_cb(GtkDrawingArea *da, cairo_t *cr, VteTerminal *vte) {
     if (list) {
         GList *l = list;
 
@@ -319,29 +336,16 @@ static gboolean draw_cb(GtkWidget *widget, cairo_t *cr, VteTerminal *vte) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        unsigned offset = 0;
-        char buffer[10];
+        unsigned offset = 0, id = 1;
 
-        for (; l != NULL; l = l->next) {
+        for (; l != NULL; l = l->next, ++id) {
             url_data *data = l->data;
 
             glong x = data->pos % cols * cw;
             offset += data->pos / cols;
             glong y = (data->line + offset) * ch;
 
-            /* move this into a function? */
-            cairo_rectangle(cr, x, y, 8, 8);
-            cairo_stroke_preserve(cr);
-            cairo_set_source_rgb(cr, 0, 0, 0);
-            cairo_fill(cr);
-
-            cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-            cairo_set_source_rgb(cr, 1, 1, 1);
-            cairo_set_font_size(cr, 9);
-            cairo_move_to(cr, x, y + 7);
-
-            snprintf(buffer, 10, "%d", data->line);
-            cairo_show_text(cr, buffer);
+            draw_marker(cr, x, y, id);
         }
     }
 
