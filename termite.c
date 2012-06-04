@@ -20,6 +20,7 @@
 enum overlay_mode {
     OVERLAY_HIDDEN,
     OVERLAY_SEARCH,
+    OVERLAY_RSEARCH,
     OVERLAY_COMPLETION
 };
 
@@ -28,7 +29,6 @@ typedef struct search_panel_info {
     GtkWidget *entry;
     GtkBin *panel;
     enum overlay_mode mode;
-    bool reverse;
 } search_panel_info;
 
 static gboolean always_selected() {
@@ -103,7 +103,11 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
 
         switch (info->mode) {
             case OVERLAY_SEARCH:
-                search(VTE_TERMINAL(info->vte), text, info->reverse);
+                search(VTE_TERMINAL(info->vte), text, false);
+                ret = TRUE;
+                break;
+            case OVERLAY_RSEARCH:
+                search(VTE_TERMINAL(info->vte), text, true);
                 ret = TRUE;
                 break;
             case OVERLAY_COMPLETION:
@@ -122,6 +126,24 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
         gtk_widget_grab_focus(info->vte);
     }
     return ret;
+}
+
+static void overlay_show(search_panel_info *info, enum overlay_mode mode, bool complete) {
+    if (complete) {
+        GtkEntryCompletion *completion = gtk_entry_completion_new();
+        gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
+        g_object_unref(completion);
+
+        GtkTreeModel *completion_model = create_completion_model(VTE_TERMINAL(info->vte));
+        gtk_entry_completion_set_model(completion, completion_model);
+        g_object_unref(completion_model);
+
+        gtk_entry_completion_set_text_column(completion, 0);
+    }
+
+    info->mode = mode;
+    gtk_widget_show(GTK_WIDGET(info->panel));
+    gtk_widget_grab_focus(info->entry);
 }
 
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
@@ -143,16 +165,10 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 vte_terminal_copy_primary(vte);
                 return TRUE;
             case KEY(KEY_SEARCH):
-                info->mode = OVERLAY_SEARCH;
-                info->reverse = false;
-                gtk_widget_show(GTK_WIDGET(info->panel));
-                gtk_widget_grab_focus(info->entry);
+                overlay_show(info, OVERLAY_SEARCH, true);
                 return TRUE;
             case KEY(KEY_RSEARCH):
-                info->mode = OVERLAY_SEARCH;
-                info->reverse = true;
-                gtk_widget_show(GTK_WIDGET(info->panel));
-                gtk_widget_grab_focus(info->entry);
+                overlay_show(info, OVERLAY_RSEARCH, true);
                 return TRUE;
             case KEY(KEY_URL):
                 search(vte, url_regex, false);
@@ -162,24 +178,7 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        // Create the completion object
-        GtkEntryCompletion *completion = gtk_entry_completion_new();
-
-        // Assign the completion to the entry
-        gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
-        g_object_unref(completion);
-
-        // Create a tree model and use it as the completion model
-        GtkTreeModel *completion_model = create_completion_model(vte);
-        gtk_entry_completion_set_model(completion, completion_model);
-        g_object_unref(completion_model);
-
-        // Use model column 0 as the text column
-        gtk_entry_completion_set_text_column(completion, 0);
-
-        info->mode = OVERLAY_COMPLETION;
-        gtk_widget_show(GTK_WIDGET(info->panel));
-        gtk_widget_grab_focus(info->entry);
+        overlay_show(info, OVERLAY_COMPLETION, true);
         return TRUE;
     }
     if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
@@ -343,7 +342,6 @@ int main(int argc, char **argv) {
         .entry = entry,
         .panel = GTK_BIN(alignment),
         .mode = OVERLAY_HIDDEN,
-        .reverse = false
     };
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
