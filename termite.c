@@ -106,7 +106,6 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
                 search(VTE_TERMINAL(info->vte), text, true);
                 break;
             case OVERLAY_COMPLETION:
-                gtk_entry_completion_insert_prefix(gtk_entry_get_completion(entry));
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
             case OVERLAY_HIDDEN:
@@ -133,6 +132,7 @@ static void overlay_show(search_panel_info *info, enum overlay_mode mode, bool c
         gtk_entry_completion_set_model(completion, completion_model);
         g_object_unref(completion_model);
 
+        gtk_entry_completion_set_inline_selection(completion, TRUE);
         gtk_entry_completion_set_text_column(completion, 0);
     }
 
