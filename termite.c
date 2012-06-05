@@ -106,6 +106,7 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
                 search(VTE_TERMINAL(info->vte), text, true);
                 break;
             case OVERLAY_COMPLETION:
+                gtk_entry_completion_insert_prefix(gtk_entry_get_completion(entry));
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
             case OVERLAY_HIDDEN:
