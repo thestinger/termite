@@ -14,6 +14,13 @@ KEYBINDINGS
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)
 
+Scrollback completion:
+
+* ``ctrl-tab``: start scrollback completion
+
+With the scrollback completion widget focused, the up/down arrows cycle through
+completions and enter inputs the text into the terminal.
+
 Scrollback search:
 
 * ``ctrl-shift-f``: start forward search
@@ -29,6 +36,7 @@ clipboard buffer.
 TODO
 ====
 
+* tab and shift-tab bindings for completion
 * better integration of scrollback completion
 * scrollback search needs to be improved upstream [1]_
 * expose more options in ``config.h``
