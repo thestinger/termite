@@ -43,8 +43,6 @@ static const char *colors[16] = {
 #define CURSOR_BLINK SYSTEM // SYSTEM, ON or OFF
 #define CURSOR_SHAPE BLOCK  // BLOCK, UNDERLINE or IBEAM
 
-static const bool resize_grip = false;
-
 static const bool scroll_on_output = false;
 static const bool scroll_on_keystroke = true;
 

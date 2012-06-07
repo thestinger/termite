@@ -245,6 +245,24 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
+static void load_config(GtkWindow *window, VteTerminal *vte) {
+    GError *error = NULL;
+    GKeyFile *config = g_key_file_new();
+    if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
+        g_printerr("could not open config file: %s\n", error->message);
+        g_error_free(error);
+    } else {
+        gboolean resize_grip = g_key_file_get_boolean(config, "options", "resize_grip", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
+        }
+    }
+    g_key_file_free(config);
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -332,6 +350,8 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte));
+
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
     vte_terminal_set_scroll_on_output(VTE_TERMINAL(vte), scroll_on_output);
@@ -341,7 +361,6 @@ int main(int argc, char **argv) {
     vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
     vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
     vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
-    gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
