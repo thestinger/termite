@@ -294,6 +294,30 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         IGNORE_ON_ERROR(error) {
             vte_terminal_set_scrollback_lines(vte, scrollback_lines);
         }
+
+        gchar *cursor_blink = g_key_file_get_string(config, "options", "cursor_blink", &error);
+        IGNORE_ON_ERROR(error) {
+            if (!strcmp(cursor_blink, "SYSTEM")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
+            } else if (!strcmp(cursor_blink, "ON")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
+            } else if (!strcmp(cursor_blink, "OFF")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
+            }
+            g_free(cursor_blink);
+        }
+
+        gchar *cursor_shape = g_key_file_get_string(config, "options", "cursor_shape", &error);
+        IGNORE_ON_ERROR(error) {
+            if (!strcmp(cursor_shape, "BLOCK")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
+            } else if (!strcmp(cursor_shape, "IBEAM")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
+            } else if (!strcmp(cursor_shape, "UNDERLINE")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
+            }
+            g_free(cursor_shape);
+        }
     }
     g_key_file_free(config);
 }
@@ -386,9 +410,6 @@ int main(int argc, char **argv) {
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     load_config(GTK_WINDOW(window), VTE_TERMINAL(vte));
-
-    vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
-    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);

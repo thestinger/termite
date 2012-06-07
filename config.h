@@ -35,9 +35,6 @@ static const char *colors[16] = {
     "#ffffff", // bright white
 };
 
-#define CURSOR_BLINK SYSTEM // SYSTEM, ON or OFF
-#define CURSOR_SHAPE BLOCK  // BLOCK, UNDERLINE or IBEAM
-
 static const char *term = "vte-256color";
 
 // keybindings
