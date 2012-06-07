@@ -336,14 +336,20 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         gdk_color_parse(foreground_color, &colors->foreground);
         gdk_color_parse(background_color, &colors->background);
-        gdk_color_parse(cursor_color, &colors->cursor);
 
         for (unsigned i = 0; i < 16; i++) {
             gdk_color_parse(palette_s[i], &colors->palette[i]);
         }
 
         vte_terminal_set_colors(vte, &colors->foreground, &colors->background, colors->palette, 16);
-        vte_terminal_set_color_cursor(vte, &colors->cursor);
+
+        gchar *cursor_color = g_key_file_get_string(config, "colors", "cursor", &error);
+        IGNORE_ON_ERROR(error) {
+            if (gdk_color_parse(cursor_color, &colors->cursor)) {
+                vte_terminal_set_color_cursor(vte, &colors->cursor);
+            }
+            g_free(cursor_color);
+        }
     }
     g_key_file_free(config);
 }
