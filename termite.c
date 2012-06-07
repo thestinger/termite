@@ -56,7 +56,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     GTree *tree = g_tree_new((GCompareFunc)strcmp);
 
-    for (int j = 1; ; j++, s_ptr = NULL) {
+    for (; ; s_ptr = NULL) {
         char *token = strtok_r(s_ptr, " \n\t", &saveptr);
         if (!token) {
             break;
