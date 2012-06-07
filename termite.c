@@ -70,6 +70,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     }
 
     g_tree_foreach(tree, (GTraverseFunc)add_to_list_store, store);
+    g_tree_destroy(tree);
     g_free(content);
     return GTK_TREE_MODEL(store);
 }
