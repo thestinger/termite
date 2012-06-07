@@ -332,16 +332,29 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         GdkColor foreground, background, cursor, palette[16];
 
-        gsize length;
-        gchar **palette_s = g_key_file_get_string_list(config, "colors", "palette", &length, &error);
-        IGNORE_ON_ERROR(error) {
-            if (length == 16) {
-                for (unsigned i = 0; i < 16; i++) {
-                    gdk_color_parse(palette_s[i], &palette[i]);
-                }
-                vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
+        static const char *color_names[8] = {"black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"};
+
+        bool fail = false;
+
+        for (unsigned i = 0; i < 8; i++) {
+            gsize length;
+            gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
+            if (error) {
+                fail = true;
+                g_clear_error(&error);
+                break;
             }
-            g_strfreev(palette_s);
+            if (length != 2) {
+                fail = true;
+                break;
+            }
+            gdk_color_parse(pair[0], &palette[i]);
+            gdk_color_parse(pair[1], &palette[i+8]);
+            g_strfreev(pair);
+        }
+
+        if (!fail) {
+            vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
         }
 
         gchar *foreground_color = g_key_file_get_string(config, "colors", "foreground", &error);
