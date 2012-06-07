@@ -256,7 +256,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
     } else {
         gboolean resize_grip = g_key_file_get_boolean(config, "options", "resize_grip", &error);
         IGNORE_ON_ERROR(error) {
-            gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
+            gtk_window_set_has_resize_grip(window, resize_grip);
         }
 
         gboolean scroll_on_output = g_key_file_get_boolean(config, "options", "scroll_on_output", &error);
