@@ -337,19 +337,17 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         bool fail = false;
 
         for (unsigned i = 0; i < 8; i++) {
+            fail = true;
             gsize length;
             gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
             if (error) {
-                fail = true;
                 g_clear_error(&error);
                 break;
             }
-            if (length != 2) {
-                fail = true;
-                break;
+            if ((length == 2 && gdk_color_parse(pair[0], &palette[i]) &&
+                 gdk_color_parse(pair[1], &palette[i+8]))) {
+                fail = false;
             }
-            gdk_color_parse(pair[0], &palette[i]);
-            gdk_color_parse(pair[1], &palette[i+8]);
             g_strfreev(pair);
         }
 
