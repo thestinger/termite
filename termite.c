@@ -334,11 +334,17 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(icon_name);
         }
 
-        for (unsigned i = 0; i < 16; i++) {
-            gdk_color_parse(palette_s[i], &colors->palette[i]);
+        gsize length;
+        gchar **palette_s = g_key_file_get_string_list(config, "colors", "palette", &length, &error);
+        IGNORE_ON_ERROR(error) {
+            if (length == 16) {
+                for (unsigned i = 0; i < 16; i++) {
+                    gdk_color_parse(palette_s[i], &colors->palette[i]);
+                }
+                vte_terminal_set_colors(vte, NULL, NULL, colors->palette, 16);
+            }
+            g_strfreev(palette_s);
         }
-
-        vte_terminal_set_colors(vte, NULL, NULL, colors->palette, 16);
 
         gchar *foreground_color = g_key_file_get_string(config, "colors", "foreground", &error);
         IGNORE_ON_ERROR(error) {

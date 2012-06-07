@@ -5,25 +5,6 @@ static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 // 0.0: opaque, 1.0: transparent
 //#define TRANSPARENCY 0.2
 
-static const char *palette_s[16] = {
-    "#3f3f3f", // black
-    "#705050", // red
-    "#60b48a", // green
-    "#dfaf8f", // yellow
-    "#506070", // blue
-    "#dc8cc3", // magenta
-    "#8cd0d3", // cyan
-    "#dcdccc", // white
-    "#709080", // bright black
-    "#dca3a3", // bright red
-    "#c3bf9f", // bright green
-    "#f0dfaf", // bright yellow
-    "#94bff3", // bright blue
-    "#ec93d3", // bright magenta
-    "#93e0e3", // bright cyan
-    "#ffffff", // bright white
-};
-
 static const char *term = "vte-256color";
 
 // keybindings
