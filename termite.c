@@ -9,7 +9,6 @@
 #include "config.h"
 
 #define CONCAT(X, Y) X ## Y
-#define CONCAT2(X, Y) CONCAT(X, Y)
 #define KEY(X) CONCAT(GDK_KEY_, X)
 
 #ifndef __GNUC__
