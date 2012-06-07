@@ -245,6 +245,8 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
+#define IGNORE_ON_ERROR(ERROR) if (ERROR) { g_error_free(error); error = NULL; } else
+
 static void load_config(GtkWindow *window, VteTerminal *vte) {
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
@@ -253,50 +255,32 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         g_error_free(error);
     } else {
         gboolean resize_grip = g_key_file_get_boolean(config, "options", "resize_grip", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
         }
 
         gboolean scroll_on_output = g_key_file_get_boolean(config, "options", "scroll_on_output", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             vte_terminal_set_scroll_on_output(vte, scroll_on_output);
         }
 
         gboolean scroll_on_keystroke = g_key_file_get_boolean(config, "options", "scroll_on_keystroke", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             vte_terminal_set_scroll_on_keystroke(vte, scroll_on_keystroke);
         }
 
         gboolean audible_bell = g_key_file_get_boolean(config, "options", "audible_bell", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             vte_terminal_set_audible_bell(vte, audible_bell);
         }
 
         gboolean visible_bell = g_key_file_get_boolean(config, "options", "visible_bell", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             vte_terminal_set_visible_bell(vte, visible_bell);
         }
 
         gboolean mouse_autohide = g_key_file_get_boolean(config, "options", "mouse_autohide", &error);
-        if (error) {
-            g_error_free(error);
-            error = NULL;
-        } else {
+        IGNORE_ON_ERROR(error) {
             vte_terminal_set_mouse_autohide(vte, mouse_autohide);
         }
     }
