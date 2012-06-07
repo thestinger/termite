@@ -241,7 +241,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
-#define IGNORE_ON_ERROR(ERROR) if (ERROR) { g_clear_error(&ERROR); } else
+#define IGNORE_ON_ERROR(ERROR) if (ERROR) g_clear_error(&ERROR); else
 
 static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_title, gboolean *urgent_on_bell) {
     GError *error = NULL;
