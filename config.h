@@ -5,7 +5,7 @@
 #define CLICKABLE_URL
 //#define ICON_NAME "terminal"
 
-static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
+static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
 #ifdef CLICKABLE_URL
 #define URL_COMMAND(URL_MATCH) {"/usr/bin/firefox", URL_MATCH, NULL}
