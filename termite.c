@@ -259,6 +259,46 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         } else {
             gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
         }
+
+        gboolean scroll_on_output = g_key_file_get_boolean(config, "options", "scroll_on_output", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            vte_terminal_set_scroll_on_output(vte, scroll_on_output);
+        }
+
+        gboolean scroll_on_keystroke = g_key_file_get_boolean(config, "options", "scroll_on_keystroke", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            vte_terminal_set_scroll_on_keystroke(vte, scroll_on_keystroke);
+        }
+
+        gboolean audible_bell = g_key_file_get_boolean(config, "options", "audible_bell", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            vte_terminal_set_audible_bell(vte, audible_bell);
+        }
+
+        gboolean visible_bell = g_key_file_get_boolean(config, "options", "visible_bell", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            vte_terminal_set_visible_bell(vte, visible_bell);
+        }
+
+        gboolean mouse_autohide = g_key_file_get_boolean(config, "options", "mouse_autohide", &error);
+        if (error) {
+            g_error_free(error);
+            error = NULL;
+        } else {
+            vte_terminal_set_mouse_autohide(vte, mouse_autohide);
+        }
     }
     g_key_file_free(config);
 }
@@ -354,11 +394,6 @@ int main(int argc, char **argv) {
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
     vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
-    vte_terminal_set_scroll_on_output(VTE_TERMINAL(vte), scroll_on_output);
-    vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(vte), scroll_on_keystroke);
-    vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
-    vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
-    vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
     vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
     vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
 

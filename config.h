@@ -1,5 +1,3 @@
-#include <stdbool.h>
-
 #define URGENT_ON_BEEP
 #define DYNAMIC_TITLE
 #define CLICKABLE_URL
@@ -42,14 +40,6 @@ static const char *colors[16] = {
 
 #define CURSOR_BLINK SYSTEM // SYSTEM, ON or OFF
 #define CURSOR_SHAPE BLOCK  // BLOCK, UNDERLINE or IBEAM
-
-static const bool scroll_on_output = false;
-static const bool scroll_on_keystroke = true;
-
-static const bool audible_bell = false;
-static const bool visible_bell = false;
-
-static const bool mouse_autohide = false;
 
 static const char *term = "vte-256color";
 
