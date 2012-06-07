@@ -290,6 +290,14 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         if (get_config_boolean(config, "options", "clickable_url", &cfgbool))
             *clickable_url = cfgbool;
 
+        if (get_config_string(config, "options", "browser", &cfgstr)) {
+            browser_cmd[0] = cfgstr;
+        } else {
+            browser_cmd[0] = g_getenv("BROWSER");
+            if (!browser_cmd[0]) *clickable_url = false;
+        }
+
+
         if (get_config_string(config, "options", "font", &cfgstr)) {
             vte_terminal_set_font_from_string(vte, cfgstr);
             g_free(cfgstr);
@@ -415,9 +423,6 @@ int main(int argc, char **argv) {
         if (!default_argv[0]) default_argv[0] = "/bin/sh";
         command_argv = default_argv;
     }
-
-    browser_cmd[0] = g_getenv("BROWSER");
-    if (!browser_cmd[0]) browser_cmd[0] = default_browser;
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
