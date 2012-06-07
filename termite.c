@@ -241,13 +241,9 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 
 #define IGNORE_ON_ERROR(ERROR) if (ERROR) g_clear_error(&ERROR); else
 
-struct colors {
-    GdkColor foreground, background, cursor, palette[16];
-};
-
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, struct colors *colors) {
+                        gboolean *clickable_url) {
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
     if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
@@ -334,38 +330,40 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(icon_name);
         }
 
+        GdkColor foreground, background, cursor, palette[16];
+
         gsize length;
         gchar **palette_s = g_key_file_get_string_list(config, "colors", "palette", &length, &error);
         IGNORE_ON_ERROR(error) {
             if (length == 16) {
                 for (unsigned i = 0; i < 16; i++) {
-                    gdk_color_parse(palette_s[i], &colors->palette[i]);
+                    gdk_color_parse(palette_s[i], &palette[i]);
                 }
-                vte_terminal_set_colors(vte, NULL, NULL, colors->palette, 16);
+                vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
             }
             g_strfreev(palette_s);
         }
 
         gchar *foreground_color = g_key_file_get_string(config, "colors", "foreground", &error);
         IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(foreground_color, &colors->foreground)) {
-                vte_terminal_set_color_foreground(vte, &colors->foreground);
+            if (gdk_color_parse(foreground_color, &foreground)) {
+                vte_terminal_set_color_foreground(vte, &foreground);
             }
             g_free(foreground_color);
         }
 
         gchar *background_color = g_key_file_get_string(config, "colors", "background", &error);
         IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(background_color, &colors->background)) {
-                vte_terminal_set_color_background(vte, &colors->background);
+            if (gdk_color_parse(background_color, &background)) {
+                vte_terminal_set_color_background(vte, &background);
             }
             g_free(background_color);
         }
 
         gchar *cursor_color = g_key_file_get_string(config, "colors", "cursor", &error);
         IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(cursor_color, &colors->cursor)) {
-                vte_terminal_set_color_cursor(vte, &colors->cursor);
+            if (gdk_color_parse(cursor_color, &cursor)) {
+                vte_terminal_set_color_cursor(vte, &cursor);
             }
             g_free(cursor_color);
         }
@@ -453,9 +451,8 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
-    struct colors colors;
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url, &colors);
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
