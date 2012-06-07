@@ -283,6 +283,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         IGNORE_ON_ERROR(error) {
             vte_terminal_set_mouse_autohide(vte, mouse_autohide);
         }
+
+        gchar *font = g_key_file_get_string(config, "options", "font", &error);
+        IGNORE_ON_ERROR(error) {
+            vte_terminal_set_font_from_string(vte, font);
+        }
     }
     g_key_file_free(config);
 }
@@ -377,7 +382,6 @@ int main(int argc, char **argv) {
     load_config(GTK_WINDOW(window), VTE_TERMINAL(vte));
 
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
-    vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
     vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
     vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
 
