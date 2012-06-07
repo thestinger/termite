@@ -241,7 +241,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
-#define IGNORE_ON_ERROR(ERROR) if (ERROR) { g_error_free(error); error = NULL; } else
+#define IGNORE_ON_ERROR(ERROR) if (ERROR) { g_clear_error(&ERROR); } else
 
 static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_title, gboolean *urgent_on_bell) {
     GError *error = NULL;
@@ -281,10 +281,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_t
         }
 
         *dynamic_title = g_key_file_get_boolean(config, "options", "dynamic_title", &error);
-        IGNORE_ON_ERROR(error) {}
+        g_clear_error(&error);
 
         *urgent_on_bell = g_key_file_get_boolean(config, "options", "urgent_on_bell", &error);
-        IGNORE_ON_ERROR(error) {}
+        g_clear_error(&error);
 
         gchar *font = g_key_file_get_string(config, "options", "font", &error);
         IGNORE_ON_ERROR(error) {
