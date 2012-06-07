@@ -43,9 +43,12 @@ static gboolean add_to_list_store(char *key,
 static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     GtkListStore *store = gtk_list_store_new(1, G_TYPE_STRING);
 
-    // TODO: get the full buffer
-    gchar *content = vte_terminal_get_text(vte,
-                                           NULL, NULL, NULL);
+    glong end_row, end_col;
+    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
+    gchar *content = vte_terminal_get_text_range(vte, 0, 0,
+                                                 end_row,
+                                                 end_col,
+                                                 NULL, NULL, NULL);
 
     if (!content) {
         g_printerr("no content");
