@@ -21,7 +21,7 @@ KEYBINDINGS
 * ``ctrl-shift-p``: jump to previous search match
 * ``ctrl-tab``: start scrollback completion
 
-During scrollback search, The current selection is changed to the search match
+During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
 With the scrollback completion/widget open, up/down cycle through completions,
