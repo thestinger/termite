@@ -48,7 +48,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
                                                  NULL, NULL, NULL);
 
     if (!content) {
-        g_printerr("no content returned for completion");
+        g_printerr("no content returned for completion\n");
         return GTK_TREE_MODEL(store);
     }
 
