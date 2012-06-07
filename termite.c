@@ -256,9 +256,13 @@ MAKE_GET_CONFIG_FUNCTION(string, gchar *)
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url) {
+
+    const gchar *dir = g_get_user_config_dir();
+    gchar *path = g_strconcat(dir, "/termite.cfg", NULL);
+
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
-    if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
+    if (!g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, &error)) {
         g_printerr("could not open config file: %s\n", error->message);
         g_error_free(error);
     } else {
@@ -368,6 +372,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(cfgstr);
         }
     }
+    g_free(path);
     g_key_file_free(config);
 }
 
