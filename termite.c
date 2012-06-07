@@ -287,6 +287,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         gchar *font = g_key_file_get_string(config, "options", "font", &error);
         IGNORE_ON_ERROR(error) {
             vte_terminal_set_font_from_string(vte, font);
+            g_free(font);
         }
 
         gint scrollback_lines = g_key_file_get_integer(config, "options", "scrollback_lines", &error);
