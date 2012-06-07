@@ -12,8 +12,6 @@ static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+]*";
 // 0.0: opaque, 1.0: transparent
 //#define TRANSPARENCY 0.2
 
-static const long scrollback_lines = 1000;
-
 static const char *foreground_color = "#dcdccc";
 static const char *background_color = "#3f3f3f";
 static const char *cursor_color = "#dcdccc";
