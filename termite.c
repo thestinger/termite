@@ -241,9 +241,13 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 
 #define IGNORE_ON_ERROR(ERROR) if (ERROR) g_clear_error(&ERROR); else
 
+struct colors {
+    GdkColor foreground, background, cursor, palette[16];
+};
+
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url) {
+                        gboolean *clickable_url, struct colors *colors) {
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
     if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
@@ -329,6 +333,17 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             gtk_window_set_icon_name(window, icon_name);
             g_free(icon_name);
         }
+
+        gdk_color_parse(foreground_color, &colors->foreground);
+        gdk_color_parse(background_color, &colors->background);
+        gdk_color_parse(cursor_color, &colors->cursor);
+
+        for (unsigned i = 0; i < 16; i++) {
+            gdk_color_parse(palette_s[i], &colors->palette[i]);
+        }
+
+        vte_terminal_set_colors(vte, &colors->foreground, &colors->background, colors->palette, 16);
+        vte_terminal_set_color_cursor(vte, &colors->cursor);
     }
     g_key_file_free(config);
 }
@@ -413,8 +428,9 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
+    struct colors colors;
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url);
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url, &colors);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
@@ -426,19 +442,6 @@ int main(int argc, char **argv) {
     vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
     vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
 #endif
-
-    // set colors
-    GdkColor foreground, background, cursor, palette[16];
-    gdk_color_parse(foreground_color, &foreground);
-    gdk_color_parse(background_color, &background);
-    gdk_color_parse(cursor_color, &cursor);
-
-    for (unsigned i = 0; i < 16; i++) {
-        gdk_color_parse(colors[i], &palette[i]);
-    }
-
-    vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
-    vte_terminal_set_color_cursor(VTE_TERMINAL(vte), &cursor);
 
     if (clickable_url) {
         int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),

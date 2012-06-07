@@ -9,7 +9,7 @@ static const char *foreground_color = "#dcdccc";
 static const char *background_color = "#3f3f3f";
 static const char *cursor_color = "#dcdccc";
 
-static const char *colors[16] = {
+static const char *palette_s[16] = {
     "#3f3f3f", // black
     "#705050", // red
     "#60b48a", // green
