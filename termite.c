@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -55,26 +54,24 @@ static gboolean add_to_list_store(char *key,
 }
 
 static GtkTreeModel *create_completion_model(VteTerminal *vte) {
-    GtkListStore *store;
+    GtkListStore *store = gtk_list_store_new(1, G_TYPE_STRING);
 
-    store = gtk_list_store_new(1, G_TYPE_STRING);
-
-    // TODO: get the full buffer
-    gchar *content = vte_terminal_get_text(vte,
-                                           (VteSelectionFunc)always_selected,
-                                           NULL, NULL);
+    glong end_row, end_col;
+    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
+    gchar *content = vte_terminal_get_text_range(vte, 0, 0, end_row, end_col,
+                                                 NULL, NULL, NULL);
 
     if (!content) {
-        g_printerr("no content");
-        exit(EXIT_FAILURE);
+        g_printerr("no content returned for completion");
+        return GTK_TREE_MODEL(store);
     }
 
     char *s_ptr = content, *saveptr;
 
     GTree *tree = g_tree_new((GCompareFunc)strcmp);
 
-    for (int j = 1; ; j++, s_ptr = NULL) {
-        char *token = strtok_r(s_ptr, " \n", &saveptr);
+    for (; ; s_ptr = NULL) {
+        char *token = strtok_r(s_ptr, " \n\t", &saveptr);
         if (!token) {
             break;
         }
@@ -82,7 +79,8 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
     }
 
     g_tree_foreach(tree, (GTraverseFunc)add_to_list_store, store);
-
+    g_tree_destroy(tree);
+    g_free(content);
     return GTK_TREE_MODEL(store);
 }
 
@@ -205,6 +203,7 @@ static void overlay_show(search_panel_info *info, enum overlay_mode mode, bool c
         gtk_entry_completion_set_model(completion, completion_model);
         g_object_unref(completion_model);
 
+        gtk_entry_completion_set_inline_selection(completion, TRUE);
         gtk_entry_completion_set_text_column(completion, 0);
     }
 
