@@ -1,5 +1,3 @@
-#define URGENT_ON_BEEP
-#define DYNAMIC_TITLE
 #define CLICKABLE_URL
 //#define ICON_NAME "terminal"
 

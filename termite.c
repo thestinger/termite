@@ -210,7 +210,6 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
 }
 #endif
 
-#ifdef URGENT_ON_BEEP
 static void beep_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, TRUE);
 }
@@ -219,14 +218,11 @@ static gboolean focus_in_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, FALSE);
     return FALSE;
 }
-#endif
 
-#ifdef DYNAMIC_TITLE
 static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     const char *t = vte_terminal_get_window_title(vte);
     gtk_window_set_title(window, t ? t : "termite");
 }
-#endif
 
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc) {
     GtkWidget *vte = gtk_bin_get_child(overlay);
@@ -247,7 +243,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 
 #define IGNORE_ON_ERROR(ERROR) if (ERROR) { g_error_free(error); error = NULL; } else
 
-static void load_config(GtkWindow *window, VteTerminal *vte) {
+static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_title, gboolean *urgent_on_bell) {
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
     if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
@@ -283,6 +279,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte) {
         IGNORE_ON_ERROR(error) {
             vte_terminal_set_mouse_autohide(vte, mouse_autohide);
         }
+
+        *dynamic_title = g_key_file_get_boolean(config, "options", "dynamic_title", &error);
+        IGNORE_ON_ERROR(error) {}
+
+        *urgent_on_bell = g_key_file_get_boolean(config, "options", "urgent_on_bell", &error);
+        IGNORE_ON_ERROR(error) {}
 
         gchar *font = g_key_file_get_string(config, "options", "font", &error);
         IGNORE_ON_ERROR(error) {
@@ -409,7 +411,8 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte));
+    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE;
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
@@ -446,15 +449,15 @@ int main(int argc, char **argv) {
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
 #endif
 
-#ifdef URGENT_ON_BEEP
-    g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
-    g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
-#endif
+    if (urgent_on_bell) {
+        g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
+        g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
+    }
 
-#ifdef DYNAMIC_TITLE
-    window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
-    g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
-#endif
+    if (dynamic_title) {
+        window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
+        g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
+    }
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
