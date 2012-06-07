@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -45,14 +44,12 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     glong end_row, end_col;
     vte_terminal_get_cursor_position(vte, &end_col, &end_row);
-    gchar *content = vte_terminal_get_text_range(vte, 0, 0,
-                                                 end_row,
-                                                 end_col,
+    gchar *content = vte_terminal_get_text_range(vte, 0, 0, end_row, end_col,
                                                  NULL, NULL, NULL);
 
     if (!content) {
-        g_printerr("no content");
-        exit(EXIT_FAILURE);
+        g_printerr("no content returned for completion");
+        return GTK_TREE_MODEL(store);
     }
 
     char *s_ptr = content, *saveptr;
