@@ -175,7 +175,6 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
     return FALSE;
 }
 
-#ifdef CLICKABLE_URL
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
@@ -208,7 +207,6 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     }
     return FALSE;
 }
-#endif
 
 static void beep_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, TRUE);
@@ -243,7 +241,9 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 
 #define IGNORE_ON_ERROR(ERROR) if (ERROR) g_clear_error(&ERROR); else
 
-static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_title, gboolean *urgent_on_bell) {
+static void load_config(GtkWindow *window, VteTerminal *vte,
+                        gboolean *dynamic_title, gboolean *urgent_on_bell,
+                        gboolean *clickable_url) {
     GError *error = NULL;
     GKeyFile *config = g_key_file_new();
     if (!g_key_file_load_from_file(config, "termite.cfg", G_KEY_FILE_NONE, &error)) {
@@ -284,6 +284,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_t
         g_clear_error(&error);
 
         *urgent_on_bell = g_key_file_get_boolean(config, "options", "urgent_on_bell", &error);
+        g_clear_error(&error);
+
+        *clickable_url = g_key_file_get_boolean(config, "options", "clickable_url", &error);
         g_clear_error(&error);
 
         gchar *font = g_key_file_get_string(config, "options", "font", &error);
@@ -410,8 +413,8 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
-    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE;
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell);
+    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url);
 
 #ifdef TRANSPARENCY
     GdkScreen *screen = gtk_widget_get_screen(window);
@@ -437,16 +440,16 @@ int main(int argc, char **argv) {
     vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
     vte_terminal_set_color_cursor(VTE_TERMINAL(vte), &cursor);
 
-#ifdef CLICKABLE_URL
-    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
-                                            g_regex_new(url_regex,
-                                                        G_REGEX_CASELESS,
-                                                        G_REGEX_MATCH_NOTEMPTY,
-                                                        NULL),
-                                            (GRegexMatchFlags)0);
-    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
-    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
-#endif
+    if (clickable_url) {
+        int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                                g_regex_new(url_regex,
+                                                            G_REGEX_CASELESS,
+                                                            G_REGEX_MATCH_NOTEMPTY,
+                                                            NULL),
+                                                (GRegexMatchFlags)0);
+        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+        g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
+    }
 
     if (urgent_on_bell) {
         g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
