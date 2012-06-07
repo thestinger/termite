@@ -333,24 +333,25 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         static const char *color_names[8] = {"black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"};
 
-        bool fail = false;
-
+        bool success = true;
         for (unsigned i = 0; i < 8; i++) {
-            fail = true;
             gsize length;
             gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
             if (error) {
+                success = false;
                 g_clear_error(&error);
                 break;
             }
-            if ((length == 2 && gdk_color_parse(pair[0], &palette[i]) &&
-                 gdk_color_parse(pair[1], &palette[i+8]))) {
-                fail = false;
+            if ((length != 2 || !gdk_color_parse(pair[0], &palette[i]) ||
+                 !gdk_color_parse(pair[1], &palette[i+8]))) {
+                success = false;
+                g_strfreev(pair);
+                break;
             }
             g_strfreev(pair);
         }
 
-        if (!fail) {
+        if (success) {
             vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
         }
 
