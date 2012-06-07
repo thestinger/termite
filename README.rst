@@ -14,14 +14,16 @@ KEYBINDINGS
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)
 
-Scrollback completion:
+Scrollback completion
+---------------------
 
 * ``ctrl-tab``: start scrollback completion
 
 With the scrollback completion widget focused, the up/down arrows cycle through
 completions and enter inputs the text into the terminal.
 
-Scrollback search:
+Scrollback search
+-----------------
 
 * ``ctrl-shift-f``: start forward search
 * ``ctrl-shift-b``: start reverse search
