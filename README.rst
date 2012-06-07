@@ -39,7 +39,6 @@ TODO
 ====
 
 * tab and shift-tab bindings for completion
-* better integration of scrollback completion
 * better url matching regex
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback search needs to be improved upstream [1]_
