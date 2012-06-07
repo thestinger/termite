@@ -238,7 +238,20 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     return TRUE;
 }
 
-#define IGNORE_ON_ERROR(ERROR) if (ERROR) g_clear_error(&ERROR); else
+#define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
+static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char *key, TYPE *value) { \
+    GError *error = NULL; \
+    *value = g_key_file_get_ ## NAME (config, group, key, &error); \
+    if (error) { \
+        g_error_free(error); \
+        return false; \
+    } \
+    return true; \
+}
+
+MAKE_GET_CONFIG_FUNCTION(boolean, gboolean)
+MAKE_GET_CONFIG_FUNCTION(integer, gint)
+MAKE_GET_CONFIG_FUNCTION(string, gchar *)
 
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
@@ -249,84 +262,63 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         g_printerr("could not open config file: %s\n", error->message);
         g_error_free(error);
     } else {
-        gboolean resize_grip = g_key_file_get_boolean(config, "options", "resize_grip", &error);
-        IGNORE_ON_ERROR(error) {
-            gtk_window_set_has_resize_grip(window, resize_grip);
+        gboolean cfgbool;
+        gchar *cfgstr;
+
+        if (get_config_boolean(config, "options", "resize_grip", &cfgbool))
+            gtk_window_set_has_resize_grip(window, cfgbool);
+        if (get_config_boolean(config, "options", "scroll_on_output", &cfgbool))
+            vte_terminal_set_scroll_on_output(vte, cfgbool);
+        if (get_config_boolean(config, "options", "scroll_on_keystroke", &cfgbool))
+            vte_terminal_set_scroll_on_keystroke(vte, cfgbool);
+        if (get_config_boolean(config, "options", "audible_bell", &cfgbool))
+            vte_terminal_set_audible_bell(vte, cfgbool);
+        if (get_config_boolean(config, "options", "visible_bell", &cfgbool))
+            vte_terminal_set_visible_bell(vte, cfgbool);
+        if (get_config_boolean(config, "options", "mouse_autohide", &cfgbool))
+            vte_terminal_set_mouse_autohide(vte, cfgbool);
+        if (get_config_boolean(config, "options", "dynamic_title", &cfgbool))
+            *dynamic_title = cfgbool;
+        if (get_config_boolean(config, "options", "urgent_on_bell", &cfgbool))
+            *urgent_on_bell = cfgbool;
+        if (get_config_boolean(config, "options", "clickable_url", &cfgbool))
+            *clickable_url = cfgbool;
+
+        if (get_config_string(config, "options", "font", &cfgstr)) {
+            vte_terminal_set_font_from_string(vte, cfgstr);
+            g_free(cfgstr);
         }
 
-        gboolean scroll_on_output = g_key_file_get_boolean(config, "options", "scroll_on_output", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_scroll_on_output(vte, scroll_on_output);
+        gint cfgint;
+        if (get_config_integer(config, "options", "scrollback_lines", &cfgint)) {
+            vte_terminal_set_scrollback_lines(vte, cfgint);
         }
 
-        gboolean scroll_on_keystroke = g_key_file_get_boolean(config, "options", "scroll_on_keystroke", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_scroll_on_keystroke(vte, scroll_on_keystroke);
-        }
-
-        gboolean audible_bell = g_key_file_get_boolean(config, "options", "audible_bell", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_audible_bell(vte, audible_bell);
-        }
-
-        gboolean visible_bell = g_key_file_get_boolean(config, "options", "visible_bell", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_visible_bell(vte, visible_bell);
-        }
-
-        gboolean mouse_autohide = g_key_file_get_boolean(config, "options", "mouse_autohide", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_mouse_autohide(vte, mouse_autohide);
-        }
-
-        *dynamic_title = g_key_file_get_boolean(config, "options", "dynamic_title", &error);
-        g_clear_error(&error);
-
-        *urgent_on_bell = g_key_file_get_boolean(config, "options", "urgent_on_bell", &error);
-        g_clear_error(&error);
-
-        *clickable_url = g_key_file_get_boolean(config, "options", "clickable_url", &error);
-        g_clear_error(&error);
-
-        gchar *font = g_key_file_get_string(config, "options", "font", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_font_from_string(vte, font);
-            g_free(font);
-        }
-
-        gint scrollback_lines = g_key_file_get_integer(config, "options", "scrollback_lines", &error);
-        IGNORE_ON_ERROR(error) {
-            vte_terminal_set_scrollback_lines(vte, scrollback_lines);
-        }
-
-        gchar *cursor_blink = g_key_file_get_string(config, "options", "cursor_blink", &error);
-        IGNORE_ON_ERROR(error) {
-            if (!strcmp(cursor_blink, "SYSTEM")) {
+        if (get_config_string(config, "options", "cursor_blink", &cfgstr)) {
+            if (!strcmp(cfgstr, "SYSTEM")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
-            } else if (!strcmp(cursor_blink, "ON")) {
+            } else if (!strcmp(cfgstr, "ON")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
-            } else if (!strcmp(cursor_blink, "OFF")) {
+            } else if (!strcmp(cfgstr, "OFF")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
             }
-            g_free(cursor_blink);
+            g_free(cfgstr);
         }
 
-        gchar *cursor_shape = g_key_file_get_string(config, "options", "cursor_shape", &error);
-        IGNORE_ON_ERROR(error) {
-            if (!strcmp(cursor_shape, "BLOCK")) {
+        if (get_config_string(config, "options", "cursor_shape", &cfgstr)) {
+            if (!strcmp(cfgstr, "BLOCK")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
-            } else if (!strcmp(cursor_shape, "IBEAM")) {
+            } else if (!strcmp(cfgstr, "IBEAM")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
-            } else if (!strcmp(cursor_shape, "UNDERLINE")) {
+            } else if (!strcmp(cfgstr, "UNDERLINE")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
             }
-            g_free(cursor_shape);
+            g_free(cfgstr);
         }
 
-        gchar *icon_name = g_key_file_get_string(config, "options", "icon_name", &error);
-        IGNORE_ON_ERROR(error) {
-            gtk_window_set_icon_name(window, icon_name);
-            g_free(icon_name);
+        if (get_config_string(config, "options", "icon_name", &cfgstr)) {
+            gtk_window_set_icon_name(window, cfgstr);
+            g_free(cfgstr);
         }
 
         GdkColor foreground, background, cursor, palette[16];
@@ -339,7 +331,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
             if (error) {
                 success = false;
-                g_clear_error(&error);
+                g_error_free(error);
                 break;
             }
             if ((length != 2 || !gdk_color_parse(pair[0], &palette[i]) ||
@@ -355,28 +347,25 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
         }
 
-        gchar *foreground_color = g_key_file_get_string(config, "colors", "foreground", &error);
-        IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(foreground_color, &foreground)) {
+        if (get_config_string(config, "colors", "foreground", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &foreground)) {
                 vte_terminal_set_color_foreground(vte, &foreground);
             }
-            g_free(foreground_color);
+            g_free(cfgstr);
         }
 
-        gchar *background_color = g_key_file_get_string(config, "colors", "background", &error);
-        IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(background_color, &background)) {
+        if (get_config_string(config, "colors", "background", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &background)) {
                 vte_terminal_set_color_background(vte, &background);
             }
-            g_free(background_color);
+            g_free(cfgstr);
         }
 
-        gchar *cursor_color = g_key_file_get_string(config, "colors", "cursor", &error);
-        IGNORE_ON_ERROR(error) {
-            if (gdk_color_parse(cursor_color, &cursor)) {
+        if (get_config_string(config, "colors", "cursor", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &cursor)) {
                 vte_terminal_set_color_cursor(vte, &cursor);
             }
-            g_free(cursor_color);
+            g_free(cfgstr);
         }
     }
     g_key_file_free(config);
