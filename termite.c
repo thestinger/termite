@@ -31,10 +31,6 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
-static gboolean always_selected() {
-    return TRUE;
-}
-
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
                                   GtkListStore *store) {
@@ -49,8 +45,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     // TODO: get the full buffer
     gchar *content = vte_terminal_get_text(vte,
-                                           (VteSelectionFunc)always_selected,
-                                           NULL, NULL);
+                                           NULL, NULL, NULL);
 
     if (!content) {
         g_printerr("no content");
