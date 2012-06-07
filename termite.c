@@ -320,6 +320,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte, gboolean *dynamic_t
             }
             g_free(cursor_shape);
         }
+
+        gchar *icon_name = g_key_file_get_string(config, "options", "icon_name", &error);
+        IGNORE_ON_ERROR(error) {
+            gtk_window_set_icon_name(window, icon_name);
+            g_free(icon_name);
+        }
     }
     g_key_file_free(config);
 }
@@ -347,13 +353,6 @@ int main(int argc, char **argv) {
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
     }
-
-#ifdef ICON_NAME
-    GdkPixbuf *icon = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), ICON_NAME, 48, 0, NULL);
-    if (icon) {
-        gtk_window_set_icon(GTK_WINDOW(window), icon);
-    }
-#endif
 
     GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
