@@ -297,7 +297,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             if (!browser_cmd[0]) *clickable_url = false;
         }
 
-
         if (get_config_string(config, "options", "font", &cfgstr)) {
             vte_terminal_set_font_from_string(vte, cfgstr);
             g_free(cfgstr);
