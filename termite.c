@@ -338,6 +338,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(cfgstr);
         }
 
+		if (get_config_boolean(config, "options", "bold_allowed", &cfgbool)) {
+			vte_terminal_set_allow_bold (vte, cfgbool);
+		}
+
         gdouble cfgdouble;
         if (get_config_double(config, "options", "transparency", &cfgdouble)) {
             *transparency = cfgdouble;
