@@ -1,5 +1,4 @@
 static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
-static const char *term = "vte-256color";
 
 // keybindings
 #define KEY_COPY    c
