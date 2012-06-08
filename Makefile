@@ -15,14 +15,14 @@ CFLAGS := -std=c99 -O3 \
 	  -Wc++-compat \
 	  -Wbad-function-cast \
 	  -Wunused-macros \
-	  $(shell pkg-config --cflags ${GTK} ${VTE}) \
+	  ${shell pkg-config --cflags ${GTK} ${VTE}} \
 	  ${CFLAGS}
 
 ifeq (${CC}, clang)
 	CFLAGS += -Wno-missing-field-initializers
 endif
 
-LDFLAGS := -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE}) ${LDFLAGS}
+LDFLAGS := -s -Wl,--as-needed ${shell pkg-config --libs ${GTK} ${VTE}} ${LDFLAGS}
 
 termite: termite.c config.h
 	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS}
