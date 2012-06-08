@@ -285,7 +285,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_visible_bell(vte, cfgbool);
         if (get_config_boolean(config, "options", "mouse_autohide", &cfgbool))
             vte_terminal_set_mouse_autohide(vte, cfgbool);
-        if (get_config_boolean(config, "options", "bold_allowed", &cfgbool))
+        if (get_config_boolean(config, "options", "allow_bold", &cfgbool))
             vte_terminal_set_allow_bold(vte, cfgbool);
         if (get_config_boolean(config, "options", "dynamic_title", &cfgbool))
             *dynamic_title = cfgbool;
