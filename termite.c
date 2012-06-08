@@ -353,13 +353,14 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         GdkColor foreground, background, cursor, palette[16];
 
-        static const char *color_names[8] = {"black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"};
+        static const char *colors[8] = {"black", "red", "green", "yellow",
+                                        "blue", "magenta", "cyan", "white"};
 
         bool success = true;
         for (unsigned i = 0; i < 8; i++) {
             GError *error = NULL;
             gsize length;
-            gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
+            gchar **pair = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
             if (error) {
                 success = false;
                 g_error_free(error);
