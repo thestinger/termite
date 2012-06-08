@@ -29,7 +29,7 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
-static const gchar *browser_cmd[3] = { NULL };
+static gchar *browser_cmd[3] = { NULL };
 
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
@@ -202,7 +202,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
         browser_cmd[1] = match;
-        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+        g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
@@ -307,10 +307,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
         if (get_config_boolean(config, "options", "clickable_url", &cfgbool)) {
             *clickable_url = cfgbool;
         }
+
         if (get_config_string(config, "options", "browser", &cfgstr)) {
             browser_cmd[0] = cfgstr;
         } else {
-            browser_cmd[0] = g_getenv("BROWSER");
+            browser_cmd[0] = g_strdup(g_getenv("BROWSER"));
             if (!browser_cmd[0]) *clickable_url = false;
         }
 
