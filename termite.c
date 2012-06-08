@@ -258,7 +258,7 @@ MAKE_GET_CONFIG_FUNCTION(double, gdouble)
 
 static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, double *transparency, gchar **term) {
+                        gboolean *clickable_url, double *transparency, const gchar **term) {
 
     static const char *filename = "termite.cfg";
     const gchar *dir = g_get_user_config_dir();
@@ -410,7 +410,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
 
 int main(int argc, char **argv) {
     GError *error = NULL;
-    char *term = "vte-256color";
+    const char *term = "vte-256color";
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     const gchar *role = NULL;
