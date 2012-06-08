@@ -35,6 +35,6 @@ TODO
 * better url matching regex
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback search needs to be improved upstream [1]_
-* expose more options in ``config.h``
+* expose more options in ``termite.cfg``, including keybindings
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
