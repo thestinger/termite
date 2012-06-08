@@ -526,3 +526,5 @@ int main(int argc, char **argv) {
     gtk_main();
     return 0;
 }
+
+// vim: et:sts=4:sw=4:cino=(0
