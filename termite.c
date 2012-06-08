@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -19,17 +20,30 @@ enum overlay_mode {
     OVERLAY_HIDDEN = 0,
     OVERLAY_SEARCH,
     OVERLAY_RSEARCH,
-    OVERLAY_COMPLETION
+    OVERLAY_COMPLETION,
+    OVERLAY_URLSELECT
 };
 
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
+    GtkWidget *da;
     GtkBin *panel;
     enum overlay_mode mode;
 } search_panel_info;
 
+typedef struct url_data {
+    gchar *url;
+    unsigned line;
+    gint pos;
+} url_data;
+
 static const gchar *browser_cmd[3] = { NULL };
+GList *list = NULL;
+
+static gboolean always_selected() {
+    return TRUE;
+}
 
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
@@ -85,6 +99,16 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
+static void launch_url(unsigned id) {
+    url_data *url = g_list_nth_data(list, id);
+    if (url) {
+        browser_cmd[1] = url->url;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+    } else {
+        g_printerr("url not found\n");
+    }
+}
+
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
     gboolean ret = FALSE;
 
@@ -103,6 +127,9 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
             case OVERLAY_COMPLETION:
                 vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
                 break;
+            case OVERLAY_URLSELECT:
+                launch_url((unsigned)atoi(text) - 1);
+                break;
             case OVERLAY_HIDDEN:
                 break;
         }
@@ -110,11 +137,61 @@ static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_p
     }
 
     if (ret) {
+        if (info->mode == OVERLAY_URLSELECT) {
+            gtk_widget_hide(info->da);
+
+            /* free list: TODO */
+            list = NULL;
+        }
         info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(GTK_WIDGET(info->panel));
         gtk_widget_grab_focus(info->vte);
     }
     return ret;
+}
+
+static void find_urls(VteTerminal *vte) {
+    GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
+    gchar *content = vte_terminal_get_text(vte, NULL, NULL, NULL);
+
+    char *s_ptr = content, *saveptr;
+
+    for (unsigned line = 0; ; line++, s_ptr = NULL) {
+        char *token = strtok_r(s_ptr, "\n", &saveptr);
+
+        if (!token) {
+            break;
+        }
+
+        GError *error = NULL;
+        GMatchInfo *info;
+
+        g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
+        while (g_match_info_matches(info)) {
+            url_data *node = g_malloc(sizeof(url_data));
+
+            node->url = g_match_info_fetch(info, 0);
+            node->line = line;
+            g_match_info_fetch_pos(info, 0, &node->pos, NULL);
+
+            char c = token[node->pos];
+            token[node->pos] = '\0';
+            size_t len = mbstowcs(NULL, token, 0);
+            token[node->pos] = c;
+            node->pos = len;
+
+            list = g_list_append(list, node);
+            g_match_info_next(info, &error);
+        }
+
+        g_match_info_free(info);
+
+        if (error) {
+            g_printerr("Error while matching: %s\n", error->message);
+            g_error_free(error);
+        }
+    }
+    g_regex_unref(regex);
 }
 
 static void overlay_show(search_panel_info *info, enum overlay_mode mode, bool complete) {
@@ -163,7 +240,10 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
                 overlay_show(info, OVERLAY_RSEARCH, true);
                 return TRUE;
             case KEY(KEY_URL):
-                search(vte, url_regex, false);
+                /* search(vte, url_regex, false); */
+                find_urls(vte);
+                gtk_widget_show(info->da);
+                overlay_show(info, OVERLAY_URLSELECT, false);
                 return TRUE;
             case KEY(KEY_RURL):
                 search(vte, url_regex, true);
@@ -238,6 +318,52 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
     alloc->height = MIN(height, req.height);
 
     return TRUE;
+}
+
+static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
+    char buffer[3];
+
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_rectangle(cr, x, y, 8, 8);
+    cairo_stroke_preserve(cr);
+    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_fill(cr);
+
+    cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_set_font_size(cr, 9);
+    cairo_move_to(cr, x, y + 7);
+
+    snprintf(buffer, 10, "%d", id);
+    cairo_show_text(cr, buffer);
+}
+
+static gboolean draw_cb(GtkDrawingArea *da, cairo_t *cr, VteTerminal *vte) {
+    if (list) {
+        GList *l = list;
+
+        glong cols = vte_terminal_get_column_count(vte);
+        glong cw = vte_terminal_get_char_width(vte);
+        glong ch = vte_terminal_get_char_height(vte);
+
+        cairo_set_line_width(cr, 1);
+        cairo_set_source_rgb(cr, 0, 0, 0);
+        cairo_stroke(cr);
+
+        unsigned offset = 0, id = 1;
+
+        for (; l != NULL; l = l->next, ++id) {
+            url_data *data = l->data;
+
+            glong x = data->pos % cols * cw;
+            offset += data->pos / cols;
+            glong y = (data->line + offset) * ch;
+
+            draw_marker(cr, x, y, id);
+        }
+    }
+
+    return FALSE;
 }
 
 #define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
@@ -418,7 +544,6 @@ int main(int argc, char **argv) {
         gtk_window_set_role(GTK_WINDOW(window), role);
     }
 
-    GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
 
     char **command_argv;
@@ -434,8 +559,7 @@ int main(int argc, char **argv) {
 
     VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
 
-    if (!pty) {
-        g_printerr("Failed to create pty: %s\n", error->message);
+    if (!pty) { g_printerr("Failed to create pty: %s\n", error->message);
         return 1;
     }
 
@@ -454,25 +578,42 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    GtkWidget *alignment = gtk_alignment_new(0, 0, 1, 1);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), alignment);
+    GdkRGBA transparent = {0, 0, 0, 0};
 
+    GtkWidget *overlay[2] = {
+        gtk_overlay_new(),
+        gtk_overlay_new()
+    };
+
+    GtkWidget *da = gtk_drawing_area_new();
+    GtkWidget *align = gtk_alignment_new(0, 0, 1, 1);
     GtkWidget *entry = gtk_entry_new();
-    gtk_widget_set_halign(entry, GTK_ALIGN_START);
-    gtk_widget_set_valign(entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(alignment), entry);
-    gtk_container_add(GTK_CONTAINER(overlay), vte);
-    gtk_container_add(GTK_CONTAINER(window), overlay);
+    gtk_widget_override_background_color(overlay[1], GTK_STATE_FLAG_NORMAL, &transparent);
+    gtk_widget_override_background_color(da, GTK_STATE_FLAG_NORMAL, &transparent);
 
-    search_panel_info info = {vte, entry, GTK_BIN(alignment), OVERLAY_HIDDEN};
+    gtk_widget_set_halign(da, GTK_ALIGN_FILL);
+    gtk_widget_set_valign(da, GTK_ALIGN_FILL);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay[1]), da);
 
-    g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
-    g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(align), 5, 5, 5, 5);
+    gtk_widget_set_halign(align, GTK_ALIGN_START);
+    gtk_widget_set_valign(align, GTK_ALIGN_END);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay[0]), align);
+
+    gtk_container_add(GTK_CONTAINER(align), entry);
+    gtk_container_add(GTK_CONTAINER(overlay[0]), overlay[1]);
+    gtk_container_add(GTK_CONTAINER(overlay[1]), vte);
+    gtk_container_add(GTK_CONTAINER(window), overlay[0]);
+
+    search_panel_info info = {vte, entry, da, GTK_BIN(align), OVERLAY_HIDDEN};
+
+    g_signal_connect(window,     "destroy",            G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte,        "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte,        "key-press-event",    G_CALLBACK(key_press_cb), &info);
+    g_signal_connect(da,         "draw",               G_CALLBACK(draw_cb), vte);
+    g_signal_connect(entry,      "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
+    g_signal_connect(overlay[0], "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     double transparency = 0.0;
@@ -513,7 +654,8 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
-    gtk_widget_hide(alignment);
+    gtk_widget_hide(da);
+    gtk_widget_hide(align);
     gtk_main();
     return 0;
 }
