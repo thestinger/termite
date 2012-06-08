@@ -1,6 +1,7 @@
 A simple VTE-based terminal.
 
-Configuration is done at compile-time via ``config.h``.
+Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (or ``~/.config`` if
+unset) and then falls back to ``$XDG_CONFIG_DIRS``.
 
 DEPENDENCIES
 ============
