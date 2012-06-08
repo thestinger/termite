@@ -324,22 +324,22 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
         }
 
         if (get_config_string(config, "options", "cursor_blink", &cfgstr)) {
-            if (!strcmp(cfgstr, "SYSTEM")) {
+            if (!g_ascii_strcasecmp(cfgstr, "system")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
-            } else if (!strcmp(cfgstr, "ON")) {
+            } else if (!g_ascii_strcasecmp(cfgstr, "on")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
-            } else if (!strcmp(cfgstr, "OFF")) {
+            } else if (!g_ascii_strcasecmp(cfgstr, "off")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
             }
             g_free(cfgstr);
         }
 
         if (get_config_string(config, "options", "cursor_shape", &cfgstr)) {
-            if (!strcmp(cfgstr, "BLOCK")) {
+            if (!g_ascii_strcasecmp(cfgstr, "block")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
-            } else if (!strcmp(cfgstr, "IBEAM")) {
+            } else if (!g_ascii_strcasecmp(cfgstr, "ibeam")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
-            } else if (!strcmp(cfgstr, "UNDERLINE")) {
+            } else if (!g_ascii_strcasecmp(cfgstr, "underline")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
             }
             g_free(cfgstr);
