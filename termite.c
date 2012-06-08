@@ -6,14 +6,11 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
-#include "config.h"
-
-#define CONCAT(X, Y) X ## Y
-#define KEY(X) CONCAT(GDK_KEY_, X)
-
 #ifndef __GNUC__
 # define __attribute__(x)
 #endif
+
+static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
 typedef enum overlay_mode {
     OVERLAY_HIDDEN = 0,
@@ -63,30 +60,30 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case KEY(KEY_COPY):
+            case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
                 return TRUE;
-            case KEY(KEY_PASTE):
+            case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
                 return TRUE;
-            case KEY(KEY_PREV):
+            case GDK_KEY_p:
                 vte_terminal_search_find_previous(vte);
                 vte_terminal_copy_primary(vte);
                 return TRUE;
-            case KEY(KEY_NEXT):
+            case GDK_KEY_n:
                 vte_terminal_search_find_next(vte);
                 vte_terminal_copy_primary(vte);
                 return TRUE;
-            case KEY(KEY_SEARCH):
+            case GDK_KEY_f:
                 overlay_show(info, OVERLAY_SEARCH, true);
                 return TRUE;
-            case KEY(KEY_RSEARCH):
+            case GDK_KEY_r:
                 overlay_show(info, OVERLAY_RSEARCH, true);
                 return TRUE;
-            case KEY(KEY_URL):
+            case GDK_KEY_j:
                 search(vte, url_regex, false);
                 return TRUE;
-            case KEY(KEY_RURL):
+            case GDK_KEY_k:
                 search(vte, url_regex, true);
                 return TRUE;
         }
