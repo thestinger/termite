@@ -264,7 +264,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
     const gchar *dir = g_get_user_config_dir();
     gchar *path = g_build_filename(dir, filename, NULL);
 
-    GError *error = NULL;
     GKeyFile *config = g_key_file_new();
 
     if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
@@ -349,6 +348,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         bool success = true;
         for (unsigned i = 0; i < 8; i++) {
+            GError *error = NULL;
             gsize length;
             gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
             if (error) {
