@@ -2,7 +2,7 @@ PREFIX = /usr/local
 GTK = gtk+-3.0
 VTE = vte-2.90
 
-CFLAGS += -std=c99 -O3 \
+CFLAGS := -std=c99 -O3 \
 	  -Wall -Wextra -pedantic \
 	  -Winit-self \
 	  -Wshadow \
@@ -15,13 +15,14 @@ CFLAGS += -std=c99 -O3 \
 	  -Wc++-compat \
 	  -Wbad-function-cast \
 	  -Wunused-macros \
-	  $(shell pkg-config --cflags ${GTK} ${VTE})
+	  $(shell pkg-config --cflags ${GTK} ${VTE}) \
+	  ${CFLAGS}
 
 ifeq (${CC}, clang)
 	CFLAGS += -Wno-missing-field-initializers
 endif
 
-LDFLAGS += -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE})
+LDFLAGS := -s -Wl,--as-needed $(shell pkg-config --libs ${GTK} ${VTE}) ${LDFLAGS}
 
 termite: termite.c config.h
 	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS}
@@ -34,4 +35,7 @@ install: termite
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/termite
 
-.PHONY: install uninstall
+clean:
+	rm termite
+
+.PHONY: clean install uninstall
