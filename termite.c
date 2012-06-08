@@ -254,10 +254,11 @@ static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char
 MAKE_GET_CONFIG_FUNCTION(boolean, gboolean)
 MAKE_GET_CONFIG_FUNCTION(integer, gint)
 MAKE_GET_CONFIG_FUNCTION(string, gchar *)
+MAKE_GET_CONFIG_FUNCTION(double, gdouble)
 
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url) {
+                        gboolean *clickable_url, double *transparency) {
 
     static const char *filename = "termite.cfg";
     const gchar *dir = g_get_user_config_dir();
@@ -333,6 +334,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         if (get_config_string(config, "options", "icon_name", &cfgstr)) {
             gtk_window_set_icon_name(window, cfgstr);
             g_free(cfgstr);
+        }
+
+        gdouble cfgdouble;
+        if (get_config_double(config, "options", "transparency", &cfgdouble)) {
+            *transparency = cfgdouble;
         }
 
         GdkColor foreground, background, cursor, palette[16];
@@ -467,18 +473,20 @@ int main(int argc, char **argv) {
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title, &urgent_on_bell, &clickable_url);
+    double transparency = 0.0;
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
+                &urgent_on_bell, &clickable_url, &transparency);
 
-#ifdef TRANSPARENCY
-    GdkScreen *screen = gtk_widget_get_screen(window);
-    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-    if (!visual) {
-        visual = gdk_screen_get_system_visual(screen);
+    if (transparency > 0.0) {
+        GdkScreen *screen = gtk_widget_get_screen(window);
+        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+        if (!visual) {
+            visual = gdk_screen_get_system_visual(screen);
+        }
+        gtk_widget_set_visual(window, visual);
+        vte_terminal_set_background_saturation(VTE_TERMINAL(vte), transparency);
+        vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - transparency)));
     }
-    gtk_widget_set_visual(window, visual);
-    vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
-    vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
-#endif
 
     if (clickable_url) {
         int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
