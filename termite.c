@@ -256,9 +256,9 @@ MAKE_GET_CONFIG_FUNCTION(integer, gint)
 MAKE_GET_CONFIG_FUNCTION(string, gchar *)
 MAKE_GET_CONFIG_FUNCTION(double, gdouble)
 
-static void load_config(GtkWindow *window, VteTerminal *vte,
+static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, double *transparency) {
+                        gboolean *clickable_url, double *transparency, gchar **term) {
 
     static const char *filename = "termite.cfg";
     const gchar *dir = g_get_user_config_dir();
@@ -270,7 +270,13 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
          g_key_file_load_from_dirs(config, filename, (const char **)g_get_system_config_dirs(),
                                    NULL, G_KEY_FILE_NONE, NULL))) {
         gboolean cfgbool;
+        gdouble cfgdouble;
+        gint cfgint;
         gchar *cfgstr;
+
+        if (first_run && get_config_string(config, "terminal", "term", &cfgstr)) {
+            *term = cfgstr;
+        }
 
         if (get_config_boolean(config, "options", "resize_grip", &cfgbool)) {
             gtk_window_set_has_resize_grip(window, cfgbool);
@@ -314,7 +320,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(cfgstr);
         }
 
-        gint cfgint;
         if (get_config_integer(config, "options", "scrollback_lines", &cfgint)) {
             vte_terminal_set_scrollback_lines(vte, cfgint);
         }
@@ -346,7 +351,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_free(cfgstr);
         }
 
-        gdouble cfgdouble;
         if (get_config_double(config, "options", "transparency", &cfgdouble)) {
             *transparency = cfgdouble;
         }
@@ -406,6 +410,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
 int main(int argc, char **argv) {
     GError *error = NULL;
+    char *term = "vte-256color";
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     const gchar *role = NULL;
@@ -449,6 +454,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    double transparency = 0.0;
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), true, &dynamic_title,
+                &urgent_on_bell, &clickable_url, &transparency, &term);
+
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
 
@@ -483,11 +493,6 @@ int main(int argc, char **argv) {
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
-
-    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    double transparency = 0.0;
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
-                &urgent_on_bell, &clickable_url, &transparency);
 
     if (transparency > 0.0) {
         GdkScreen *screen = gtk_widget_get_screen(window);
