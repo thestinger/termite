@@ -29,6 +29,8 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
+static const gchar *browser_cmd[3] = { NULL };
+
 static gboolean add_to_list_store(char *key,
                                   __attribute__((unused)) void *value,
                                   GtkListStore *store) {
@@ -199,8 +201,8 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
-        char *argv[] = URL_COMMAND(match);
-        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
+        browser_cmd[1] = match;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
@@ -288,6 +290,13 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             *urgent_on_bell = cfgbool;
         if (get_config_boolean(config, "options", "clickable_url", &cfgbool))
             *clickable_url = cfgbool;
+
+        if (get_config_string(config, "options", "browser", &cfgstr)) {
+            browser_cmd[0] = cfgstr;
+        } else {
+            browser_cmd[0] = g_getenv("BROWSER");
+            if (!browser_cmd[0]) *clickable_url = false;
+        }
 
         if (get_config_string(config, "options", "font", &cfgstr)) {
             vte_terminal_set_font_from_string(vte, cfgstr);
