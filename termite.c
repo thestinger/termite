@@ -274,10 +274,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
         gint cfgint;
         gchar *cfgstr;
 
-        if (first_run && get_config_string(config, "terminal", "term", &cfgstr)) {
+        if (first_run && get_config_string(config, "options", "term", &cfgstr)) {
             *term = cfgstr;
         }
-
         if (get_config_boolean(config, "options", "resize_grip", &cfgbool)) {
             gtk_window_set_has_resize_grip(window, cfgbool);
         }
