@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -9,7 +10,6 @@
 #include "config.h"
 
 #define CONCAT(X, Y) X ## Y
-#define CONCAT2(X, Y) CONCAT(X, Y)
 #define KEY(X) CONCAT(GDK_KEY_, X)
 
 #ifndef __GNUC__
@@ -38,6 +38,7 @@ typedef struct url_data {
     gint pos;
 } url_data;
 
+static const gchar *browser_cmd[3] = { NULL };
 GList *list = NULL;
 
 static gboolean always_selected() {
@@ -62,7 +63,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte) {
                                                  NULL, NULL, NULL);
 
     if (!content) {
-        g_printerr("no content returned for completion");
+        g_printerr("no content returned for completion\n");
         return GTK_TREE_MODEL(store);
     }
 
@@ -101,8 +102,8 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse) {
 static void launch_url(unsigned id) {
     url_data *url = g_list_nth_data(list, id);
     if (url) {
-        char *argv[] = URL_COMMAND(url->url);
-        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
+        browser_cmd[1] = url->url;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
         g_printerr("url not found\n");
     }
@@ -255,7 +256,6 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_
     return FALSE;
 }
 
-#ifdef CLICKABLE_URL
 static void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     GtkBorder *border = NULL;
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
@@ -281,16 +281,14 @@ static char *check_match(VteTerminal *vte, int event_x, int event_y) {
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
     if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
-        char *argv[] = URL_COMMAND(match);
-        g_spawn_async(NULL, argv, NULL, (GSpawnFlags)0, NULL, NULL, NULL, NULL);
+        browser_cmd[1] = match;
+        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
         g_free(match);
         return TRUE;
     }
     return FALSE;
 }
-#endif
 
-#ifdef URGENT_ON_BEEP
 static void beep_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, TRUE);
 }
@@ -299,14 +297,11 @@ static gboolean focus_in_handler(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, FALSE);
     return FALSE;
 }
-#endif
 
-#ifdef DYNAMIC_TITLE
 static void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     const char *t = vte_terminal_get_window_title(vte);
     gtk_window_set_title(window, t ? t : "termite");
 }
-#endif
 
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc) {
     GtkWidget *vte = gtk_bin_get_child(overlay);
@@ -371,6 +366,158 @@ static gboolean draw_cb(GtkDrawingArea *da, cairo_t *cr, VteTerminal *vte) {
     return FALSE;
 }
 
+#define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
+static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char *key, TYPE *value) { \
+    GError *error = NULL; \
+    *value = g_key_file_get_ ## NAME (config, group, key, &error); \
+    if (error) { \
+        g_error_free(error); \
+        return false; \
+    } \
+    return true; \
+}
+
+MAKE_GET_CONFIG_FUNCTION(boolean, gboolean)
+MAKE_GET_CONFIG_FUNCTION(integer, gint)
+MAKE_GET_CONFIG_FUNCTION(string, gchar *)
+MAKE_GET_CONFIG_FUNCTION(double, gdouble)
+
+static void load_config(GtkWindow *window, VteTerminal *vte,
+                        gboolean *dynamic_title, gboolean *urgent_on_bell,
+                        gboolean *clickable_url, double *transparency) {
+
+    static const char *filename = "termite.cfg";
+    const gchar *dir = g_get_user_config_dir();
+    gchar *path = g_build_filename(dir, filename, NULL);
+
+    GError *error = NULL;
+    GKeyFile *config = g_key_file_new();
+
+    if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
+         g_key_file_load_from_dirs(config, filename, (const char **)g_get_system_config_dirs(),
+                                   NULL, G_KEY_FILE_NONE, NULL))) {
+        gboolean cfgbool;
+        gchar *cfgstr;
+
+        if (get_config_boolean(config, "options", "resize_grip", &cfgbool))
+            gtk_window_set_has_resize_grip(window, cfgbool);
+        if (get_config_boolean(config, "options", "scroll_on_output", &cfgbool))
+            vte_terminal_set_scroll_on_output(vte, cfgbool);
+        if (get_config_boolean(config, "options", "scroll_on_keystroke", &cfgbool))
+            vte_terminal_set_scroll_on_keystroke(vte, cfgbool);
+        if (get_config_boolean(config, "options", "audible_bell", &cfgbool))
+            vte_terminal_set_audible_bell(vte, cfgbool);
+        if (get_config_boolean(config, "options", "visible_bell", &cfgbool))
+            vte_terminal_set_visible_bell(vte, cfgbool);
+        if (get_config_boolean(config, "options", "mouse_autohide", &cfgbool))
+            vte_terminal_set_mouse_autohide(vte, cfgbool);
+        if (get_config_boolean(config, "options", "dynamic_title", &cfgbool))
+            *dynamic_title = cfgbool;
+        if (get_config_boolean(config, "options", "urgent_on_bell", &cfgbool))
+            *urgent_on_bell = cfgbool;
+        if (get_config_boolean(config, "options", "clickable_url", &cfgbool))
+            *clickable_url = cfgbool;
+
+        if (get_config_string(config, "options", "browser", &cfgstr)) {
+            browser_cmd[0] = cfgstr;
+        } else {
+            browser_cmd[0] = g_getenv("BROWSER");
+            if (!browser_cmd[0]) *clickable_url = false;
+        }
+
+        if (get_config_string(config, "options", "font", &cfgstr)) {
+            vte_terminal_set_font_from_string(vte, cfgstr);
+            g_free(cfgstr);
+        }
+
+        gint cfgint;
+        if (get_config_integer(config, "options", "scrollback_lines", &cfgint)) {
+            vte_terminal_set_scrollback_lines(vte, cfgint);
+        }
+
+        if (get_config_string(config, "options", "cursor_blink", &cfgstr)) {
+            if (!strcmp(cfgstr, "SYSTEM")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
+            } else if (!strcmp(cfgstr, "ON")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
+            } else if (!strcmp(cfgstr, "OFF")) {
+                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
+            }
+            g_free(cfgstr);
+        }
+
+        if (get_config_string(config, "options", "cursor_shape", &cfgstr)) {
+            if (!strcmp(cfgstr, "BLOCK")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
+            } else if (!strcmp(cfgstr, "IBEAM")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
+            } else if (!strcmp(cfgstr, "UNDERLINE")) {
+                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
+            }
+            g_free(cfgstr);
+        }
+
+        if (get_config_string(config, "options", "icon_name", &cfgstr)) {
+            gtk_window_set_icon_name(window, cfgstr);
+            g_free(cfgstr);
+        }
+
+        gdouble cfgdouble;
+        if (get_config_double(config, "options", "transparency", &cfgdouble)) {
+            *transparency = cfgdouble;
+        }
+
+        GdkColor foreground, background, cursor, palette[16];
+
+        static const char *color_names[8] = {"black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"};
+
+        bool success = true;
+        for (unsigned i = 0; i < 8; i++) {
+            gsize length;
+            gchar **pair = g_key_file_get_string_list(config, "colors", color_names[i], &length, &error);
+            if (error) {
+                success = false;
+                g_error_free(error);
+                break;
+            }
+            if ((length != 2 || !gdk_color_parse(pair[0], &palette[i]) ||
+                 !gdk_color_parse(pair[1], &palette[i+8]))) {
+                success = false;
+                g_strfreev(pair);
+                break;
+            }
+            g_strfreev(pair);
+        }
+
+        if (success) {
+            vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
+        }
+
+        if (get_config_string(config, "colors", "foreground", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &foreground)) {
+                vte_terminal_set_color_foreground(vte, &foreground);
+            }
+            g_free(cfgstr);
+        }
+
+        if (get_config_string(config, "colors", "background", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &background)) {
+                vte_terminal_set_color_background(vte, &background);
+            }
+            g_free(cfgstr);
+        }
+
+        if (get_config_string(config, "colors", "cursor", &cfgstr)) {
+            if (gdk_color_parse(cfgstr, &cursor)) {
+                vte_terminal_set_color_cursor(vte, &cursor);
+            }
+            g_free(cfgstr);
+        }
+    }
+    g_free(path);
+    g_key_file_free(config);
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
 
@@ -394,13 +541,6 @@ int main(int argc, char **argv) {
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
     }
-
-#ifdef ICON_NAME
-    GdkPixbuf *icon = gtk_icon_theme_load_icon(gtk_icon_theme_get_default(), ICON_NAME, 48, 0, NULL);
-    if (icon) {
-        gtk_window_set_icon(GTK_WINDOW(window), icon);
-    }
-#endif
 
     GtkWidget *vte = vte_terminal_new();
 
@@ -473,61 +613,42 @@ int main(int argc, char **argv) {
     g_signal_connect(entry,      "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay[0], "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
-    vte_terminal_set_scrollback_lines(VTE_TERMINAL(vte), scrollback_lines);
-    vte_terminal_set_font_from_string(VTE_TERMINAL(vte), font);
-    vte_terminal_set_scroll_on_output(VTE_TERMINAL(vte), scroll_on_output);
-    vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(vte), scroll_on_keystroke);
-    vte_terminal_set_audible_bell(VTE_TERMINAL(vte), audible_bell);
-    vte_terminal_set_visible_bell(VTE_TERMINAL(vte), visible_bell);
-    vte_terminal_set_mouse_autohide(VTE_TERMINAL(vte), mouse_autohide);
-    vte_terminal_set_cursor_shape(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_SHAPE_, CURSOR_SHAPE));
-    vte_terminal_set_cursor_blink_mode(VTE_TERMINAL(vte), CONCAT2(VTE_CURSOR_BLINK_, CURSOR_BLINK));
-    gtk_window_set_has_resize_grip(GTK_WINDOW(window), resize_grip);
+    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    double transparency = 0.0;
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
+                &urgent_on_bell, &clickable_url, &transparency);
 
-#ifdef TRANSPARENCY
-    GdkScreen *screen = gtk_widget_get_screen(window);
-    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-    if (!visual) {
-        visual = gdk_screen_get_system_visual(screen);
-    }
-    gtk_widget_set_visual(window, visual);
-    vte_terminal_set_background_saturation(VTE_TERMINAL(vte), TRANSPARENCY);
-    vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - TRANSPARENCY)));
-#endif
-
-    // set colors
-    GdkColor foreground, background, cursor, palette[16];
-    gdk_color_parse(foreground_color, &foreground);
-    gdk_color_parse(background_color, &background);
-    gdk_color_parse(cursor_color, &cursor);
-
-    for (unsigned i = 0; i < 16; i++) {
-        gdk_color_parse(colors[i], &palette[i]);
+    if (transparency > 0.0) {
+        GdkScreen *screen = gtk_widget_get_screen(window);
+        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+        if (!visual) {
+            visual = gdk_screen_get_system_visual(screen);
+        }
+        gtk_widget_set_visual(window, visual);
+        vte_terminal_set_background_saturation(VTE_TERMINAL(vte), transparency);
+        vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - transparency)));
     }
 
-    vte_terminal_set_colors(VTE_TERMINAL(vte), &foreground, &background, palette, 16);
-    vte_terminal_set_color_cursor(VTE_TERMINAL(vte), &cursor);
+    if (clickable_url) {
+        int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                                g_regex_new(url_regex,
+                                                            G_REGEX_CASELESS,
+                                                            G_REGEX_MATCH_NOTEMPTY,
+                                                            NULL),
+                                                (GRegexMatchFlags)0);
+        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+        g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
+    }
 
-#ifdef CLICKABLE_URL
-    int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
-                                            g_regex_new(url_regex,
-                                                        G_REGEX_CASELESS,
-                                                        G_REGEX_MATCH_NOTEMPTY,
-                                                        NULL),
-                                            (GRegexMatchFlags)0);
-    vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
-    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
-#endif
+    if (urgent_on_bell) {
+        g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
+        g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
+    }
 
-#ifdef URGENT_ON_BEEP
-    g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_handler), window);
-    g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_handler), NULL);
-#endif
-
-#ifdef DYNAMIC_TITLE
-    window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
-    g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
-#endif
+    if (dynamic_title) {
+        window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
+        g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
+    }
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);

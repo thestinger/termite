@@ -1,6 +1,7 @@
 A simple VTE-based terminal.
 
-Configuration is done at compile-time via ``config.h``.
+Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (or ``~/.config`` if
+unset) and then falls back to ``$XDG_CONFIG_DIRS``.
 
 DEPENDENCIES
 ============
@@ -21,7 +22,7 @@ KEYBINDINGS
 * ``ctrl-shift-p``: jump to previous search match
 * ``ctrl-tab``: start scrollback completion
 
-During scrollback search, The current selection is changed to the search match
+During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
 With the scrollback completion/widget open, up/down cycle through completions,
@@ -34,6 +35,6 @@ TODO
 * better url matching regex
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback search needs to be improved upstream [1]_
-* expose more options in ``config.h``
+* expose more options in ``termite.cfg``, including keybindings
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
