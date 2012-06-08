@@ -15,6 +15,7 @@ CFLAGS := -std=c99 -O3 \
 	  -Wc++-compat \
 	  -Wbad-function-cast \
 	  -Wunused-macros \
+	  -Wwrite-strings \
 	  ${shell pkg-config --cflags ${GTK} ${VTE}} \
 	  ${CFLAGS}
 
