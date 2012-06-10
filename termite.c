@@ -145,7 +145,7 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 
 gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
     char *match = check_match(vte, (int)event->x, (int)event->y);
-    if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match != NULL) {
+    if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
         launch_browser(match);
         g_free(match);
         return TRUE;
