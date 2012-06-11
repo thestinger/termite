@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -44,6 +45,7 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
+static bool read_geometry(GtkWindow *window, VteTerminal *vte, const char *str);
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url, const gchar **term);
@@ -269,6 +271,25 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
                                     &tag);
 }
 
+bool read_geometry(GtkWindow *window, VteTerminal *vte, const char *str) {
+    glong cw = vte_terminal_get_char_width(vte);
+    glong ch = vte_terminal_get_char_height(vte);
+    glong w, h, x, y;
+
+    if (sscanf(str, "%ldx%ld", &w, &h) != 2) {
+        return false;
+    }
+
+    gtk_window_set_default_size(GTK_WINDOW(window), cw * w, ch * h);
+
+    str = strchr(str, '+');
+    if (str && sscanf(str, "+%ld+%ld", &x, &y) == 2) {
+        gtk_window_move(GTK_WINDOW(window), x, y);
+    }
+
+    return true;
+}
+
 /* {{{ CONFIG LOADING */
 #define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
 static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char *key, TYPE *value) { \
@@ -443,12 +464,14 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "vte-256color";
+    const char *geom;
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     gchar *role = NULL;
     const GOptionEntry entries[] = {
-        {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"role",     'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"geometry",  0,  0, G_OPTION_ARG_STRING, &geom, "Window geometry", "GEOMETRY"},
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -556,6 +579,18 @@ int main(int argc, char **argv) {
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
     gtk_widget_hide(alignment);
+
+    /* most window managers ignore requests for initial window
+     * positions (instead using a user-defined placement algorithm)
+     * and honor requests after the window has already been shown */
+    if (geom) {
+        if (!read_geometry(GTK_WINDOW(window), VTE_TERMINAL(vte), geom)) {
+            g_printerr("Invalid geometry string: %s\n", geom);
+            return 1;
+        }
+    }
+
+
     gtk_main();
     return 0;
 }
