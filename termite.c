@@ -436,7 +436,7 @@ int main(int argc, char **argv) {
     double transparency = 0.0;
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
-    const gchar *role = NULL;
+    gchar *role = NULL;
     const GOptionEntry entries[] = {
         { "role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE" },
         { NULL }
@@ -455,6 +455,7 @@ int main(int argc, char **argv) {
 
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
+        g_free(role);
     }
 
     char **command_argv;
