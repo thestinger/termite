@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gtk/gtk.h>
@@ -44,6 +45,7 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
+static bool read_geometry(VteTerminal *vte, const char *str, long *w, long *h);
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url, double *transparency, const gchar **term);
@@ -270,6 +272,21 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
                                     &tag);
 }
 
+bool read_geometry(VteTerminal *vte, const char *str, long *w, long *h) {
+    *w = vte_terminal_get_char_width(vte);
+    *h = vte_terminal_get_char_height(vte);
+
+    char *p = strchr(str, 'x');
+    if (!p)
+        return false;
+
+    *p = '\0';
+    *w *= atol(str);
+    ++p;
+    *h *= atol(p);
+    return true;
+}
+
 /* {{{ CONFIG LOADING */
 #define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
 static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char *key, TYPE *value) { \
@@ -443,13 +460,15 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "vte-256color";
+    const char *geom;
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     double transparency = 0.0;
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     gchar *role = NULL;
     const GOptionEntry entries[] = {
-        {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"role",     'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"geometry",  0,  0, G_OPTION_ARG_STRING, &geom, "Window geometry", "GEOMETRY"},
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -487,6 +506,13 @@ int main(int argc, char **argv) {
         g_printerr("Failed to create pty: %s\n", error->message);
         return 1;
     }
+
+    long ww, wh;
+    if (!read_geometry(VTE_TERMINAL(vte), geom, &ww, &wh)) {
+        g_printerr("Invalid geometry string: %s\n", geom);
+        return 1;
+    }
+    gtk_window_set_default_size(GTK_WINDOW(window), ww, wh);
 
     load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
                 &urgent_on_bell, &clickable_url, &transparency, &term);
