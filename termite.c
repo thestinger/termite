@@ -44,7 +44,7 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
-static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
+static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url, double *transparency, const gchar **term);
 
@@ -93,7 +93,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 return TRUE;
             case GDK_KEY_Escape:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
-                            vte, false, &dynamic_title, &urgent_on_bell,
+                            vte, &dynamic_title, &urgent_on_bell,
                             &clickable_url, &transparency, NULL);
                 return TRUE;
         }
@@ -287,7 +287,7 @@ MAKE_GET_CONFIG_FUNCTION(integer, gint)
 MAKE_GET_CONFIG_FUNCTION(string, gchar *)
 MAKE_GET_CONFIG_FUNCTION(double, gdouble)
 
-static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
+static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url, double *transparency, const gchar **term) {
 
@@ -305,7 +305,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
         gint cfgint;
         gchar *cfgstr;
 
-        if (first_run && get_config_string(config, "options", "term", &cfgstr)) {
+        if (term && get_config_string(config, "options", "term", &cfgstr)) {
             *term = cfgstr;
         }
         if (get_config_boolean(config, "options", "resize_grip", &cfgbool)) {
@@ -488,7 +488,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), true, &dynamic_title,
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
                 &urgent_on_bell, &clickable_url, &transparency, &term);
 
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
