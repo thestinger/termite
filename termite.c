@@ -507,15 +507,15 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
+                &urgent_on_bell, &clickable_url, &transparency, &term);
+
     long ww, wh;
     if (!read_geometry(VTE_TERMINAL(vte), geom, &ww, &wh)) {
         g_printerr("Invalid geometry string: %s\n", geom);
         return 1;
     }
     gtk_window_set_default_size(GTK_WINDOW(window), ww, wh);
-
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
-                &urgent_on_bell, &clickable_url, &transparency, &term);
 
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
