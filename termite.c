@@ -46,7 +46,7 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, double *transparency, const gchar **term);
+                        gboolean *clickable_url, const gchar **term);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -62,7 +62,6 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    double transparency = 0.0;
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_c:
@@ -94,7 +93,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_Escape:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
                             vte, &dynamic_title, &urgent_on_bell,
-                            &clickable_url, &transparency, NULL);
+                            &clickable_url, NULL);
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
@@ -289,7 +288,7 @@ MAKE_GET_CONFIG_FUNCTION(double, gdouble)
 
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, double *transparency, const gchar **term) {
+                        gboolean *clickable_url, const gchar **term) {
 
     static const char *filename = "termite.cfg";
     const gchar *dir = g_get_user_config_dir();
@@ -384,7 +383,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         }
 
         if (get_config_double(config, "options", "transparency", &cfgdouble)) {
-            *transparency = cfgdouble;
+            vte_terminal_set_background_saturation(VTE_TERMINAL(vte), cfgdouble);
+            vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - cfgdouble)));
         }
 
         GdkColor foreground, background, cursor, palette[16];
@@ -444,7 +444,6 @@ int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "vte-256color";
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    double transparency = 0.0;
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     gchar *role = NULL;
@@ -463,6 +462,13 @@ int main(int argc, char **argv) {
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *overlay = gtk_overlay_new();
     GtkWidget *vte = vte_terminal_new();
+
+    GdkScreen *screen = gtk_widget_get_screen(window);
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+    if (!visual) {
+        visual = gdk_screen_get_system_visual(screen);
+    }
+    gtk_widget_set_visual(window, visual);
 
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
@@ -489,7 +495,7 @@ int main(int argc, char **argv) {
     }
 
     load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
-                &urgent_on_bell, &clickable_url, &transparency, &term);
+                &urgent_on_bell, &clickable_url, &term);
 
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
@@ -525,17 +531,6 @@ int main(int argc, char **argv) {
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
-
-    if (transparency > 0.0) {
-        GdkScreen *screen = gtk_widget_get_screen(window);
-        GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-        if (!visual) {
-            visual = gdk_screen_get_system_visual(screen);
-        }
-        gtk_widget_set_visual(window, visual);
-        vte_terminal_set_background_saturation(VTE_TERMINAL(vte), transparency);
-        vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - transparency)));
-    }
 
     if (clickable_url) {
         int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
