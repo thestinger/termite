@@ -273,26 +273,18 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
 }
 
 bool read_geometry(GtkWindow *window, VteTerminal *vte, const char *str) {
-    glong w = vte_terminal_get_char_width(vte);
-    glong h = vte_terminal_get_char_height(vte);
+    glong cw = vte_terminal_get_char_width(vte);
+    glong ch = vte_terminal_get_char_height(vte);
+    glong w, h, x, y;
 
-    char *s1 = strchr(str, 'x');
-    if (!s1) return false;
-    char *s2 = strchr(s1 + 1, '+');
-    char *s3 = s2 ? strchr(s2 + 1, '+') : NULL;
+    if (sscanf(str, "%ldx%ld", &w, &h) != 2) {
+        return false;
+    }
 
-    *s1 = '\0';
-    if (s2) *s2 = '\0';
-    if (s3) *s3 = '\0';
+    gtk_window_set_default_size(GTK_WINDOW(window), cw * w, ch * h);
 
-    w *= atol(str);
-    ++s1;
-    h *= atol(s1);
-    gtk_window_set_default_size(GTK_WINDOW(window), w, h);
-
-    if (s2 && s3) {
-        glong x = atol(++s2);
-        glong y = atol(++s3);
+    str = strchr(str, '+');
+    if (str && sscanf(str, "+%ld+%ld", &x, &y) == 2) {
         gtk_window_move(GTK_WINDOW(window), x, y);
     }
 
