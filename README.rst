@@ -11,6 +11,7 @@ A vte version >= 0.30.
 KEYBINDINGS
 ===========
 
+* ``ctrl-shift-escape``: reload configuration file
 * ``ctrl-shift-c``: copy to CLIPBOARD
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)

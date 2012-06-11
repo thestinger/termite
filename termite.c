@@ -44,6 +44,9 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
+static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
+                        gboolean *dynamic_title, gboolean *urgent_on_bell,
+                        gboolean *clickable_url, double *transparency, const gchar **term);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -58,6 +61,8 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
+    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    double transparency = 0.0;
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_c:
@@ -85,6 +90,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 return TRUE;
             case GDK_KEY_k:
                 search(vte, url_regex, true);
+                return TRUE;
+            case GDK_KEY_Escape:
+                load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
+                            vte, false, &dynamic_title, &urgent_on_bell,
+                            &clickable_url, &transparency, NULL);
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
