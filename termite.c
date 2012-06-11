@@ -26,7 +26,7 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
-static gchar *browser_cmd[3] = { NULL };
+static gchar *browser_cmd[3] = {NULL};
 
 static void launch_browser(char *url);
 
@@ -329,6 +329,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, bool first_run,
             *clickable_url = cfgbool;
         }
 
+        g_free(browser_cmd[0]);
         if (get_config_string(config, "options", "browser", &cfgstr)) {
             browser_cmd[0] = cfgstr;
         } else {
