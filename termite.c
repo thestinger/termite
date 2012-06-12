@@ -447,8 +447,10 @@ int main(int argc, char **argv) {
 
     GOptionContext *context = g_option_context_new("[COMMAND]");
     gchar *role = NULL;
+    char *geometry = NULL;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -551,6 +553,15 @@ int main(int argc, char **argv) {
     if (dynamic_title) {
         window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
         g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
+    }
+
+    if (geometry) {
+        gtk_widget_show_all(overlay);
+        gtk_widget_show_all(alignment);
+        if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
+            g_printerr("Invalid geometry string: %s\n", geometry);
+        }
+        g_free(geometry);
     }
 
     gtk_widget_grab_focus(vte);
