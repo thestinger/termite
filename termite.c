@@ -37,6 +37,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event);
 static void beep_cb(GtkWindow *window);
 static gboolean focus_in_cb(GtkWindow *window);
+static gboolean focus_out_cb(GtkWindow *window);
 
 static gboolean add_to_list_store(char *key, void *value, GtkListStore *store);
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
@@ -167,6 +168,11 @@ void beep_cb(GtkWindow *window) {
 }
 
 gboolean focus_in_cb(GtkWindow *window) {
+    gtk_window_set_urgency_hint(window, FALSE);
+    return FALSE;
+}
+
+gboolean focus_out_cb(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, FALSE);
     return FALSE;
 }
@@ -548,6 +554,7 @@ int main(int argc, char **argv) {
     if (urgent_on_bell) {
         g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_cb), window);
         g_signal_connect(window, "focus-in-event", G_CALLBACK(focus_in_cb), NULL);
+        g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_out_cb), NULL);
     }
 
     if (dynamic_title) {
