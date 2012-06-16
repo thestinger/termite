@@ -26,7 +26,7 @@ typedef struct search_panel_info {
     enum overlay_mode mode;
 } search_panel_info;
 
-static gchar *browser_cmd[3] = {NULL};
+static char *browser_cmd[3] = {NULL};
 
 static void launch_browser(char *url);
 
@@ -46,7 +46,7 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, const gchar **term);
+                        gboolean *clickable_url, const char **term);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -109,7 +109,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (event->keyval == GDK_KEY_Escape) {
         ret = TRUE;
     } else if (event->keyval == GDK_KEY_Return) {
-        const gchar *text = gtk_entry_get_text(entry);
+        const char *text = gtk_entry_get_text(entry);
 
         switch (info->mode) {
             case OVERLAY_SEARCH:
@@ -184,10 +184,10 @@ gboolean add_to_list_store(char *key,
 GtkTreeModel *create_completion_model(VteTerminal *vte) {
     GtkListStore *store = gtk_list_store_new(1, G_TYPE_STRING);
 
-    glong end_row, end_col;
+    long end_row, end_col;
     vte_terminal_get_cursor_position(vte, &end_col, &end_row);
-    gchar *content = vte_terminal_get_text_range(vte, 0, 0, end_row, end_col,
-                                                 NULL, NULL, NULL);
+    char *content = vte_terminal_get_text_range(vte, 0, 0, end_row, end_col,
+                                                NULL, NULL, NULL);
 
     if (!content) {
         g_printerr("no content returned for completion\n");
@@ -282,17 +282,17 @@ static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char
 }
 
 MAKE_GET_CONFIG_FUNCTION(boolean, gboolean)
-MAKE_GET_CONFIG_FUNCTION(integer, gint)
-MAKE_GET_CONFIG_FUNCTION(string, gchar *)
-MAKE_GET_CONFIG_FUNCTION(double, gdouble)
+MAKE_GET_CONFIG_FUNCTION(integer, int)
+MAKE_GET_CONFIG_FUNCTION(string, char *)
+MAKE_GET_CONFIG_FUNCTION(double, double)
 
 static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, const gchar **term) {
+                        gboolean *clickable_url, const char **term) {
 
     static const char *filename = "termite.cfg";
-    const gchar *dir = g_get_user_config_dir();
-    gchar *path = g_build_filename(dir, filename, NULL);
+    const char *dir = g_get_user_config_dir();
+    char *path = g_build_filename(dir, filename, NULL);
 
     GKeyFile *config = g_key_file_new();
 
@@ -300,9 +300,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
          g_key_file_load_from_dirs(config, filename, (const char **)g_get_system_config_dirs(),
                                    NULL, G_KEY_FILE_NONE, NULL))) {
         gboolean cfgbool;
-        gdouble cfgdouble;
-        gint cfgint;
-        gchar *cfgstr;
+        double cfgdouble;
+        int cfgint;
+        char *cfgstr;
 
         if (term && get_config_string(config, "options", "term", &cfgstr)) {
             *term = cfgstr;
@@ -396,7 +396,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         for (unsigned i = 0; i < 8; i++) {
             GError *error = NULL;
             gsize length;
-            gchar **pair = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
+            char **pair = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
             if (error) {
                 success = false;
                 g_error_free(error);
@@ -482,8 +482,8 @@ int main(int argc, char **argv) {
     char *default_argv[2] = {fallback, NULL};
 
     if (execute) {
-        gint argcp;
-        gchar **argvp;
+        int argcp;
+        char **argvp;
         g_shell_parse_argv(execute, &argcp, &argvp, &error);
         if (error) {
             g_printerr("Failed to parse command: %s\n", error->message);
