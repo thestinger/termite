@@ -445,12 +445,14 @@ int main(int argc, char **argv) {
     const char *term = "vte-256color";
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
 
-    GOptionContext *context = g_option_context_new("[COMMAND]");
+    GOptionContext *context = g_option_context_new(NULL);
     gchar *role = NULL;
     char *geometry = NULL;
+    char *execute = NULL;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
+        {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -481,8 +483,15 @@ int main(int argc, char **argv) {
     char fallback[] = "/bin/sh";
     char *default_argv[2] = {fallback, NULL};
 
-    if (argc > 1) {
-        command_argv = &argv[1];
+    if (execute) {
+        gint argcp;
+        gchar **argvp;
+        g_shell_parse_argv(execute, &argcp, &argvp, &error);
+        if (error) {
+            g_printerr("Failed to parse command: %s\n", error->message);
+            return 1;
+        }
+        command_argv = argvp;
     } else {
         char *shell = vte_get_user_shell();
         if (shell) default_argv[0] = shell;
