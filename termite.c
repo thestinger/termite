@@ -446,9 +446,7 @@ int main(int argc, char **argv) {
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
-    gchar *role = NULL;
-    char *geometry = NULL;
-    char *execute = NULL;
+    char *role = NULL, *geometry = NULL, *execute = NULL;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
