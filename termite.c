@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
-        {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL },
+        {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
