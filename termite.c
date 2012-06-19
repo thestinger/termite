@@ -588,7 +588,7 @@ int main(int argc, char **argv) {
     gtk_widget_show_all(window);
     gtk_widget_hide(alignment);
     gtk_main();
-    return 0;
+    return vte_terminal_get_child_exit_status(VTE_TERMINAL(vte));
 }
 
 // vim: et:sts=4:sw=4:cino=(0
