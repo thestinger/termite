@@ -293,7 +293,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
     static const char *filename = "termite.cfg";
     const char *dir = g_get_user_config_dir();
     char *path = g_build_filename(dir, filename, NULL);
-
     GKeyFile *config = g_key_file_new();
 
     if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
@@ -387,7 +386,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
-        GdkColor foreground, background, cursor, palette[16];
+        GdkColor color, palette[16];
 
         static const char *colors[8] = {"black", "red", "green", "yellow",
                                         "blue", "magenta", "cyan", "white"};
@@ -417,22 +416,28 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         }
 
         if (get_config_string(config, "colors", "foreground", &cfgstr)) {
-            if (gdk_color_parse(cfgstr, &foreground)) {
-                vte_terminal_set_color_foreground(vte, &foreground);
+            if (gdk_color_parse(cfgstr, &color)) {
+                vte_terminal_set_color_foreground(vte, &color);
+            } else {
+                g_printerr("invalid color string: %s\n", cfgstr);
             }
             g_free(cfgstr);
         }
 
         if (get_config_string(config, "colors", "background", &cfgstr)) {
-            if (gdk_color_parse(cfgstr, &background)) {
-                vte_terminal_set_color_background(vte, &background);
+            if (gdk_color_parse(cfgstr, &color)) {
+                vte_terminal_set_color_background(vte, &color);
+            } else {
+                g_printerr("invalid color string: %s\n", cfgstr);
             }
             g_free(cfgstr);
         }
 
         if (get_config_string(config, "colors", "cursor", &cfgstr)) {
-            if (gdk_color_parse(cfgstr, &cursor)) {
-                vte_terminal_set_color_cursor(vte, &cursor);
+            if (gdk_color_parse(cfgstr, &color)) {
+                vte_terminal_set_color_cursor(vte, &color);
+            } else {
+                g_printerr("invalid color string: %s\n", cfgstr);
             }
             g_free(cfgstr);
         }
