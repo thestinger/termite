@@ -449,6 +449,7 @@ int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "vte-256color";
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    gboolean version;
 
     GOptionContext *context = g_option_context_new(NULL);
     char *role = NULL, *geometry = NULL, *execute = NULL;
@@ -456,6 +457,7 @@ int main(int argc, char **argv) {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
+        {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL },
         {NULL}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -464,6 +466,11 @@ int main(int argc, char **argv) {
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("option parsing failed: %s\n", error->message);
         return 1;
+    }
+
+    if (version) {
+        g_print("termite %s\n", TERMITE_VERSION);
+        return 0;
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);

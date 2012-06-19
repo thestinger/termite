@@ -1,3 +1,4 @@
+VERSION = $(shell git describe --tags)
 PREFIX = /usr/local
 GTK = gtk+-3.0
 VTE = vte-2.90
@@ -16,6 +17,7 @@ CFLAGS := -std=c99 -O3 \
 	  -Wbad-function-cast \
 	  -Wunused-macros \
 	  -Wwrite-strings \
+	  -DTERMITE_VERSION=\"${VERSION}\" \
 	  ${shell pkg-config --cflags ${GTK} ${VTE}} \
 	  ${CFLAGS}
 
