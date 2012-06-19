@@ -449,7 +449,7 @@ int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "vte-256color";
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
-    gboolean version;
+    gboolean version = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
     char *role = NULL, *geometry = NULL, *execute = NULL;
