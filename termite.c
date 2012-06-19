@@ -554,13 +554,13 @@ int main(int argc, char **argv) {
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     if (clickable_url) {
-        int tmp = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+        int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
                                                 g_regex_new(url_regex,
                                                             G_REGEX_CASELESS,
                                                             G_REGEX_MATCH_NOTEMPTY,
                                                             NULL),
                                                 (GRegexMatchFlags)0);
-        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tmp, GDK_HAND2);
+        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tag, GDK_HAND2);
         g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
     }
 
