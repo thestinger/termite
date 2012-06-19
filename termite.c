@@ -383,8 +383,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         }
 
         if (get_config_double(config, "options", "transparency", &cfgdouble)) {
-            vte_terminal_set_background_saturation(VTE_TERMINAL(vte), cfgdouble);
-            vte_terminal_set_opacity(VTE_TERMINAL(vte), (guint16)(0xffff * (1 - cfgdouble)));
+            vte_terminal_set_background_saturation(vte, cfgdouble);
+            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
         GdkColor foreground, background, cursor, palette[16];
