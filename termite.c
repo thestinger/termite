@@ -393,20 +393,21 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                                         "blue", "magenta", "cyan", "white"};
 
         bool success = true;
-        for (unsigned i = 0; i < 8; i++) {
+        for (unsigned i = 0; success && i < 8; i++) {
             GError *error = NULL;
             gsize length;
             char **pair = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
+            success = false;
             if (error) {
-                success = false;
                 g_error_free(error);
-                break;
-            }
-            if ((length != 2 || !gdk_color_parse(pair[0], &palette[i]) ||
-                 !gdk_color_parse(pair[1], &palette[i+8]))) {
-                success = false;
-                g_strfreev(pair);
-                break;
+            } else if (length != 2) {
+                g_printerr("%s is not set to a pair of color strings\n", colors[i]);
+            } else if (!gdk_color_parse(pair[0], &palette[i])) {
+                g_printerr("invalid color string: %s\n", pair[0]);
+            } else if (!gdk_color_parse(pair[1], &palette[i+8])) {
+                g_printerr("invalid color string: %s\n", pair[1]);
+            } else {
+                success = true;
             }
             g_strfreev(pair);
         }
