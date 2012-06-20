@@ -22,7 +22,7 @@ typedef enum overlay_mode {
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
-    GtkBin *panel;
+    GtkWidget *panel;
     enum overlay_mode mode;
 } search_panel_info;
 
@@ -129,7 +129,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
 
     if (ret) {
         info->mode = OVERLAY_HIDDEN;
-        gtk_widget_hide(GTK_WIDGET(info->panel));
+        gtk_widget_hide(info->panel);
         gtk_widget_grab_focus(info->vte);
     }
     return ret;
@@ -243,7 +243,7 @@ void overlay_show(search_panel_info *info, overlay_mode mode, bool complete) {
     gtk_entry_set_text(GTK_ENTRY(info->entry), "");
 
     info->mode = mode;
-    gtk_widget_show(GTK_WIDGET(info->panel));
+    gtk_widget_show(info->panel);
     gtk_widget_grab_focus(info->entry);
 }
 
@@ -545,7 +545,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    search_panel_info info = {vte, entry, GTK_BIN(alignment), OVERLAY_HIDDEN};
+    search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
