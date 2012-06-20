@@ -811,6 +811,16 @@ int main(int argc, char **argv) {
         g_free(geometry);
     }
 
+    int width, height, padding_w, padding_h;
+    long char_width = vte_terminal_get_char_width(vte);
+    long char_height = vte_terminal_get_char_height(vte);
+
+    gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+    get_vte_padding(vte, &padding_w, &padding_h);
+    vte_terminal_set_size(vte,
+                          (width - padding_w) / char_width,
+                          (height - padding_h) / char_height);
+
     gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
     gtk_widget_hide(panel.panel);
