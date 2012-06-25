@@ -403,8 +403,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         static const long palette_size = 24;
         GdkColor color, palette[palette_size];
 
-        static const char *colors[8] = {"black", "red", "green", "yellow",
-                                        "blue", "magenta", "cyan", "white"};
+        static const char * const colors[8] = {"black", "red", "green", "yellow",
+                                               "blue", "magenta", "cyan", "white"};
 
         bool success = true;
         for (unsigned i = 0; success && i < 8; i++) {
