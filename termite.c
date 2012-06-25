@@ -400,7 +400,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
-        static const long palette_size = 16;
+        static const long palette_size = 24;
         GdkColor color, palette[palette_size];
 
         static const char *colors[8] = {"black", "red", "green", "yellow",
@@ -410,24 +410,26 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         for (unsigned i = 0; success && i < 8; i++) {
             GError *error = NULL;
             gsize length;
-            char **pair = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
+            char **triplet = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
             success = false;
             if (error) {
                 g_error_free(error);
-            } else if (length != 2) {
-                g_printerr("%s is not set to a pair of color strings\n", colors[i]);
-            } else if (!gdk_color_parse(pair[0], &palette[i])) {
-                g_printerr("invalid color string: %s\n", pair[0]);
-            } else if (!gdk_color_parse(pair[1], &palette[i+8])) {
-                g_printerr("invalid color string: %s\n", pair[1]);
+            } else if (length != 3) {
+                g_printerr("%s is not set to a triplet of color strings\n", colors[i]);
+            } else if (!gdk_color_parse(triplet[0], &palette[i])) {
+                g_printerr("invalid color string: %s\n", triplet[0]);
+            } else if (!gdk_color_parse(triplet[1], &palette[i+8])) {
+                g_printerr("invalid color string: %s\n", triplet[1]);
+            } else if (!gdk_color_parse(triplet[2], &palette[i+16])) {
+                g_printerr("invalid color string: %s\n", triplet[2]);
             } else {
                 success = true;
             }
-            g_strfreev(pair);
+            g_strfreev(triplet);
         }
 
-        if (success) {
-            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
+        if (get_config_color(config, "dim", &color)) {
+            vte_terminal_set_color_dim(vte, &color);
         }
 
         if (get_config_color(config, "foreground", &color)) {
@@ -436,6 +438,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         if (get_config_color(config, "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
+        }
+
+        if (success) {
+            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
         }
 
         if (get_config_color(config, "cursor", &color)) {
