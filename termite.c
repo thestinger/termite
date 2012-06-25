@@ -428,6 +428,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             g_strfreev(triplet);
         }
 
+        if (success) {
+            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
+        }
+
         if (get_config_color(config, "dim", &color)) {
             vte_terminal_set_color_dim(vte, &color);
         }
@@ -438,10 +442,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
         if (get_config_color(config, "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
-        }
-
-        if (success) {
-            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
         }
 
         if (get_config_color(config, "cursor", &color)) {
