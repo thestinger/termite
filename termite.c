@@ -423,8 +423,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                         palette[i].green += 0x3fff;
                         palette[i].red += 0x3fff;
                     }
-                }
-                else if (i < 232) {
+                } else if (i < 232) {
                     unsigned j = i - 16;
                     unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
                     unsigned red =   (r == 0) ? 0 : r * 40 + 55;
