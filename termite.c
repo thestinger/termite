@@ -400,32 +400,44 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
-        static const long palette_size = 24;
+        static const long palette_size = 255;
         GdkColor color, palette[palette_size];
 
-        static const char * const colors[8] = {"black", "red", "green", "yellow",
-                                               "blue", "magenta", "cyan", "white"};
+        char color_key[] = "color000";
 
         bool success = true;
-        for (unsigned i = 0; success && i < 8; i++) {
-            GError *error = NULL;
-            gsize length;
-            char **triplet = g_key_file_get_string_list(config, "colors", colors[i], &length, &error);
-            success = false;
-            if (error) {
-                g_error_free(error);
-            } else if (length != 3) {
-                g_printerr("%s is not set to a triplet of color strings\n", colors[i]);
-            } else if (!gdk_color_parse(triplet[0], &palette[i])) {
-                g_printerr("invalid color string: %s\n", triplet[0]);
-            } else if (!gdk_color_parse(triplet[1], &palette[i+8])) {
-                g_printerr("invalid color string: %s\n", triplet[1]);
-            } else if (!gdk_color_parse(triplet[2], &palette[i+16])) {
-                g_printerr("invalid color string: %s\n", triplet[2]);
+        for (unsigned i = 0; success && i < palette_size; i++) {
+            snprintf(color_key, sizeof color_key, "color%u", i);
+            if (get_config_string(config, "colors", color_key, &cfgstr)) {
+                if (!gdk_color_parse(cfgstr, &palette[i])) {
+                    g_printerr("invalid color string: %s\n", cfgstr);
+                    success = false;
+                }
             } else {
-                success = true;
+                if (i < 16) {
+                    palette[i].blue = (i & 4) ? 0xc000 : 0;
+                    palette[i].green = (i & 2) ? 0xc000 : 0;
+                    palette[i].red = (i & 1) ? 0xc000 : 0;
+                    if (i > 7) {
+                        palette[i].blue += 0x3fff;
+                        palette[i].green += 0x3fff;
+                        palette[i].red += 0x3fff;
+                    }
+                }
+                else if (i < 232) {
+                    unsigned j = i - 16;
+                    unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
+                    unsigned red =   (r == 0) ? 0 : r * 40 + 55;
+                    unsigned green = (g == 0) ? 0 : g * 40 + 55;
+                    unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
+                    palette[i].red   = red | red << 8  ;
+                    palette[i].green = green | green << 8;
+                    palette[i].blue  = blue | blue << 8;
+                } else if (i < 256) {
+                    unsigned shade = 8 + (i - 232) * 10;
+                    palette[i].red = palette[i].green = palette[i].blue = shade | shade << 8;
+                }
             }
-            g_strfreev(triplet);
         }
 
         if (success) {
