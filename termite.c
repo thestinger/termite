@@ -304,7 +304,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                         gboolean *dynamic_title, gboolean *urgent_on_bell,
                         gboolean *clickable_url, const char **term) {
 
-    static const char *filename = "termite.cfg";
+    static const char * const filename = "termite.cfg";
     const char *dir = g_get_user_config_dir();
     char *path = g_build_filename(dir, filename, NULL);
     GKeyFile *config = g_key_file_new();
