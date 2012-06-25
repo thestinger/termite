@@ -432,12 +432,16 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
         }
 
-        if (get_config_color(config, "dim", &color)) {
-            vte_terminal_set_color_dim(vte, &color);
-        }
-
         if (get_config_color(config, "foreground", &color)) {
             vte_terminal_set_color_foreground(vte, &color);
+        }
+
+        if (get_config_color(config, "foreground_bold", &color)) {
+            vte_terminal_set_color_bold(vte, &color);
+        }
+
+        if (get_config_color(config, "foreground_dim", &color)) {
+            vte_terminal_set_color_dim(vte, &color);
         }
 
         if (get_config_color(config, "background", &color)) {
