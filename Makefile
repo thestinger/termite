@@ -2,6 +2,7 @@ VERSION = $(shell git describe --tags)
 PREFIX = /usr/local
 GTK = gtk+-3.0
 VTE = vte-2.90
+TERMINFO = ${PREFIX}/share/terminfo
 
 CFLAGS := -std=c99 -O3 \
 	  -Wall -Wextra -pedantic \
@@ -34,6 +35,7 @@ install: termite
 	mkdir -p ${DESTDIR}${PREFIX}/bin
 	cp -f termite ${DESTDIR}${PREFIX}/bin
 	chmod 755 ${DESTDIR}${PREFIX}/bin/termite
+	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/termite

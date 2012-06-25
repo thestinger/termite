@@ -454,7 +454,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 
 int main(int argc, char **argv) {
     GError *error = NULL;
-    const char *term = "vte-256color";
+    const char *term = "termite";
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     gboolean version = FALSE;
 
