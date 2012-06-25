@@ -10,7 +10,7 @@
 # define __attribute__(x)
 #endif
 
-static const char *url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
+static const char * const url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
 typedef enum overlay_mode {
     OVERLAY_HIDDEN = 0,
