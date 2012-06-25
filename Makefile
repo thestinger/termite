@@ -32,7 +32,7 @@ termite: termite.c
 	${CC} ${CFLAGS} -o $@ $< ${LDFLAGS}
 
 install: termite
-	mkdir -p ${DESTDIR}${PREFIX}/bin
+	mkdir -p ${DESTDIR}${PREFIX}/bin ${DESTDIR}${TERMINFO}
 	cp -f termite ${DESTDIR}${PREFIX}/bin
 	chmod 755 ${DESTDIR}${PREFIX}/bin/termite
 	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
