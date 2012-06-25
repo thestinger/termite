@@ -400,7 +400,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
-        GdkColor color, palette[16];
+        static const long palette_size = 16;
+        GdkColor color, palette[palette_size];
 
         static const char *colors[8] = {"black", "red", "green", "yellow",
                                         "blue", "magenta", "cyan", "white"};
@@ -426,7 +427,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         }
 
         if (success) {
-            vte_terminal_set_colors(vte, NULL, NULL, palette, 16);
+            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
         }
 
         if (get_config_color(config, "foreground", &color)) {
