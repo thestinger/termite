@@ -1,3 +1,4 @@
+# vim: noet:ts=8:sw=8:sts=0
 termite|VTE-based terminal,
 	am,
 	bce,
@@ -182,3 +183,7 @@ termite|VTE-based terminal,
 	u8=\E[?1;2c,
 	u9=\E[c,
 	vpa=\E[%i%p1%dd,
+	hs,
+	tsl=\E]2;,
+	fsl=^G,
+	dsl=\E]2;\007,
