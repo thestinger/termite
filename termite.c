@@ -419,9 +419,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                     palette[i].green = (i & 2) ? 0xc000 : 0;
                     palette[i].red = (i & 1) ? 0xc000 : 0;
                     if (i > 7) {
-                        palette[i].blue += 0x3fff;
-                        palette[i].green += 0x3fff;
-                        palette[i].red += 0x3fff;
+                        palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
+                        palette[i].green = (guint16)(palette[i].green + 0x3fff);
+                        palette[i].red = (guint16)(palette[i].red + 0x3fff);
                     }
                 } else if (i < 232) {
                     unsigned j = i - 16;
@@ -429,12 +429,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                     unsigned red =   (r == 0) ? 0 : r * 40 + 55;
                     unsigned green = (g == 0) ? 0 : g * 40 + 55;
                     unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
-                    palette[i].red   = red | red << 8  ;
-                    palette[i].green = green | green << 8;
-                    palette[i].blue  = blue | blue << 8;
+                    palette[i].red   = (guint16)(red | red << 8);
+                    palette[i].green = (guint16)(green | green << 8);
+                    palette[i].blue  = (guint16)(blue | blue << 8);
                 } else if (i < 256) {
                     unsigned shade = 8 + (i - 232) * 10;
-                    palette[i].red = palette[i].green = palette[i].blue = shade | shade << 8;
+                    palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
                 }
             }
         }
