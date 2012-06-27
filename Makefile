@@ -33,8 +33,7 @@ termite: termite.c
 
 install: termite
 	mkdir -p ${DESTDIR}${PREFIX}/bin ${DESTDIR}${TERMINFO}
-	cp -f termite ${DESTDIR}${PREFIX}/bin
-	chmod 755 ${DESTDIR}${PREFIX}/bin/termite
+	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
 	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
 	install -Dm644 termite.vim ${DESTDIR}${PREFIX}/share/vim/vimfiles/plugin/termite.vim
 
