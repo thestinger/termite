@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
@@ -543,18 +544,6 @@ int main(int argc, char **argv) {
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
 
-    GPid ppid;
-
-    if (g_spawn_async(NULL, command_argv, NULL,
-                      (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
-                      (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
-                      &ppid, &error)) {
-        vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
-    } else {
-        g_printerr("The new terminal's command failed to run: %s\n", error->message);
-        return 1;
-    }
-
     GtkWidget *alignment = gtk_alignment_new(0, 0, 1, 1);
     gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 5, 5, 5, 5);
     gtk_overlay_add_overlay(GTK_OVERLAY(overlay), alignment);
@@ -609,6 +598,31 @@ int main(int argc, char **argv) {
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
     gtk_widget_hide(alignment);
+
+    GdkWindow *gdk_window = gtk_widget_get_window(window);
+    if (!gdk_window) {
+        g_printerr("no window");
+        return 1;
+    }
+    char *xid_s = g_strdup_printf("%lu", GDK_WINDOW_XID(gdk_window));
+    char **env = g_get_environ();
+    env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
+    env = g_environ_setenv(env, "TERM", term, TRUE);
+    g_free(xid_s);
+
+    GPid ppid;
+    if (g_spawn_async(NULL, command_argv, env,
+                      (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
+                      (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
+                      &ppid, &error)) {
+        vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
+    } else {
+        g_printerr("The new terminal's command failed to run: %s\n", error->message);
+        return 1;
+    }
+
+    g_strfreev(env);
+
     gtk_main();
     return vte_terminal_get_child_exit_status(VTE_TERMINAL(vte));
 }
