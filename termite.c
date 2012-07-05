@@ -1,7 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include <gdk/gdkx.h>
@@ -75,25 +74,12 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
-static void remove_selection(AtkText *text) {
-    int n_selections = atk_text_get_n_selections(text);
-
-    if (n_selections) {
-        if (n_selections == 1) {
-            atk_text_remove_selection(text, 0);
-        } else {
-            g_printerr("more than one selection!");
-            exit(EXIT_FAILURE);
-        }
-    }
-}
-
 static void update_selection(VteTerminal *vte, select_info *select) {
     if (select->mode == SELECT_ON) {
         return; // not in visual mode
     }
 
-    remove_selection(select->text);
+    vte_terminal_select_none(vte);
 
     int offset = atk_text_get_caret_offset(select->text);
 
@@ -116,10 +102,10 @@ static void end_selection(VteTerminal *vte, select_info *select) {
     select->mode = SELECT_OFF;
 }
 
-static void toggle_visual(select_info *select) {
+static void toggle_visual(VteTerminal *vte, select_info *select) {
     if (select->mode == SELECT_VISUAL) {
         select->mode = SELECT_ON;
-        remove_selection(select->text);
+        vte_terminal_select_none(vte);
     } else {
         select->mode = SELECT_VISUAL;
         select->begin = atk_text_get_caret_offset(select->text);
@@ -152,7 +138,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 update_selection(vte, &info->select);
                 break;
             case GDK_KEY_v:
-                toggle_visual(&info->select);
+                toggle_visual(vte, &info->select);
                 break;
             case GDK_KEY_Escape:
                 end_selection(vte, &info->select);
