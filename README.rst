@@ -34,6 +34,7 @@ TEXT SELECTION MODE
 -------------------
 
 * ``escape``: deactivate selection mode
+* ``v``: visual mode
 
 TODO
 ====

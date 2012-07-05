@@ -22,9 +22,15 @@ typedef enum overlay_mode {
     OVERLAY_COMPLETION
 } overlay_mode;
 
+typedef enum select_mode {
+    SELECT_OFF = 0,
+    SELECT_ON,
+    SELECT_VISUAL
+} select_mode;
+
 typedef struct select_info {
     AtkText *text;
-    bool mode;
+    select_mode mode;
     int begin;
     int end;
 } select_info;
@@ -70,17 +76,25 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
-static void update_selection(VteTerminal *vte, select_info *select) {
-    int n_selections = atk_text_get_n_selections(select->text);
+static void remove_selection(AtkText *text) {
+    int n_selections = atk_text_get_n_selections(text);
 
     if (n_selections) {
         if (n_selections == 1) {
-            atk_text_remove_selection(select->text, 0);
+            atk_text_remove_selection(text, 0);
         } else {
             g_printerr("more than one selection!");
             exit(EXIT_FAILURE);
         }
     }
+}
+
+static void update_selection(VteTerminal *vte, select_info *select) {
+    if (select->mode == SELECT_ON) {
+        return; // not in visual mode
+    }
+
+    remove_selection(select->text);
 
     atk_text_add_selection(select->text,
                            MIN(select->begin, select->end),
@@ -90,8 +104,17 @@ static void update_selection(VteTerminal *vte, select_info *select) {
 }
 
 static void start_selection(select_info *select) {
-    select->mode = true;
+    select->mode = SELECT_ON;
     select->begin = select->end = atk_text_get_caret_offset(select->text);
+}
+
+static void toggle_visual(select_info *select) {
+    if (select->mode == SELECT_VISUAL) {
+        select->mode = SELECT_ON;
+        remove_selection(select->text);
+    } else {
+        select->mode = SELECT_VISUAL;
+    }
 }
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
@@ -107,8 +130,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 info->select.end++;
                 update_selection(vte, &info->select);
                 break;
+            case GDK_KEY_v:
+                toggle_visual(&info->select);
+                break;
             case GDK_KEY_Escape:
-                info->select.mode = false;
+                info->select.mode = SELECT_OFF;
                 break;
         }
         return TRUE;
@@ -612,7 +638,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), false, 0, 0};
+    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), SELECT_OFF, 0, 0};
     search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
