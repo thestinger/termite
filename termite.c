@@ -105,7 +105,7 @@ static void update_selection(VteTerminal *vte, select_info *select) {
 
 static void start_selection(select_info *select) {
     select->mode = SELECT_ON;
-    select->begin = select->end = atk_text_get_caret_offset(select->text);
+    select->end = atk_text_get_caret_offset(select->text);
 }
 
 static void toggle_visual(select_info *select) {
