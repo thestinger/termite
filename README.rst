@@ -26,8 +26,8 @@ KEYBINDINGS
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
-With the scrollback completion/widget open, up/down cycle through completions,
-escape closes the widget and enter accepts the input.
+With the scrollback search/completion widget open, up/down cycle through
+completions, escape closes the widget and enter accepts the input.
 
 TODO
 ====
