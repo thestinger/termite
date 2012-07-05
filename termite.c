@@ -114,6 +114,7 @@ static void toggle_visual(select_info *select) {
         remove_selection(select->text);
     } else {
         select->mode = SELECT_VISUAL;
+        select->begin = select->end;
     }
 }
 
