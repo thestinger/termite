@@ -93,12 +93,12 @@ static void update_selection(VteTerminal *vte, select_info *select) {
 #define CSI "\x1b["
 
 static void start_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_feed(vte, CSI "s", sizeof CSI "s"); // save cursor position
+    vte_terminal_feed(vte, CSI "s", strlen(CSI "s")); // save cursor position
     select->mode = SELECT_ON;
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_feed(vte, CSI "u", sizeof CSI "u"); // restore cursor position
+    vte_terminal_feed(vte, CSI "u", strlen(CSI "u")); // restore cursor position
     select->mode = SELECT_OFF;
 }
 
