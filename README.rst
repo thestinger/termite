@@ -22,12 +22,18 @@ KEYBINDINGS
 * ``ctrl-shift-n``: jump to next search match
 * ``ctrl-shift-p``: jump to previous search match
 * ``ctrl-tab``: start scrollback completion
+* ``ctrl-shift-space``: start selection mode
 
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
 With the scrollback search/completion widget open, up/down cycle through
 completions, escape closes the widget and enter accepts the input.
+
+TEXT SELECTION MODE
+-------------------
+
+* ``escape``: deactivate selection mode
 
 TODO
 ====

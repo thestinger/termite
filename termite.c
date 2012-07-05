@@ -1,11 +1,13 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+#include <vte/vteaccess.h>
 
 #ifndef __GNUC__
 # define __attribute__(x)
@@ -20,11 +22,19 @@ typedef enum overlay_mode {
     OVERLAY_COMPLETION
 } overlay_mode;
 
+typedef struct select_info {
+    AtkText *text;
+    bool mode;
+    int begin;
+    int end;
+} select_info;
+
 typedef struct search_panel_info {
     GtkWidget *vte;
     GtkWidget *entry;
     GtkWidget *panel;
     enum overlay_mode mode;
+    select_info select;
 } search_panel_info;
 
 static char *browser_cmd[3] = {NULL};
@@ -60,11 +70,54 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
+static void update_selection(VteTerminal *vte, select_info *select) {
+    int n_selections = atk_text_get_n_selections(select->text);
+
+    if (n_selections) {
+        if (n_selections == 1) {
+            atk_text_remove_selection(select->text, 0);
+        } else {
+            g_printerr("more than one selection!");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    atk_text_add_selection(select->text,
+                           MIN(select->begin, select->end),
+                           MAX(select->begin, select->end));
+
+    vte_terminal_copy_primary(vte);
+}
+
+static void start_selection(select_info *select) {
+    select->mode = true;
+    select->begin = select->end = atk_text_get_caret_offset(select->text);
+}
+
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
+    if (info->select.mode) {
+        switch (event->keyval) {
+            case GDK_KEY_h:
+                info->select.end--;
+                update_selection(vte, &info->select);
+                break;
+            case GDK_KEY_l:
+                info->select.end++;
+                update_selection(vte, &info->select);
+                break;
+            case GDK_KEY_Escape:
+                info->select.mode = false;
+                break;
+        }
+        return TRUE;
+    }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_space:
+                start_selection(&info->select);
+                return TRUE;
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
                 return TRUE;
@@ -559,7 +612,8 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN};
+    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), false, 0, 0};
+    search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
