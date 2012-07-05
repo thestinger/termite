@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +33,6 @@ typedef struct select_info {
     AtkText *text;
     select_mode mode;
     int begin;
-    int end;
 } select_info;
 
 typedef struct search_panel_info {
@@ -96,16 +96,25 @@ static void update_selection(VteTerminal *vte, select_info *select) {
 
     remove_selection(select->text);
 
+    int offset = atk_text_get_caret_offset(select->text);
+
     atk_text_add_selection(select->text,
-                           MIN(select->begin, select->end),
-                           MAX(select->begin, select->end));
+                           MIN(select->begin, offset),
+                           MAX(select->begin, offset));
 
     vte_terminal_copy_primary(vte);
 }
 
-static void start_selection(select_info *select) {
+#define CSI "\x1b["
+
+static void start_selection(VteTerminal *vte, select_info *select) {
+    vte_terminal_feed(vte, CSI "s", sizeof CSI "s"); // save cursor position
     select->mode = SELECT_ON;
-    select->end = atk_text_get_caret_offset(select->text);
+}
+
+static void end_selection(VteTerminal *vte, select_info *select) {
+    vte_terminal_feed(vte, CSI "u", sizeof CSI "u"); // restore cursor position
+    select->mode = SELECT_OFF;
 }
 
 static void toggle_visual(select_info *select) {
@@ -114,7 +123,7 @@ static void toggle_visual(select_info *select) {
         remove_selection(select->text);
     } else {
         select->mode = SELECT_VISUAL;
-        select->begin = select->end;
+        select->begin = atk_text_get_caret_offset(select->text);
     }
 }
 
@@ -125,19 +134,29 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
-                info->select.end--;
+                vte_terminal_feed(vte, CSI "1D", strlen(CSI "1D"));
+                update_selection(vte, &info->select);
+                break;
+            case GDK_KEY_Down:
+            case GDK_KEY_j:
+                vte_terminal_feed(vte, CSI "1B", strlen(CSI "1B"));
+                update_selection(vte, &info->select);
+                break;
+            case GDK_KEY_Up:
+            case GDK_KEY_k:
+                vte_terminal_feed(vte, CSI "1A", strlen(CSI "1A"));
                 update_selection(vte, &info->select);
                 break;
             case GDK_KEY_Right:
             case GDK_KEY_l:
-                info->select.end++;
+                vte_terminal_feed(vte, CSI "1C", strlen(CSI "1C"));
                 update_selection(vte, &info->select);
                 break;
             case GDK_KEY_v:
                 toggle_visual(&info->select);
                 break;
             case GDK_KEY_Escape:
-                info->select.mode = SELECT_OFF;
+                end_selection(vte, &info->select);
                 break;
         }
         return TRUE;
@@ -145,7 +164,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_space:
-                start_selection(&info->select);
+                start_selection(vte, &info->select);
                 return TRUE;
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
@@ -641,7 +660,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), SELECT_OFF, 0, 0};
+    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), SELECT_OFF, 0};
     search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
