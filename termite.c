@@ -123,10 +123,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     if (info->select.mode) {
         switch (event->keyval) {
+            case GDK_KEY_Left:
             case GDK_KEY_h:
                 info->select.end--;
                 update_selection(vte, &info->select);
                 break;
+            case GDK_KEY_Right:
             case GDK_KEY_l:
                 info->select.end++;
                 update_selection(vte, &info->select);
