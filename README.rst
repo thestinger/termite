@@ -32,6 +32,7 @@ completions, escape closes the widget and enter accepts the input.
 TODO
 ====
 
+* keyboard text selection
 * tab and shift-tab bindings for completion
 * better url matching regex
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
