@@ -351,6 +351,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
         if (get_config_boolean(config, "options", "clickable_url", &cfgbool)) {
             *clickable_url = cfgbool;
         }
+        if (get_config_boolean(config, "options", "search_wrap", &cfgbool)) {
+            vte_terminal_search_set_wrap_around(vte, cfgbool);
+        }
 
         g_free(browser_cmd[0]);
         if (get_config_string(config, "options", "browser", &cfgstr)) {
