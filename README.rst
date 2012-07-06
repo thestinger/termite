@@ -40,11 +40,18 @@ TEXT SELECTION MODE
 TODO
 ====
 
-* keyboard text selection
 * tab and shift-tab bindings for completion
 * better url matching regex
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback search needs to be improved upstream [1]_
 * expose keybindings in ``termite.cfg``
+
+TEXT SELECTION
+--------------
+
+* _vte_terminal_select_text would be perfect for extending this, but it isn't
+  exposed in the API
+* does not currently work in ncurses applications
+* needs to be extended to more than just the basic ``h``/``j``/``k``/``l``
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
