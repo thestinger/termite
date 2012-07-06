@@ -12,6 +12,8 @@
 # define __attribute__(x)
 #endif
 
+#define CSI "\x1b["
+
 static const char * const url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
 typedef enum overlay_mode {
@@ -89,8 +91,6 @@ static void update_selection(VteTerminal *vte, select_info *select) {
 
     vte_terminal_copy_primary(vte);
 }
-
-#define CSI "\x1b["
 
 static void start_selection(VteTerminal *vte, select_info *select) {
     vte_terminal_feed(vte, CSI "s", strlen(CSI "s")); // save cursor position
