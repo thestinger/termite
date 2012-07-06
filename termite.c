@@ -76,8 +76,8 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
-static void update_selection(VteTerminal *vte, select_info *select) {
-    if (select->mode == SELECT_ON) {
+static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
+    if (select->mode != SELECT_VISUAL) {
         return; // not in visual mode
     }
 
@@ -120,22 +120,18 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_Left:
             case GDK_KEY_h:
                 vte_terminal_feed(vte, CSI "1D", strlen(CSI "1D"));
-                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_Down:
             case GDK_KEY_j:
                 vte_terminal_feed(vte, CSI "1B", strlen(CSI "1B"));
-                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_Up:
             case GDK_KEY_k:
                 vte_terminal_feed(vte, CSI "1A", strlen(CSI "1A"));
-                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_Right:
             case GDK_KEY_l:
                 vte_terminal_feed(vte, CSI "1C", strlen(CSI "1C"));
-                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select);
@@ -653,6 +649,7 @@ int main(int argc, char **argv) {
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
+    g_signal_connect(vte,     "cursor-moved",       G_CALLBACK(cursor_moved_cb), &info.select);
 
     if (clickable_url) {
         int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
