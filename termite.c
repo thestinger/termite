@@ -6,7 +6,6 @@
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
-#include <vte/vteaccess.h>
 
 #ifndef __GNUC__
 # define __attribute__(x)
@@ -30,9 +29,9 @@ typedef enum select_mode {
 } select_mode;
 
 typedef struct select_info {
-    AtkText *text;
     select_mode mode;
-    int begin;
+    long begin_col;
+    long begin_row;
 } select_info;
 
 typedef struct search_panel_info {
@@ -83,11 +82,10 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
 
     vte_terminal_select_none(vte);
 
-    int offset = atk_text_get_caret_offset(select->text);
+    long end_row, end_col;
+    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
 
-    atk_text_add_selection(select->text,
-                           MIN(select->begin, offset),
-                           MAX(select->begin, offset));
+    vte_terminal_select_text(vte, select->begin_col, select->begin_row, end_col, end_row, 0, 0);
 
     vte_terminal_copy_primary(vte);
 }
@@ -108,7 +106,7 @@ static void toggle_visual(VteTerminal *vte, select_info *select) {
         vte_terminal_select_none(vte);
     } else {
         select->mode = SELECT_VISUAL;
-        select->begin = atk_text_get_caret_offset(select->text);
+        vte_terminal_get_cursor_position(vte, &select->begin_col, &select->begin_row);
     }
 }
 
@@ -641,7 +639,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {ATK_TEXT(vte_terminal_accessible_new(VTE_TERMINAL(vte))), SELECT_OFF, 0};
+    select_info select = {SELECT_OFF, 0, 0};
     search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);

@@ -1,0 +1,57 @@
+diff -aur vte-0.32.2-old/src/vteaccess.c vte-0.32.2/src/vteaccess.c
+--- vte-0.32.2-old/src/vteaccess.c	2012-07-06 19:26:00.615978048 -0400
++++ vte-0.32.2/src/vteaccess.c	2012-07-06 19:26:52.543297289 -0400
+@@ -1666,7 +1666,7 @@
+ 				 VTE_TERMINAL_ACCESSIBLE_PRIVATE_DATA);
+ 	xy_from_offset (priv, start_offset, &start_x, &start_y);
+ 	xy_from_offset (priv, end_offset, &end_x, &end_y);
+-	_vte_terminal_select_text (terminal, start_x, start_y, end_x, end_y, start_offset, end_offset);
++	vte_terminal_select_text (terminal, start_x, start_y, end_x, end_y, start_offset, end_offset);
+ 	return TRUE;
+ }
+ 
+diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
+--- vte-0.32.2-old/src/vte.c	2012-07-06 19:26:00.612644674 -0400
++++ vte-0.32.2/src/vte.c	2012-07-06 19:26:52.479963159 -0400
+@@ -14568,7 +14568,7 @@
+ }
+ 
+ void
+-_vte_terminal_select_text(VteTerminal *terminal,
++vte_terminal_select_text(VteTerminal *terminal,
+ 			  long start_col, long start_row,
+ 			  long end_col, long end_row,
+ 			  int start_offset, int end_offset)
+@@ -14603,7 +14603,7 @@
+ _vte_terminal_select_empty_at(VteTerminal *terminal,
+ 			      long col, long row)
+ {
+-	_vte_terminal_select_text(terminal, col, row, col - 1, row, 0, 0);
++	vte_terminal_select_text(terminal, col, row, col - 1, row, 0, 0);
+ }
+ 
+ static void
+@@ -15293,7 +15293,7 @@
+ 	g_free (row_text);
+ 	g_match_info_free (match_info);
+ 
+-	_vte_terminal_select_text (terminal, start_col, start_row, end_col, end_row, 0, 0);
++	vte_terminal_select_text (terminal, start_col, start_row, end_col, end_row, 0, 0);
+ 	/* Quite possibly the math here should not access adjustment directly... */
+ 	value = gtk_adjustment_get_value(terminal->adjustment);
+ 	page_size = gtk_adjustment_get_page_size(terminal->adjustment);
+diff -aur vte-0.32.2-old/src/vte.h vte-0.32.2/src/vte.h
+--- vte-0.32.2-old/src/vte.h	2012-07-06 19:26:00.612644674 -0400
++++ vte-0.32.2/src/vte.h	2012-07-06 19:28:06.264224798 -0400
+@@ -485,6 +485,11 @@
+ 
+ char *vte_get_user_shell (void);
+ 
++void vte_terminal_select_text(VteTerminal *terminal,
++                              long start_col, long start_row,
++                              long end_col, long end_row,
++                              int start_offset, int end_offset);
++
+ /* Accessors for bindings. */
+ #if !GTK_CHECK_VERSION (2, 91, 2)
+ GtkAdjustment *vte_terminal_get_adjustment(VteTerminal *terminal);

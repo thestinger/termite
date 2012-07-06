@@ -6,7 +6,8 @@ unset) and then falls back to ``$XDG_CONFIG_DIRS``.
 DEPENDENCIES
 ============
 
-A vte version >= 0.30.
+A vte version >= 0.30. A patch is currently required to expose the
+``vte-terminal-select-text`` function which is used for keyboard selection.
 
 KEYBINDINGS
 ===========
@@ -46,12 +47,7 @@ TODO
 * scrollback search needs to be improved upstream [1]_
 * expose keybindings in ``termite.cfg``
 
-TEXT SELECTION
---------------
-
-* _vte_terminal_select_text would be perfect for extending this, but it isn't
-  exposed in the API
-* does not currently work in ncurses applications
-* needs to be extended to more than just the basic ``h``/``j``/``k``/``l``
+* text selection needs to be extended to more than just the basic
+  ``h``/``j``/``k``/``l``
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
