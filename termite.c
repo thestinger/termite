@@ -26,7 +26,8 @@ typedef enum select_mode {
     SELECT_OFF = 0,
     SELECT_ON,
     SELECT_VISUAL,
-    SELECT_VISUAL_LINE
+    SELECT_VISUAL_LINE,
+    SELECT_VISUAL_BLOCK
 } select_mode;
 
 typedef struct select_info {
@@ -91,6 +92,8 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     long begin = select->begin_row * n_columns + select->begin_col;
     long end = end_row * n_columns + end_col;
 
+    vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
+
     if (select->mode == SELECT_VISUAL) {
         if (begin < end) {
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
@@ -106,6 +109,14 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
         } else {
             vte_terminal_select_text(vte, 0, end_row,
                                      n_columns - 1, select->begin_row, 0, 0);
+        }
+    } else if (select->mode == SELECT_VISUAL_BLOCK) {
+        if (begin < end) {
+            vte_terminal_select_text(vte, MIN(select->begin_col, end_col), select->begin_row,
+                                     MAX(select->begin_col, end_col), end_row, 0, 0);
+        } else {
+            vte_terminal_select_text(vte, MIN(select->begin_col, end_col), end_row,
+                                     MAX(select->begin_col, end_col), select->begin_row, 0, 0);
         }
     }
 
@@ -136,6 +147,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     if (info->select.mode) {
+        if (modifiers == GDK_CONTROL_MASK) {
+            if (gdk_keyval_to_lower(event->keyval) == GDK_KEY_v) {
+                toggle_visual(vte, &info->select, SELECT_VISUAL_BLOCK);
+            }
+            return TRUE;
+        }
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
