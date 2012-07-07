@@ -25,7 +25,8 @@ typedef enum overlay_mode {
 typedef enum select_mode {
     SELECT_OFF = 0,
     SELECT_ON,
-    SELECT_VISUAL
+    SELECT_VISUAL,
+    SELECT_VISUAL_LINE
 } select_mode;
 
 typedef struct select_info {
@@ -76,7 +77,7 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 }
 
 static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
-    if (select->mode != SELECT_VISUAL) {
+    if (select->mode == SELECT_OFF || select->mode == SELECT_ON) {
         return; // not in visual mode
     }
 
@@ -90,12 +91,22 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     long begin = select->begin_row * n_columns + select->begin_col;
     long end = end_row * n_columns + end_col;
 
-    if (begin < end) {
-        vte_terminal_select_text(vte, select->begin_col, select->begin_row,
-                                 end_col, end_row, 0, 0);
-    } else {
-        vte_terminal_select_text(vte, end_col, end_row,
-                                 select->begin_col, select->begin_row, 0, 0);
+    if (select->mode == SELECT_VISUAL) {
+        if (begin < end) {
+            vte_terminal_select_text(vte, select->begin_col, select->begin_row,
+                                     end_col, end_row, 0, 0);
+        } else {
+            vte_terminal_select_text(vte, end_col, end_row,
+                                     select->begin_col, select->begin_row, 0, 0);
+        }
+    } else if (select->mode == SELECT_VISUAL_LINE) {
+        if (begin < end) {
+            vte_terminal_select_text(vte, 0, select->begin_row,
+                                     n_columns - 1, end_row, 0, 0);
+        } else {
+            vte_terminal_select_text(vte, 0, end_row,
+                                     n_columns - 1, select->begin_row, 0, 0);
+        }
     }
 
     vte_terminal_copy_primary(vte);
@@ -111,12 +122,12 @@ static void end_selection(VteTerminal *vte, select_info *select) {
     select->mode = SELECT_OFF;
 }
 
-static void toggle_visual(VteTerminal *vte, select_info *select) {
-    if (select->mode == SELECT_VISUAL) {
+static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mode) {
+    if (select->mode == mode) {
         select->mode = SELECT_ON;
         vte_terminal_select_none(vte);
     } else {
-        select->mode = SELECT_VISUAL;
+        select->mode = mode;
         vte_terminal_get_cursor_position(vte, &select->begin_col, &select->begin_row);
     }
 }
@@ -143,7 +154,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 vte_terminal_feed(vte, CSI "1C", strlen(CSI "1C"));
                 break;
             case GDK_KEY_v:
-                toggle_visual(vte, &info->select);
+                toggle_visual(vte, &info->select, SELECT_VISUAL);
+                break;
+            case GDK_KEY_V:
+                toggle_visual(vte, &info->select, SELECT_VISUAL_LINE);
                 break;
             case GDK_KEY_Escape:
                 end_selection(vte, &info->select);

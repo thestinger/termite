@@ -36,6 +36,7 @@ TEXT SELECTION MODE
 
 * ``escape``: deactivate selection mode
 * ``v``: visual mode
+* ``V``: visual line mode
 * ``h``/``j``/``k``/``l`` or arrow keys: move cursor left/down/up/right
 
 TODO
