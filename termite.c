@@ -85,7 +85,18 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     long end_row, end_col;
     vte_terminal_get_cursor_position(vte, &end_col, &end_row);
 
-    vte_terminal_select_text(vte, select->begin_col, select->begin_row, end_col, end_row, 0, 0);
+    long n_columns = vte_terminal_get_column_count(vte);
+
+    long begin = select->begin_row * n_columns + select->begin_col;
+    long end = end_row * n_columns + end_col;
+
+    if (begin < end) {
+        vte_terminal_select_text(vte, select->begin_col, select->begin_row,
+                                 end_col, end_row, 0, 0);
+    } else {
+        vte_terminal_select_text(vte, end_col, end_row,
+                                 select->begin_col, select->begin_row, 0, 0);
+    }
 
     vte_terminal_copy_primary(vte);
 }
