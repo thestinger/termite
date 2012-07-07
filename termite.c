@@ -129,6 +129,7 @@ static void start_selection(VteTerminal *vte, select_info *select) {
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
+    vte_terminal_select_none(vte);
     vte_terminal_feed(vte, CSI "u", strlen(CSI "u")); // restore cursor position
     select->mode = SELECT_OFF;
 }
