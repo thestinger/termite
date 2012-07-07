@@ -7,7 +7,7 @@ DEPENDENCIES
 ============
 
 A vte version >= 0.30. A patch is currently required to expose the
-``vte-terminal-select-text`` function which is used for keyboard selection.
+functions needed for keyboard selection.
 
 KEYBINDINGS
 ===========
