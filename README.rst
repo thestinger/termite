@@ -39,6 +39,8 @@ TEXT SELECTION MODE
 * ``V``: visual line mode
 * ``ctrl-v``: visual block mode
 * ``h``/``j``/``k``/``l`` or arrow keys: move cursor left/down/up/right
+* ``$``: end-of-line
+* ``^``: beginning-of-line
 
 TODO
 ====

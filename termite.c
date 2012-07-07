@@ -154,6 +154,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             }
             return TRUE;
         }
+        char *eol;
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
@@ -170,6 +171,14 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_Right:
             case GDK_KEY_l:
                 vte_terminal_feed(vte, CSI "1C", strlen(CSI "1C"));
+                break;
+            case GDK_KEY_asciicircum:
+                vte_terminal_feed(vte, CSI "0G", strlen(CSI "0G"));
+                break;
+            case GDK_KEY_dollar:
+                eol = g_strdup_printf(CSI "%ldG", vte_terminal_get_column_count(vte));
+                vte_terminal_feed(vte, eol, (long)strlen(eol));
+                g_free(eol);
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select, SELECT_VISUAL);
