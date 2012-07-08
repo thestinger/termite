@@ -83,13 +83,11 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     }
 
     vte_terminal_select_none(vte);
-
-    long end_row, end_col;
-    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
+    vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
 
     long n_columns = vte_terminal_get_column_count(vte);
-
-    vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
+    long end_row, end_col;
+    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
 
     if (select->mode == SELECT_VISUAL) {
         long begin = select->begin_row * n_columns + select->begin_col;
