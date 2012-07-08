@@ -142,6 +142,12 @@ static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mod
     }
 }
 
+static void cursor_move_end_of_line(VteTerminal *vte) {
+    char *eol = g_strdup_printf(CSI "%ldG", vte_terminal_get_column_count(vte));
+    feed_str(vte, eol);
+    g_free(eol);
+}
+
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
@@ -152,7 +158,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             }
             return TRUE;
         }
-        char *eol;
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
@@ -174,9 +179,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 feed_str(vte, CSI "0G");
                 break;
             case GDK_KEY_dollar:
-                eol = g_strdup_printf(CSI "%ldG", vte_terminal_get_column_count(vte));
-                feed_str(vte, eol);
-                g_free(eol);
+                cursor_move_end_of_line(vte);
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select, SELECT_VISUAL);
