@@ -117,14 +117,18 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     vte_terminal_copy_primary(vte);
 }
 
+static void feed_str(VteTerminal *vte, const char *s) {
+    vte_terminal_feed(vte, s, (long)strlen(s));
+}
+
 static void start_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_feed(vte, CSI "s", strlen(CSI "s")); // save cursor position
+    feed_str(vte, CSI "s"); // save cursor position
     select->mode = SELECT_ON;
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
     vte_terminal_select_none(vte);
-    vte_terminal_feed(vte, CSI "u", strlen(CSI "u")); // restore cursor position
+    feed_str(vte, CSI "u"); // restore cursor position
     select->mode = SELECT_OFF;
 }
 
@@ -152,26 +156,26 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
-                vte_terminal_feed(vte, CSI "1D", strlen(CSI "1D"));
+                feed_str(vte, CSI "1D");
                 break;
             case GDK_KEY_Down:
             case GDK_KEY_j:
-                vte_terminal_feed(vte, CSI "1B", strlen(CSI "1B"));
+                feed_str(vte, CSI "1B");
                 break;
             case GDK_KEY_Up:
             case GDK_KEY_k:
-                vte_terminal_feed(vte, CSI "1A", strlen(CSI "1A"));
+                feed_str(vte, CSI "1A");
                 break;
             case GDK_KEY_Right:
             case GDK_KEY_l:
-                vte_terminal_feed(vte, CSI "1C", strlen(CSI "1C"));
+                feed_str(vte, CSI "1C");
                 break;
             case GDK_KEY_asciicircum:
-                vte_terminal_feed(vte, CSI "0G", strlen(CSI "0G"));
+                feed_str(vte, CSI "0G");
                 break;
             case GDK_KEY_dollar:
                 eol = g_strdup_printf(CSI "%ldG", vte_terminal_get_column_count(vte));
-                vte_terminal_feed(vte, eol, (long)strlen(eol));
+                feed_str(vte, eol);
                 g_free(eol);
                 break;
             case GDK_KEY_v:
