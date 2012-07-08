@@ -73,7 +73,7 @@ void launch_browser(char *url) {
 
 /* {{{ CALLBACKS */
 void window_title_cb(VteTerminal *vte, GtkWindow *window) {
-    const char *t = vte_terminal_get_window_title(vte);
+    const char * const t = vte_terminal_get_window_title(vte);
     gtk_window_set_title(window, t ? t : "termite");
 }
 
@@ -85,13 +85,13 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     vte_terminal_select_none(vte);
     vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
 
-    long n_columns = vte_terminal_get_column_count(vte);
+    const long n_columns = vte_terminal_get_column_count(vte);
     long end_row, end_col;
     vte_terminal_get_cursor_position(vte, &end_col, &end_row);
 
     if (select->mode == SELECT_VISUAL) {
-        long begin = select->begin_row * n_columns + select->begin_col;
-        long end = end_row * n_columns + end_col;
+        const long begin = select->begin_row * n_columns + select->begin_col;
+        const long end = end_row * n_columns + end_col;
         if (begin < end) {
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
                                      end_col, end_row, 0, 0);
@@ -265,8 +265,8 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
 gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc) {
     GtkWidget *vte = gtk_bin_get_child(overlay);
 
-    int width  = gtk_widget_get_allocated_width(vte);
-    int height = gtk_widget_get_allocated_height(vte);
+    const int width  = gtk_widget_get_allocated_width(vte);
+    const int height = gtk_widget_get_allocated_height(vte);
 
     GtkRequisition req;
     gtk_widget_get_preferred_size(widget, NULL, &req);
@@ -554,16 +554,16 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                         palette[i].red = (guint16)(palette[i].red + 0x3fff);
                     }
                 } else if (i < 232) {
-                    unsigned j = i - 16;
-                    unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
-                    unsigned red =   (r == 0) ? 0 : r * 40 + 55;
-                    unsigned green = (g == 0) ? 0 : g * 40 + 55;
-                    unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
+                    const unsigned j = i - 16;
+                    const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
+                    const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
+                    const unsigned green = (g == 0) ? 0 : g * 40 + 55;
+                    const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
                     palette[i].red   = (guint16)(red | red << 8);
                     palette[i].green = (guint16)(green | green << 8);
                     palette[i].blue  = (guint16)(blue | blue << 8);
                 } else if (i < 256) {
-                    unsigned shade = 8 + (i - 232) * 10;
+                    const unsigned shade = 8 + (i - 232) * 10;
                     palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
                 }
             }
