@@ -111,13 +111,12 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
                                      n_columns - 1, select->begin_row, 0, 0);
         }
     } else if (select->mode == SELECT_VISUAL_BLOCK) {
-        if (begin < end) {
-            vte_terminal_select_text(vte, MIN(select->begin_col, end_col), select->begin_row,
-                                     MAX(select->begin_col, end_col), end_row, 0, 0);
-        } else {
-            vte_terminal_select_text(vte, MIN(select->begin_col, end_col), end_row,
-                                     MAX(select->begin_col, end_col), select->begin_row, 0, 0);
-        }
+        vte_terminal_select_text(vte,
+                                 MIN(select->begin_col, end_col),
+                                 MIN(select->begin_row, end_row),
+                                 MAX(select->begin_col, end_col),
+                                 MAX(select->begin_row, end_row),
+                                 0, 0);
     }
 
     vte_terminal_copy_primary(vte);
