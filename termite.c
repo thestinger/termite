@@ -88,30 +88,29 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
 
     const long n_columns = vte_terminal_get_column_count(vte);
-    long end_row = select->cursor_row, end_col = select->cursor_col;
 
     if (select->mode == SELECT_VISUAL) {
         const long begin = select->begin_row * n_columns + select->begin_col;
-        const long end = end_row * n_columns + end_col;
+        const long end = select->cursor_row * n_columns + select->cursor_col;
         if (begin < end) {
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
-                                     end_col, end_row, 0, 0);
+                                     select->cursor_col, select->cursor_row, 0, 0);
         } else {
-            vte_terminal_select_text(vte, end_col, end_row,
+            vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
                                      select->begin_col, select->begin_row, 0, 0);
         }
     } else if (select->mode == SELECT_VISUAL_LINE) {
         vte_terminal_select_text(vte, 0,
-                                 MIN(select->begin_row, end_row),
+                                 MIN(select->begin_row, select->cursor_row),
                                  n_columns - 1,
-                                 MAX(select->begin_row, end_row),
+                                 MAX(select->begin_row, select->cursor_row),
                                  0, 0);
     } else if (select->mode == SELECT_VISUAL_BLOCK) {
         vte_terminal_select_text(vte,
-                                 MIN(select->begin_col, end_col),
-                                 MIN(select->begin_row, end_row),
-                                 MAX(select->begin_col, end_col),
-                                 MAX(select->begin_row, end_row),
+                                 MIN(select->begin_col, select->cursor_col),
+                                 MIN(select->begin_row, select->cursor_row),
+                                 MAX(select->begin_col, select->cursor_col),
+                                 MAX(select->begin_row, select->cursor_row),
                                  0, 0);
     }
 
