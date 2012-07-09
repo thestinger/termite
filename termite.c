@@ -80,7 +80,7 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 }
 
 static void update_selection(VteTerminal *vte, select_info *select) {
-    if (select->mode == SELECT_OFF || select->mode == SELECT_ON) {
+    if (select->mode == SELECT_ON) {
         return; // not in visual mode
     }
 
