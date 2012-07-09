@@ -41,6 +41,8 @@ TEXT SELECTION MODE
 * ``h``/``j``/``k``/``l`` or arrow keys: move cursor left/down/up/right
 * ``$``: end-of-line
 * ``^``: beginning-of-line
+* ``g``: jump to start of first row
+* ``G``: jump to start of last row
 
 TODO
 ====

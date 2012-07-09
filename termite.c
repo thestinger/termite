@@ -159,21 +159,32 @@ static long last_row(VteTerminal *vte) {
     return (long)scroll_upper - 1;
 }
 
-static void move(VteTerminal *vte, select_info *select, long col, long row) {
+static void update_scroll(VteTerminal *vte, const select_info *select) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     double scroll_row = gtk_adjustment_get_value(adjust);
     long n_rows = vte_terminal_get_row_count(vte);
-
-    const long end_col = vte_terminal_get_column_count(vte) - 1;
-
-    select->cursor_col = CLAMP(select->cursor_col + col, 0, end_col);
-    select->cursor_row = CLAMP(select->cursor_row + row, first_row(vte), last_row(vte));
 
     if (select->cursor_row < scroll_row) {
         gtk_adjustment_set_value(adjust, (double)select->cursor_row);
     } else if (select->cursor_row - n_rows >= (long)scroll_row) {
         gtk_adjustment_set_value(adjust, (double)(select->cursor_row - n_rows + 1));
     }
+}
+
+static void move(VteTerminal *vte, select_info *select, long col, long row) {
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    select->cursor_col = CLAMP(select->cursor_col + col, 0, end_col);
+    select->cursor_row = CLAMP(select->cursor_row + row, first_row(vte), last_row(vte));
+
+    update_scroll(vte, select);
+    update_selection(vte, select);
+}
+
+static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
+    select->cursor_col = 0;
+    select->cursor_row = row;
+    update_scroll(vte, select);
     update_selection(vte, select);
 }
 
@@ -211,6 +222,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_dollar:
                 info->select.cursor_col = vte_terminal_get_column_count(vte) - 1;
                 update_selection(vte, &info->select);
+                break;
+            case GDK_KEY_g:
+                move_to_row_start(vte, &info->select, first_row(vte));
+                break;
+            case GDK_KEY_G:
+                move_to_row_start(vte, &info->select, last_row(vte));
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select, SELECT_VISUAL);
