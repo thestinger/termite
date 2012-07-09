@@ -34,6 +34,8 @@ typedef struct select_info {
     select_mode mode;
     long begin_col;
     long begin_row;
+    long cursor_col;
+    long cursor_row;
 } select_info;
 
 typedef struct search_panel_info {
@@ -77,7 +79,7 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
-static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
+static void update_selection(VteTerminal *vte, select_info *select) {
     if (select->mode == SELECT_OFF || select->mode == SELECT_ON) {
         return; // not in visual mode
     }
@@ -86,8 +88,7 @@ static void cursor_moved_cb(VteTerminal *vte, select_info *select) {
     vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
 
     const long n_columns = vte_terminal_get_column_count(vte);
-    long end_row, end_col;
-    vte_terminal_get_cursor_position(vte, &end_col, &end_row);
+    long end_row = select->cursor_row, end_col = select->cursor_col;
 
     if (select->mode == SELECT_VISUAL) {
         const long begin = select->begin_row * n_columns + select->begin_col;
@@ -122,13 +123,14 @@ static void feed_str(VteTerminal *vte, const char *s) {
 }
 
 static void start_selection(VteTerminal *vte, select_info *select) {
-    feed_str(vte, CSI "s"); // save cursor position
+    feed_str(vte, CSI "?25l"); // hide cursor
     select->mode = SELECT_ON;
+    vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
+    feed_str(vte, CSI "?25h"); // show cursor
     vte_terminal_select_none(vte);
-    feed_str(vte, CSI "u"); // restore cursor position
     select->mode = SELECT_OFF;
 }
 
@@ -138,14 +140,20 @@ static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mod
         vte_terminal_select_none(vte);
     } else {
         select->mode = mode;
-        vte_terminal_get_cursor_position(vte, &select->begin_col, &select->begin_row);
+        select->begin_col = select->cursor_col;
+        select->begin_row = select->cursor_row;
     }
 }
 
-static void cursor_move_end_of_line(VteTerminal *vte) {
-    char *eol = g_strdup_printf(CSI "%ldG", vte_terminal_get_column_count(vte));
-    feed_str(vte, eol);
-    g_free(eol);
+static void move(VteTerminal *vte, select_info *select, long col, long row) {
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+    /*const long end_row = vte_terminal_get_row_count(vte) - 1;*/
+
+    select->cursor_col = CLAMP(select->cursor_col + col, 0, end_col);
+    select->cursor_row = MAX(select->cursor_row + row, 0);
+    /*select->cursor_row = CLAMP(select->cursor_row + row, 0, end_row);*/
+
+    update_selection(vte, select);
 }
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
@@ -161,25 +169,27 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
         switch (event->keyval) {
             case GDK_KEY_Left:
             case GDK_KEY_h:
-                feed_str(vte, CSI "1D");
+                move(vte, &info->select, -1, 0);
                 break;
             case GDK_KEY_Down:
             case GDK_KEY_j:
-                feed_str(vte, CSI "1B");
+                move(vte, &info->select, 0, 1);
                 break;
             case GDK_KEY_Up:
             case GDK_KEY_k:
-                feed_str(vte, CSI "1A");
+                move(vte, &info->select, 0, -1);
                 break;
             case GDK_KEY_Right:
             case GDK_KEY_l:
-                feed_str(vte, CSI "1C");
+                move(vte, &info->select, 1, 0);
                 break;
             case GDK_KEY_asciicircum:
-                feed_str(vte, CSI "0G");
+                info->select.cursor_col = 0;
+                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_dollar:
-                cursor_move_end_of_line(vte);
+                info->select.cursor_col = vte_terminal_get_column_count(vte) - 1;
+                update_selection(vte, &info->select);
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select, SELECT_VISUAL);
@@ -692,7 +702,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {SELECT_OFF, 0, 0};
+    select_info select = {SELECT_OFF, 0, 0, 0, 0};
     search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
@@ -700,7 +710,6 @@ int main(int argc, char **argv) {
     g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
     g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
-    g_signal_connect(vte,     "cursor-moved",       G_CALLBACK(cursor_moved_cb), &info.select);
 
     if (clickable_url) {
         int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
