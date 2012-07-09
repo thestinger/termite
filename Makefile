@@ -10,7 +10,7 @@ CFLAGS := -std=c99 -O3 \
 	  -Wshadow \
 	  -Wformat=2 \
 	  -Wmissing-declarations \
-	  -Wstrict-overflow=5 \
+	  -Wstrict-overflow=4 \
 	  -Wcast-align \
 	  -Wcast-qual \
 	  -Wconversion \

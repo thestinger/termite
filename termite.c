@@ -147,24 +147,33 @@ static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mod
     }
 }
 
+static long first_row(VteTerminal *vte) {
+    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
+    double scroll_lower = gtk_adjustment_get_lower(adjust);
+    return (long)scroll_lower;
+}
+
+static long last_row(VteTerminal *vte) {
+    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
+    double scroll_upper = gtk_adjustment_get_upper(adjust);
+    return (long)scroll_upper - 1;
+}
+
 static void move(VteTerminal *vte, select_info *select, long col, long row) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     double scroll_row = gtk_adjustment_get_value(adjust);
     long n_rows = vte_terminal_get_row_count(vte);
 
     const long end_col = vte_terminal_get_column_count(vte) - 1;
-    /*const long end_row = vte_terminal_get_row_count(vte) - 1;*/
 
     select->cursor_col = CLAMP(select->cursor_col + col, 0, end_col);
-    select->cursor_row = MAX(select->cursor_row + row, 0);
-    /*select->cursor_row = CLAMP(select->cursor_row + row, 0, end_row);*/
+    select->cursor_row = CLAMP(select->cursor_row + row, first_row(vte), last_row(vte));
 
     if (select->cursor_row < scroll_row) {
         gtk_adjustment_set_value(adjust, (double)select->cursor_row);
     } else if (select->cursor_row - n_rows >= (long)scroll_row) {
         gtk_adjustment_set_value(adjust, (double)(select->cursor_row - n_rows + 1));
     }
-
     update_selection(vte, select);
 }
 
