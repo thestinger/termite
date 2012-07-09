@@ -79,7 +79,7 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
     gtk_window_set_title(window, t ? t : "termite");
 }
 
-static void update_selection(VteTerminal *vte, select_info *select) {
+static void update_selection(VteTerminal *vte, const select_info *select) {
     if (select->mode == SELECT_ON) {
         return; // not in visual mode
     }
