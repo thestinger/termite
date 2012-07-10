@@ -83,7 +83,7 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     if (select->mode == SELECT_ON) {
         // a hack to use the selection as a cursor until a real one is implemented
         vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
-                                 select->cursor_col, select->cursor_row, 0, 0);
+                                 select->cursor_col, select->cursor_row);
         return; // not in visual mode
     }
 
@@ -97,24 +97,22 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
         const long end = select->cursor_row * n_columns + select->cursor_col;
         if (begin < end) {
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
-                                     select->cursor_col, select->cursor_row, 0, 0);
+                                     select->cursor_col, select->cursor_row);
         } else {
             vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
-                                     select->begin_col, select->begin_row, 0, 0);
+                                     select->begin_col, select->begin_row);
         }
     } else if (select->mode == SELECT_VISUAL_LINE) {
         vte_terminal_select_text(vte, 0,
                                  MIN(select->begin_row, select->cursor_row),
                                  n_columns - 1,
-                                 MAX(select->begin_row, select->cursor_row),
-                                 0, 0);
+                                 MAX(select->begin_row, select->cursor_row));
     } else if (select->mode == SELECT_VISUAL_BLOCK) {
         vte_terminal_select_text(vte,
                                  MIN(select->begin_col, select->cursor_col),
                                  MIN(select->begin_row, select->cursor_row),
                                  MAX(select->begin_col, select->cursor_col),
-                                 MAX(select->begin_row, select->cursor_row),
-                                 0, 0);
+                                 MAX(select->begin_row, select->cursor_row));
     }
 
     vte_terminal_copy_primary(vte);
