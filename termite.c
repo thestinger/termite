@@ -81,6 +81,9 @@ void window_title_cb(VteTerminal *vte, GtkWindow *window) {
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
     if (select->mode == SELECT_ON) {
+        // a hack to use the selection as a cursor until a real one is implemented
+        vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
+                                 select->cursor_col, select->cursor_row, 0, 0);
         return; // not in visual mode
     }
 
