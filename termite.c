@@ -131,15 +131,14 @@ static void end_selection(VteTerminal *vte, select_info *select) {
 static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mode) {
     if (select->mode == mode) {
         select->mode = SELECT_ON;
-        vte_terminal_select_none(vte);
     } else {
         if (select->mode == SELECT_ON) {
             select->begin_col = select->cursor_col;
             select->begin_row = select->cursor_row;
         }
         select->mode = mode;
-        update_selection(vte, select);
     }
+    update_selection(vte, select);
 }
 
 static long first_row(VteTerminal *vte) {
