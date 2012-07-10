@@ -73,12 +73,6 @@ void launch_browser(char *url) {
     g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
 
-/* {{{ CALLBACKS */
-void window_title_cb(VteTerminal *vte, GtkWindow *window) {
-    const char * const t = vte_terminal_get_window_title(vte);
-    gtk_window_set_title(window, t ? t : "termite");
-}
-
 static void update_selection(VteTerminal *vte, const select_info *select) {
     if (select->mode == SELECT_ON) {
         // a hack to use the selection as a cursor until a real one is implemented
@@ -187,6 +181,12 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
     select->cursor_row = row;
     update_scroll(vte, select);
     update_selection(vte, select);
+}
+
+/* {{{ CALLBACKS */
+void window_title_cb(VteTerminal *vte, GtkWindow *window) {
+    const char * const t = vte_terminal_get_window_title(vte);
+    gtk_window_set_title(window, t ? t : "termite");
 }
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
