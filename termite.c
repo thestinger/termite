@@ -150,20 +150,20 @@ static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mod
 
 static long first_row(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    double scroll_lower = gtk_adjustment_get_lower(adjust);
+    const double scroll_lower = gtk_adjustment_get_lower(adjust);
     return (long)scroll_lower;
 }
 
 static long last_row(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    double scroll_upper = gtk_adjustment_get_upper(adjust);
+    const double scroll_upper = gtk_adjustment_get_upper(adjust);
     return (long)scroll_upper - 1;
 }
 
 static void update_scroll(VteTerminal *vte, const select_info *select) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    double scroll_row = gtk_adjustment_get_value(adjust);
-    long n_rows = vte_terminal_get_row_count(vte);
+    const double scroll_row = gtk_adjustment_get_value(adjust);
+    const long n_rows = vte_terminal_get_row_count(vte);
 
     if (select->cursor_row < scroll_row) {
         gtk_adjustment_set_value(adjust, (double)select->cursor_row);
@@ -624,27 +624,21 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
                 }
             }
         }
-
         if (success) {
             vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
         }
-
         if (get_config_color(config, "foreground", &color)) {
             vte_terminal_set_color_foreground(vte, &color);
         }
-
         if (get_config_color(config, "foreground_bold", &color)) {
             vte_terminal_set_color_bold(vte, &color);
         }
-
         if (get_config_color(config, "foreground_dim", &color)) {
             vte_terminal_set_color_dim(vte, &color);
         }
-
         if (get_config_color(config, "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
         }
-
         if (get_config_color(config, "cursor", &color)) {
             vte_terminal_set_color_cursor(vte, &color);
         }
