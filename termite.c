@@ -140,6 +140,8 @@ static void start_selection(VteTerminal *vte, select_info *select) {
 static void end_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25h"); // show cursor
 
+    vte_terminal_feed_child(vte, "\x11", 1); // resume output (XON)
+
     // restore c_iflag
     int fd = vte_pty_get_fd(vte_terminal_get_pty_object(vte));
     struct termios t;
@@ -147,7 +149,6 @@ static void end_selection(VteTerminal *vte, select_info *select) {
     t.c_iflag = select->ciflag_old;
     tcsetattr(fd, TCSANOW, &t);
 
-    vte_terminal_feed_child(vte, "\x11", 1); // resume output (XON)
     vte_terminal_select_none(vte);
     select->mode = SELECT_OFF;
 }
