@@ -3,9 +3,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <termios.h>
-#include <unistd.h>
-
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
@@ -39,7 +36,6 @@ typedef struct select_info {
     long begin_row;
     long cursor_col;
     long cursor_row;
-    tcflag_t ciflag_old;
 } select_info;
 
 typedef struct search_panel_info {
@@ -122,16 +118,6 @@ static void feed_str(VteTerminal *vte, const char *s) {
 
 static void start_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25l"); // hide cursor
-
-    // enable flow control
-    int fd = vte_pty_get_fd(vte_terminal_get_pty_object(vte));
-    struct termios t;
-    tcgetattr(fd, &t);
-    select->ciflag_old = t.c_iflag;
-    t.c_iflag |= IXON;
-    tcsetattr(fd, TCSANOW, &t);
-
-    vte_terminal_feed_child(vte, "\x13", 1); // pause output (XOFF)
     select->mode = SELECT_ON;
     vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
     update_selection(vte, select);
@@ -139,16 +125,6 @@ static void start_selection(VteTerminal *vte, select_info *select) {
 
 static void end_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25h"); // show cursor
-
-    vte_terminal_feed_child(vte, "\x11", 1); // resume output (XON)
-
-    // restore c_iflag
-    int fd = vte_pty_get_fd(vte_terminal_get_pty_object(vte));
-    struct termios t;
-    tcgetattr(fd, &t);
-    t.c_iflag = select->ciflag_old;
-    tcsetattr(fd, TCSANOW, &t);
-
     vte_terminal_select_none(vte);
     select->mode = SELECT_OFF;
 }
@@ -762,7 +738,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {SELECT_OFF, 0, 0, 0, 0, 0};
+    select_info select = {SELECT_OFF, 0, 0, 0, 0};
     search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
 
     g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
