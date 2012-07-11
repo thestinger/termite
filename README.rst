@@ -43,6 +43,7 @@ TEXT SELECTION MODE
 * ``^``: beginning-of-line
 * ``g``: jump to start of first row
 * ``G``: jump to start of last row
+* ``y``: copy to CLIPBOARD
 
 TODO
 ====

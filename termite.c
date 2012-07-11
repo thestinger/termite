@@ -239,6 +239,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_Escape:
                 end_selection(vte, &info->select);
                 break;
+            case GDK_KEY_y:
+                vte_terminal_copy_clipboard(vte);
+                break;
         }
         return TRUE;
     }
