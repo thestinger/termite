@@ -17,18 +17,12 @@ KEYBINDINGS
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)
 * ``ctrl-tab``: start scrollback completion
-* ``ctrl-shift-space``: start selection mode
+* ``ctrl-shift-space``: start command mode
 
-During scrollback search, the current selection is changed to the search match
-and copied to the PRIMARY clipboard buffer.
-
-With the scrollback search/completion widget open, up/down cycle through
-completions, escape closes the widget and enter accepts the input.
-
-TEXT SELECTION MODE
+COMMAND MODE
 -------------------
 
-* ``escape``: deactivate selection mode
+* ``escape``: deactivate command mode
 * ``v``: visual mode
 * ``V``: visual line mode
 * ``ctrl-v``: visual block mode
@@ -45,6 +39,12 @@ TEXT SELECTION MODE
 * ``n``: next search match
 * ``N``: previous search match
 
+During scrollback search, the current selection is changed to the search match
+and copied to the PRIMARY clipboard buffer.
+
+With the scrollback search/completion widget open, up/down cycle through
+completions, escape closes the widget and enter accepts the input.
+
 TODO
 ====
 
@@ -53,7 +53,6 @@ TODO
 * hint mode overlay for urls (like elinks/vimperator/pentadactyl)
 * scrollback search needs to be improved upstream [1]_
 * expose keybindings in ``termite.cfg``
-* text selection needs to be extended with more bindings
-* output should be paused while in selection mode
+* output should be paused while in command mode
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
