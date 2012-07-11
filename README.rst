@@ -54,5 +54,6 @@ TODO
 * scrollback search needs to be improved upstream [1]_
 * expose keybindings in ``termite.cfg``
 * text selection needs to be extended with more bindings
+* output should be paused while in selection mode
 
 .. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
