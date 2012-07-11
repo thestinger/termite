@@ -242,6 +242,26 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
             case GDK_KEY_y:
                 vte_terminal_copy_clipboard(vte);
                 break;
+            case GDK_KEY_slash:
+                overlay_show(info, OVERLAY_SEARCH, true);
+                break;
+            case GDK_KEY_question:
+                overlay_show(info, OVERLAY_RSEARCH, true);
+                break;
+            case GDK_KEY_n:
+                vte_terminal_search_find_next(vte);
+                vte_terminal_copy_primary(vte);
+                break;
+            case GDK_KEY_N:
+                vte_terminal_search_find_previous(vte);
+                vte_terminal_copy_primary(vte);
+                break;
+            case GDK_KEY_u:
+                search(vte, url_regex, false);
+                break;
+            case GDK_KEY_U:
+                search(vte, url_regex, true);
+                break;
         }
         return TRUE;
     }
@@ -255,26 +275,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 return TRUE;
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
-                return TRUE;
-            case GDK_KEY_p:
-                vte_terminal_search_find_previous(vte);
-                vte_terminal_copy_primary(vte);
-                return TRUE;
-            case GDK_KEY_n:
-                vte_terminal_search_find_next(vte);
-                vte_terminal_copy_primary(vte);
-                return TRUE;
-            case GDK_KEY_f:
-                overlay_show(info, OVERLAY_SEARCH, true);
-                return TRUE;
-            case GDK_KEY_r:
-                overlay_show(info, OVERLAY_RSEARCH, true);
-                return TRUE;
-            case GDK_KEY_j:
-                search(vte, url_regex, false);
-                return TRUE;
-            case GDK_KEY_k:
-                search(vte, url_regex, true);
                 return TRUE;
             case GDK_KEY_Escape:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),

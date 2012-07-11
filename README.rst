@@ -16,12 +16,6 @@ KEYBINDINGS
 * ``ctrl-shift-c``: copy to CLIPBOARD
 * ``ctrl-shift-v``: paste from CLIPBOARD
 * ``ctrl-shift-u``: unicode input (standard GTK binding)
-* ``ctrl-shift-f``: start forward search
-* ``ctrl-shift-b``: start reverse search
-* ``ctrl-shift-j``: start forward url search
-* ``ctrl-shift-k``: start reverse url search
-* ``ctrl-shift-n``: jump to next search match
-* ``ctrl-shift-p``: jump to previous search match
 * ``ctrl-tab``: start scrollback completion
 * ``ctrl-shift-space``: start selection mode
 
@@ -44,6 +38,12 @@ TEXT SELECTION MODE
 * ``g``: jump to start of first row
 * ``G``: jump to start of last row
 * ``y``: copy to CLIPBOARD
+* ``/``: forward search
+* ``?``: reverse search
+* ``u``: forward url search
+* ``U``: reverse url search
+* ``n``: next search match
+* ``N``: previous search match
 
 TODO
 ====
