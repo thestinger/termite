@@ -120,6 +120,7 @@ static void start_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25l"); // hide cursor
     select->mode = SELECT_ON;
     vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
+    update_selection(vte, select);
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
