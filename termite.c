@@ -501,7 +501,7 @@ static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color)
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         const char **term) {
 
-    static const char * const filename = "termite.cfg";
+    const char * const filename = "termite.cfg";
     const char *dir = g_get_user_config_dir();
     char *path = g_build_filename(dir, filename, NULL);
     GKeyFile *config = g_key_file_new();
@@ -613,7 +613,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
 
-        static const long palette_size = 255;
+        const long palette_size = 255;
         GdkColor color, palette[palette_size];
 
         char color_key[] = "color000";
