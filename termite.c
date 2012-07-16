@@ -43,19 +43,29 @@ typedef struct search_panel_info {
     GtkWidget *entry;
     GtkWidget *panel;
     enum overlay_mode mode;
-    select_info select;
 } search_panel_info;
+
+typedef struct config_info {
+    gboolean dynamic_title, urgent_on_bell, clickable_url;
+    int tag;
+} config_info;
+
+typedef struct keybind_info {
+    search_panel_info panel;
+    select_info select;
+    config_info config;
+} keybind_info;
 
 static char *browser_cmd[3] = {NULL};
 
 static void launch_browser(char *url);
 
-static void window_title_cb(VteTerminal *vte, GtkWindow *window);
-static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info);
+static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
+static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info);
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc);
-static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event);
-static void beep_cb(GtkWindow *window);
+static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url);
+static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
 static gboolean add_to_list_store(char *key, void *value, GtkListStore *store);
@@ -64,9 +74,8 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
-static void load_config(GtkWindow *window, VteTerminal *vte,
-                        gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, const char **term);
+static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
+                        const char **term);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -184,14 +193,14 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 }
 
 /* {{{ CALLBACKS */
-void window_title_cb(VteTerminal *vte, GtkWindow *window) {
-    const char * const t = vte_terminal_get_window_title(vte);
-    gtk_window_set_title(window, t ? t : "termite");
+void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
+    const char * const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
+    gtk_window_set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
+                         title ? title : "termite");
 }
 
-gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *info) {
+gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
-    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     if (info->select.mode) {
         if (modifiers == GDK_CONTROL_MASK) {
             if (gdk_keyval_to_lower(event->keyval) == GDK_KEY_v) {
@@ -243,10 +252,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 vte_terminal_copy_clipboard(vte);
                 break;
             case GDK_KEY_slash:
-                overlay_show(info, OVERLAY_SEARCH, true);
+                overlay_show(&info->panel, OVERLAY_SEARCH, true);
                 break;
             case GDK_KEY_question:
-                overlay_show(info, OVERLAY_RSEARCH, true);
+                overlay_show(&info->panel, OVERLAY_RSEARCH, true);
                 break;
             case GDK_KEY_n:
                 vte_terminal_search_find_next(vte);
@@ -278,12 +287,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, search_panel_info *i
                 return TRUE;
             case GDK_KEY_Escape:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
-                            vte, &dynamic_title, &urgent_on_bell,
-                            &clickable_url, NULL);
+                            vte, &info->config, NULL);
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        overlay_show(info, OVERLAY_COMPLETION, true);
+        overlay_show(&info->panel, OVERLAY_COMPLETION, true);
         return TRUE;
     }
     return FALSE;
@@ -338,18 +346,22 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
     return TRUE;
 }
 
-gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event) {
-    char *match = check_match(vte, (int)event->x, (int)event->y);
-    if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
-        launch_browser(match);
-        g_free(match);
-        return TRUE;
+gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url) {
+    if (*clickable_url) {
+        char *match = check_match(vte, (int)event->x, (int)event->y);
+        if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
+            launch_browser(match);
+            g_free(match);
+            return TRUE;
+        }
     }
     return FALSE;
 }
 
-void beep_cb(GtkWindow *window) {
-    gtk_window_set_urgency_hint(window, TRUE);
+void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell) {
+    if (*urgent_on_bell) {
+        gtk_window_set_urgency_hint(GTK_WINDOW(gtk_widget_get_toplevel(vte)), TRUE);
+    }
 }
 
 gboolean focus_cb(GtkWindow *window) {
@@ -486,9 +498,8 @@ static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color)
     return success;
 }
 
-static void load_config(GtkWindow *window, VteTerminal *vte,
-                        gboolean *dynamic_title, gboolean *urgent_on_bell,
-                        gboolean *clickable_url, const char **term) {
+static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
+                        const char **term) {
 
     static const char * const filename = "termite.cfg";
     const char *dir = g_get_user_config_dir();
@@ -528,16 +539,30 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             vte_terminal_set_allow_bold(vte, cfgbool);
         }
         if (get_config_boolean(config, "options", "dynamic_title", &cfgbool)) {
-            *dynamic_title = cfgbool;
+            info->dynamic_title = cfgbool;
         }
         if (get_config_boolean(config, "options", "urgent_on_bell", &cfgbool)) {
-            *urgent_on_bell = cfgbool;
-        }
-        if (get_config_boolean(config, "options", "clickable_url", &cfgbool)) {
-            *clickable_url = cfgbool;
+            info->urgent_on_bell = cfgbool;
         }
         if (get_config_boolean(config, "options", "search_wrap", &cfgbool)) {
             vte_terminal_search_set_wrap_around(vte, cfgbool);
+        }
+        vte_terminal_match_remove(vte, info->tag);
+        if (get_config_boolean(config, "options", "clickable_url", &cfgbool)) {
+            info->clickable_url = cfgbool;
+        }
+        if (info->clickable_url) {
+            info->tag =
+                vte_terminal_match_add_gregex(vte,
+                                              g_regex_new(url_regex,
+                                                          G_REGEX_CASELESS,
+                                                          G_REGEX_MATCH_NOTEMPTY,
+                                                          NULL),
+                                              (GRegexMatchFlags)0);
+            vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
+        } else if (info->tag != -1) {
+            vte_terminal_match_remove(vte, info->tag);
+            info->tag = -1;
         }
 
         g_free(browser_cmd[0]);
@@ -545,7 +570,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
             browser_cmd[0] = cfgstr;
         } else {
             browser_cmd[0] = g_strdup(g_getenv("BROWSER"));
-            if (!browser_cmd[0]) *clickable_url = false;
+            if (!browser_cmd[0]) info->clickable_url = false;
         }
 
         if (get_config_string(config, "options", "font", &cfgstr)) {
@@ -653,7 +678,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte,
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "termite";
-    gboolean dynamic_title = FALSE, urgent_on_bell = FALSE, clickable_url = FALSE;
     gboolean version = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
@@ -720,58 +744,45 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    select_info select = {SELECT_OFF, 0, 0, 0, 0};
-    search_panel_info info = {vte, gtk_entry_new(),
-                              gtk_alignment_new(0, 0, 1, 1),
-                              OVERLAY_HIDDEN, select};
+    search_panel_info panel = {vte, gtk_entry_new(),
+                               gtk_alignment_new(0, 0, 1, 1),
+                               OVERLAY_HIDDEN};
+    keybind_info info = {panel, {SELECT_OFF, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
 
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
-                &urgent_on_bell, &clickable_url, &term);
+    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &info.config, &term);
 
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
 
-    gtk_alignment_set_padding(GTK_ALIGNMENT(info.panel), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), info.panel);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(panel.panel), 5, 5, 5, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), panel.panel);
 
-    gtk_widget_set_halign(info.entry, GTK_ALIGN_START);
-    gtk_widget_set_valign(info.entry, GTK_ALIGN_END);
+    gtk_widget_set_halign(panel.entry, GTK_ALIGN_START);
+    gtk_widget_set_valign(panel.entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(info.panel), info.entry);
+    gtk_container_add(GTK_CONTAINER(panel.panel), panel.entry);
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(info.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
+    g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &panel);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
-    if (clickable_url) {
-        int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
-                                                g_regex_new(url_regex,
-                                                            G_REGEX_CASELESS,
-                                                            G_REGEX_MATCH_NOTEMPTY,
-                                                            NULL),
-                                                (GRegexMatchFlags)0);
-        vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tag, GDK_HAND2);
-        g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), NULL);
-    }
+    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
 
-    if (urgent_on_bell) {
-        g_signal_connect_swapped(vte, "beep", G_CALLBACK(beep_cb), window);
-        g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
-        g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
-    }
+    g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
+    g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
+    g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
 
-    if (dynamic_title) {
-        window_title_cb(VTE_TERMINAL(vte), GTK_WINDOW(window));
-        g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb), window);
-    }
+    window_title_cb(VTE_TERMINAL(vte), &info.config.dynamic_title);
+    g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
+                     &info.config.dynamic_title);
 
     if (geometry) {
         gtk_widget_show_all(overlay);
-        gtk_widget_show_all(info.panel);
+        gtk_widget_show_all(panel.panel);
         if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
             g_printerr("Invalid geometry string: %s\n", geometry);
         }
@@ -780,7 +791,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
-    gtk_widget_hide(info.panel);
+    gtk_widget_hide(panel.panel);
 
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
