@@ -769,16 +769,13 @@ int main(int argc, char **argv) {
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &panel);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
-
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
-
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
-
-    window_title_cb(VTE_TERMINAL(vte), &info.config.dynamic_title);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
                      &info.config.dynamic_title);
+    window_title_cb(VTE_TERMINAL(vte), &info.config.dynamic_title);
 
     if (geometry) {
         gtk_widget_show_all(overlay);
