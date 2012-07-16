@@ -44,15 +44,3 @@ and copied to the PRIMARY clipboard buffer.
 
 With the scrollback search/completion widget open, up/down cycle through
 completions, escape closes the widget and enter accepts the input.
-
-TODO
-====
-
-* tab and shift-tab bindings for completion
-* better url matching regex
-* hint mode overlay for urls (like elinks/vimperator/pentadactyl)
-* scrollback search needs to be improved upstream [1]_
-* expose keybindings in ``termite.cfg``
-* output should be paused while in command mode
-
-.. [1] https://bugzilla.gnome.org/show_bug.cgi?id=627886
