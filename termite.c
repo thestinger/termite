@@ -23,7 +23,7 @@
 #define PATHTERM_CLASS  "[^\\Q]'.}>) \t\r\n,\"\\E]"
 #define SCHEME          "(?:news:|telnet:|nntp:|file:\\/|https?:|ftps?:|sftp:|webcal:)"
 #define USERPASS        USERCHARS_CLASS "+(?:" PASSCHARS_CLASS "+)?"
-#define URLPATH         "(?:(/"PATHCHARS_CLASS"+(?:[(]"PATHCHARS_CLASS"*[)])*"PATHCHARS_CLASS"*)*"PATHTERM_CLASS")?"
+#define URLPATH         "(?:(/" PATHCHARS_CLASS "+(?:[(]" PATHCHARS_CLASS "*[)])*" PATHCHARS_CLASS"*)*"PATHTERM_CLASS ")?"
 
 static const char * const url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
