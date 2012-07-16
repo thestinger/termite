@@ -39,7 +39,7 @@ typedef struct select_info {
 } select_info;
 
 typedef struct search_panel_info {
-    GtkWidget *vte;
+    VteTerminal *vte;
     GtkWidget *entry;
     GtkWidget *panel;
     enum overlay_mode mode;
@@ -307,13 +307,13 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
 
         switch (info->mode) {
             case OVERLAY_SEARCH:
-                search(VTE_TERMINAL(info->vte), text, false);
+                search(info->vte, text, false);
                 break;
             case OVERLAY_RSEARCH:
-                search(VTE_TERMINAL(info->vte), text, true);
+                search(info->vte, text, true);
                 break;
             case OVERLAY_COMPLETION:
-                vte_terminal_feed_child(VTE_TERMINAL(info->vte), text, -1);
+                vte_terminal_feed_child(info->vte, text, -1);
                 break;
             case OVERLAY_HIDDEN:
                 break;
@@ -324,7 +324,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         info->mode = OVERLAY_HIDDEN;
         gtk_widget_hide(info->panel);
-        gtk_widget_grab_focus(info->vte);
+        gtk_widget_grab_focus(GTK_WIDGET(info->vte));
     }
     return ret;
 }
@@ -430,7 +430,7 @@ void overlay_show(search_panel_info *info, overlay_mode mode, bool complete) {
         gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
         g_object_unref(completion);
 
-        GtkTreeModel *completion_model = create_completion_model(VTE_TERMINAL(info->vte));
+        GtkTreeModel *completion_model = create_completion_model(info->vte);
         gtk_entry_completion_set_model(completion, completion_model);
         g_object_unref(completion_model);
 
@@ -744,7 +744,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    search_panel_info panel = {vte, gtk_entry_new(),
+    search_panel_info panel = {VTE_TERMINAL(vte), gtk_entry_new(),
                                gtk_alignment_new(0, 0, 1, 1),
                                OVERLAY_HIDDEN};
     keybind_info info = {panel, {SELECT_OFF, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
