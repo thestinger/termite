@@ -720,31 +720,31 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    select_info select = {SELECT_OFF, 0, 0, 0, 0};
+    search_panel_info info = {vte, gtk_entry_new(),
+                              gtk_alignment_new(0, 0, 1, 1),
+                              OVERLAY_HIDDEN, select};
+
     load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &dynamic_title,
                 &urgent_on_bell, &clickable_url, &term);
 
     vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
     vte_pty_set_term(pty, term);
 
-    GtkWidget *alignment = gtk_alignment_new(0, 0, 1, 1);
-    gtk_alignment_set_padding(GTK_ALIGNMENT(alignment), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), alignment);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(info.panel), 5, 5, 5, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), info.panel);
 
-    GtkWidget *entry = gtk_entry_new();
-    gtk_widget_set_halign(entry, GTK_ALIGN_START);
-    gtk_widget_set_valign(entry, GTK_ALIGN_END);
+    gtk_widget_set_halign(info.entry, GTK_ALIGN_START);
+    gtk_widget_set_valign(info.entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(alignment), entry);
+    gtk_container_add(GTK_CONTAINER(info.panel), info.entry);
     gtk_container_add(GTK_CONTAINER(overlay), vte);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
-    select_info select = {SELECT_OFF, 0, 0, 0, 0};
-    search_panel_info info = {vte, entry, alignment, OVERLAY_HIDDEN, select};
-
-    g_signal_connect(window,  "destroy",            G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "child-exited",       G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte,     "key-press-event",    G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(entry,   "key-press-event",    G_CALLBACK(entry_key_press_cb), &info);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
+    g_signal_connect(info.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
 
     if (clickable_url) {
@@ -771,7 +771,7 @@ int main(int argc, char **argv) {
 
     if (geometry) {
         gtk_widget_show_all(overlay);
-        gtk_widget_show_all(alignment);
+        gtk_widget_show_all(info.panel);
         if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
             g_printerr("Invalid geometry string: %s\n", geometry);
         }
@@ -780,7 +780,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte);
     gtk_widget_show_all(window);
-    gtk_widget_hide(alignment);
+    gtk_widget_hide(info.panel);
 
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
