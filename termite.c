@@ -599,9 +599,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                 regex_pattern *pattern = &url_regex_patterns[i];
                 int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
                                                         g_regex_new(pattern->pattern,
-                                                        G_REGEX_CASELESS,
-                                                        G_REGEX_MATCH_NOTEMPTY,
-                                                        NULL),
+                                                                    G_REGEX_CASELESS,
+                                                                    G_REGEX_MATCH_NOTEMPTY,
+                                                                    NULL),
                                                         (GRegexMatchFlags)0);
                 vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tag, GDK_HAND2);
             }
