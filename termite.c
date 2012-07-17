@@ -595,8 +595,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
         if (info->clickable_url) {
             info->tags = true;
-            regex_pattern *pattern = url_regex_patterns;
-            for (; pattern->pattern != NULL; ++pattern) {
+            for (int i = 0; i < LAST_PATTERN; ++i) {
+                regex_pattern *pattern = &url_regex_patterns[i];
                 int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
                                                         g_regex_new(pattern->pattern,
                                                         G_REGEX_CASELESS,
