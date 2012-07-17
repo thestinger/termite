@@ -13,6 +13,20 @@
 
 #define CSI "\x1b["
 
+#define USERCHARS       "-[:alnum:]"
+#define USERCHARS_CLASS "[" USERCHARS "]"
+#define PASSCHARS_CLASS "[-[:alnum:]\\Q,?;.:/!%$^*&~\"#'\\E]"
+#define HOSTCHARS_CLASS "[-[:alnum:]]"
+#define HOST            HOSTCHARS_CLASS "+(\\." HOSTCHARS_CLASS "+)*"
+#define PORT            "(?:\\:[[:digit:]]{1,5})?"
+#define PATHCHARS_CLASS "[-[:alnum:]\\Q_$.+!*,;@&=?/~#%\\E]"
+#define PATHTERM_CLASS  "[^\\Q]'.}>) \t\r\n,\"\\E]"
+#define SCHEME          "(?:news:|telnet:|nntp:|file:\\/|https?:|ftps?:|sftp:|webcal:)"
+#define USERPASS        USERCHARS_CLASS "+(?:" PASSCHARS_CLASS "+)?"
+#define URLPATH         "(?:(/" PATHCHARS_CLASS "+(?:[(]" PATHCHARS_CLASS "*[)])*" PATHCHARS_CLASS"*)*"PATHTERM_CLASS ")?"
+
+#define LENGTH(a)       (sizeof((a)) / sizeof(0[(a)]))
+
 static const char * const url_regex = "(ftp|http)s?://[-a-zA-Z0-9.?$%&/=_~#.,:;+()]*";
 
 typedef enum overlay_mode {
@@ -47,7 +61,7 @@ typedef struct search_panel_info {
 
 typedef struct config_info {
     gboolean dynamic_title, urgent_on_bell, clickable_url;
-    int tag;
+    bool tags;
 } config_info;
 
 typedef struct keybind_info {
@@ -56,9 +70,15 @@ typedef struct keybind_info {
     config_info config;
 } keybind_info;
 
-static char *browser_cmd[3] = {NULL};
+typedef struct regex_pattern {
+    const char *pattern;
+    void (*handler)(char *);
+} regex_pattern;
 
-static void launch_browser(char *url);
+typedef struct regex_match {
+    char *match;
+    void (*handler)(char *);
+} regex_match;
 
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
@@ -73,9 +93,22 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
-static char *check_match(VteTerminal *vte, int event_x, int event_y);
+static bool check_match(VteTerminal *vte, int event_x, int event_y, regex_match *match);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         const char **term);
+
+static void launch_browser(char *url);
+
+static regex_pattern url_regex_patterns[] = {
+  { SCHEME "//(?:" USERPASS "\\@)?" HOST PORT URLPATH,                                           launch_browser },
+  { "(?:www|ftp)" HOSTCHARS_CLASS "*\\." HOST PORT URLPATH,                                      launch_browser },
+  { "(?:callto:|h323:|sip:)" USERCHARS_CLASS "[" USERCHARS ".]*(?:" PORT "/[a-z0-9]+)?\\@" HOST, launch_browser },
+  { "(?:mailto:)?" USERCHARS_CLASS "[" USERCHARS ".]*\\@" HOSTCHARS_CLASS "+\\." HOST,           launch_browser },
+  { "(?:news:|man:|info:)[[:alnum:]\\Q^_{|}~!\"#$%&'()*+,./;:=?`\\E]+",                          launch_browser },
+};
+
+static char *browser_cmd[3] = {NULL};
+static const int url_regex_length = (int)LENGTH(url_regex_patterns);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -348,10 +381,11 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 
 gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url) {
     if (*clickable_url) {
-        char *match = check_match(vte, (int)event->x, (int)event->y);
-        if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
-            launch_browser(match);
-            g_free(match);
+        regex_match match;
+        bool found = check_match(vte, (int)event->x, (int)event->y, &match);
+        if (event->button == 1 && event->type == GDK_BUTTON_PRESS && found) {
+            match.handler(match.match);
+            g_free(match.match);
             return TRUE;
         }
     }
@@ -458,13 +492,18 @@ void get_vte_padding(VteTerminal *vte, int *w, int *h) {
     }
 }
 
-char *check_match(VteTerminal *vte, int event_x, int event_y) {
+bool check_match(VteTerminal *vte, int event_x, int event_y, regex_match *match) {
     int xpad, ypad, tag;
     get_vte_padding(vte, &xpad, &ypad);
-    return vte_terminal_match_check(vte,
-                                    (event_x - ypad) / vte_terminal_get_char_width(vte),
-                                    (event_y - ypad) / vte_terminal_get_char_height(vte),
-                                    &tag);
+    match->match = vte_terminal_match_check(vte,
+                                            (event_x - ypad) / vte_terminal_get_char_width(vte),
+                                            (event_y - ypad) / vte_terminal_get_char_height(vte),
+                                            &tag);
+    if (tag >= 0 && tag < url_regex_length) {
+        match->handler = url_regex_patterns[tag].handler;
+        return true;
+    }
+    return false;
 }
 
 /* {{{ CONFIG LOADING */
@@ -551,17 +590,22 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             info->clickable_url = cfgbool;
         }
         if (info->clickable_url) {
-            info->tag =
-                vte_terminal_match_add_gregex(vte,
-                                              g_regex_new(url_regex,
-                                                          G_REGEX_CASELESS,
-                                                          G_REGEX_MATCH_NOTEMPTY,
-                                                          NULL),
-                                              (GRegexMatchFlags)0);
-            vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
-        } else if (info->tag != -1) {
-            vte_terminal_match_remove(vte, info->tag);
-            info->tag = -1;
+            info->tags = true;
+            regex_pattern *pattern = url_regex_patterns;
+            for (; pattern->pattern != NULL; ++pattern) {
+                int tag = vte_terminal_match_add_gregex(VTE_TERMINAL(vte),
+                                                        g_regex_new(pattern->pattern,
+                                                        G_REGEX_CASELESS,
+                                                        G_REGEX_MATCH_NOTEMPTY,
+                                                        NULL),
+                                                        (GRegexMatchFlags)0);
+                vte_terminal_match_set_cursor_type(VTE_TERMINAL(vte), tag, GDK_HAND2);
+            }
+        } else if (info->tags) {
+            for (int i = 0; i < url_regex_length; ++i) {
+                vte_terminal_match_remove(vte, i);
+            }
+            info->tags = false;
         }
 
         g_free(browser_cmd[0]);
