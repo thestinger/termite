@@ -703,7 +703,8 @@ int main(int argc, char **argv) {
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *overlay = gtk_overlay_new();
-    GtkWidget *vte = vte_terminal_new();
+    GtkWidget *vte_widget = vte_terminal_new();
+    VteTerminal *vte = VTE_TERMINAL(vte_widget);
 
     GdkScreen *screen = gtk_widget_get_screen(window);
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
@@ -736,21 +737,21 @@ int main(int argc, char **argv) {
         command_argv = default_argv;
     }
 
-    VtePty *pty = vte_terminal_pty_new(VTE_TERMINAL(vte), VTE_PTY_DEFAULT, &error);
+    VtePty *pty = vte_terminal_pty_new(vte, VTE_PTY_DEFAULT, &error);
 
     if (!pty) {
         g_printerr("Failed to create pty: %s\n", error->message);
         return 1;
     }
 
-    search_panel_info panel = {VTE_TERMINAL(vte), gtk_entry_new(),
+    search_panel_info panel = {vte, gtk_entry_new(),
                                gtk_alignment_new(0, 0, 1, 1),
                                OVERLAY_HIDDEN};
     keybind_info info = {panel, {SELECT_OFF, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
 
-    load_config(GTK_WINDOW(window), VTE_TERMINAL(vte), &info.config, &term);
+    load_config(GTK_WINDOW(window), vte, &info.config, &term);
 
-    vte_terminal_set_pty_object(VTE_TERMINAL(vte), pty);
+    vte_terminal_set_pty_object(vte, pty);
     vte_pty_set_term(pty, term);
 
     gtk_alignment_set_padding(GTK_ALIGNMENT(panel.panel), 5, 5, 5, 5);
@@ -760,7 +761,7 @@ int main(int argc, char **argv) {
     gtk_widget_set_valign(panel.entry, GTK_ALIGN_END);
 
     gtk_container_add(GTK_CONTAINER(panel.panel), panel.entry);
-    gtk_container_add(GTK_CONTAINER(overlay), vte);
+    gtk_container_add(GTK_CONTAINER(overlay), vte_widget);
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -774,7 +775,7 @@ int main(int argc, char **argv) {
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
                      &info.config.dynamic_title);
-    window_title_cb(VTE_TERMINAL(vte), &info.config.dynamic_title);
+    window_title_cb(vte, &info.config.dynamic_title);
 
     if (geometry) {
         gtk_widget_show_all(overlay);
@@ -785,7 +786,7 @@ int main(int argc, char **argv) {
         g_free(geometry);
     }
 
-    gtk_widget_grab_focus(vte);
+    gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
     gtk_widget_hide(panel.panel);
 
@@ -805,7 +806,7 @@ int main(int argc, char **argv) {
                       (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
                       (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
                       &ppid, &error)) {
-        vte_terminal_watch_child(VTE_TERMINAL(vte), ppid);
+        vte_terminal_watch_child(vte, ppid);
     } else {
         g_printerr("The new terminal's command failed to run: %s\n", error->message);
         return 1;
@@ -814,7 +815,7 @@ int main(int argc, char **argv) {
     g_strfreev(env);
 
     gtk_main();
-    return vte_terminal_get_child_exit_status(VTE_TERMINAL(vte));
+    return vte_terminal_get_child_exit_status(vte);
 }
 
 // vim: et:sts=4:sw=4:cino=(0
