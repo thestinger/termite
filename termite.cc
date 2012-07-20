@@ -15,22 +15,22 @@
 static const char * const url_regex = R"XXX(((?<=\()[A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+(?=\)))|([A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+))XXX";
 
 enum class overlay_mode {
-    hidden = 0,
+    hidden,
     search,
     rsearch,
     completion
 };
 
-enum select_mode {
-    SELECT_OFF = 0,
-    SELECT_ON,
-    SELECT_VISUAL,
-    SELECT_VISUAL_LINE,
-    SELECT_VISUAL_BLOCK
+enum class vi_mode {
+    insert,
+    command,
+    visual,
+    visual_line,
+    visual_block
 };
 
 struct select_info {
-    select_mode mode;
+    vi_mode mode;
     long begin_col;
     long begin_row;
     long cursor_col;
@@ -81,7 +81,7 @@ void launch_browser(char *url) {
 }
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
-    if (select->mode == SELECT_ON) {
+    if (select->mode == vi_mode::command) {
         // a hack to use the selection as a cursor until a real one is implemented
         vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
                                  select->cursor_col, select->cursor_row);
@@ -89,11 +89,11 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     }
 
     vte_terminal_select_none(vte);
-    vte_terminal_set_selection_block_mode(vte, select->mode == SELECT_VISUAL_BLOCK);
+    vte_terminal_set_selection_block_mode(vte, select->mode == vi_mode::visual_block);
 
     const long n_columns = vte_terminal_get_column_count(vte);
 
-    if (select->mode == SELECT_VISUAL) {
+    if (select->mode == vi_mode::visual) {
         const long begin = select->begin_row * n_columns + select->begin_col;
         const long end = select->cursor_row * n_columns + select->cursor_col;
         if (begin < end) {
@@ -103,12 +103,12 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
             vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
                                      select->begin_col, select->begin_row);
         }
-    } else if (select->mode == SELECT_VISUAL_LINE) {
+    } else if (select->mode == vi_mode::visual_line) {
         vte_terminal_select_text(vte, 0,
                                  std::min(select->begin_row, select->cursor_row),
                                  n_columns - 1,
                                  std::max(select->begin_row, select->cursor_row));
-    } else if (select->mode == SELECT_VISUAL_BLOCK) {
+    } else if (select->mode == vi_mode::visual_block) {
         vte_terminal_select_text(vte,
                                  std::min(select->begin_col, select->cursor_col),
                                  std::min(select->begin_row, select->cursor_row),
@@ -125,7 +125,7 @@ static void feed_str(VteTerminal *vte, const char *s) {
 
 static void start_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25l"); // hide cursor
-    select->mode = SELECT_ON;
+    select->mode = vi_mode::command;
     vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
     update_selection(vte, select);
 }
@@ -133,14 +133,14 @@ static void start_selection(VteTerminal *vte, select_info *select) {
 static void end_selection(VteTerminal *vte, select_info *select) {
     feed_str(vte, CSI "?25h"); // show cursor
     vte_terminal_select_none(vte);
-    select->mode = SELECT_OFF;
+    select->mode = vi_mode::insert;
 }
 
-static void toggle_visual(VteTerminal *vte, select_info *select, select_mode mode) {
+static void toggle_visual(VteTerminal *vte, select_info *select, vi_mode mode) {
     if (select->mode == mode) {
-        select->mode = SELECT_ON;
+        select->mode = vi_mode::command;
     } else {
-        if (select->mode == SELECT_ON) {
+        if (select->mode == vi_mode::command) {
             select->begin_col = select->cursor_col;
             select->begin_row = select->cursor_row;
         }
@@ -210,10 +210,10 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
-    if (info->select.mode) {
+    if (info->select.mode != vi_mode::insert) {
         if (modifiers == GDK_CONTROL_MASK) {
             if (gdk_keyval_to_lower(event->keyval) == GDK_KEY_v) {
-                toggle_visual(vte, &info->select, SELECT_VISUAL_BLOCK);
+                toggle_visual(vte, &info->select, vi_mode::visual_block);
             }
             return TRUE;
         }
@@ -249,10 +249,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 move_to_row_start(vte, &info->select, last_row(vte));
                 break;
             case GDK_KEY_v:
-                toggle_visual(vte, &info->select, SELECT_VISUAL);
+                toggle_visual(vte, &info->select, vi_mode::visual);
                 break;
             case GDK_KEY_V:
-                toggle_visual(vte, &info->select, SELECT_VISUAL_LINE);
+                toggle_visual(vte, &info->select, vi_mode::visual_line);
                 break;
             case GDK_KEY_Escape:
                 end_selection(vte, &info->select);
@@ -754,7 +754,7 @@ int main(int argc, char **argv) {
     search_panel_info panel = {vte, gtk_entry_new(),
                                gtk_alignment_new(0, 0, 1, 1),
                                overlay_mode::hidden};
-    keybind_info info = {panel, {SELECT_OFF, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
+    keybind_info info = {panel, {vi_mode::insert, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
 
     load_config(GTK_WINDOW(window), vte, &info.config, &term);
 
