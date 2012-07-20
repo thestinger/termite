@@ -1,8 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <cstring>
 #include <set>
-#include <stdbool.h>
-#include <string.h>
 
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
