@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
+#include <algorithm>
 #include <cstring>
 #include <set>
 
@@ -104,15 +105,15 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
         }
     } else if (select->mode == SELECT_VISUAL_LINE) {
         vte_terminal_select_text(vte, 0,
-                                 MIN(select->begin_row, select->cursor_row),
+                                 std::min(select->begin_row, select->cursor_row),
                                  n_columns - 1,
-                                 MAX(select->begin_row, select->cursor_row));
+                                 std::max(select->begin_row, select->cursor_row));
     } else if (select->mode == SELECT_VISUAL_BLOCK) {
         vte_terminal_select_text(vte,
-                                 MIN(select->begin_col, select->cursor_col),
-                                 MIN(select->begin_row, select->cursor_row),
-                                 MAX(select->begin_col, select->cursor_col),
-                                 MAX(select->begin_row, select->cursor_row));
+                                 std::min(select->begin_col, select->cursor_col),
+                                 std::min(select->begin_row, select->cursor_row),
+                                 std::max(select->begin_col, select->cursor_col),
+                                 std::max(select->begin_row, select->cursor_row));
     }
 
     vte_terminal_copy_primary(vte);
@@ -351,8 +352,8 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 
     alloc->x = width - req.width - 40;
     alloc->y = 0;
-    alloc->width  = MIN(width, req.width);
-    alloc->height = MIN(height, req.height);
+    alloc->width  = std::min(width, req.width);
+    alloc->height = std::min(height, req.height);
 
     return TRUE;
 }
