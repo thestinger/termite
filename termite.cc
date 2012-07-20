@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <set>
 
 #include <gdk/gdkx.h>
@@ -801,11 +802,11 @@ int main(int argc, char **argv) {
         g_printerr("no window");
         return 1;
     }
-    char *xid_s = g_strdup_printf("%lu", GDK_WINDOW_XID(gdk_window));
+    char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
+    snprintf(xid_s, sizeof xid_s, "%lu", GDK_WINDOW_XID(gdk_window));
     char **env = g_get_environ();
     env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
     env = g_environ_setenv(env, "TERM", term, TRUE);
-    g_free(xid_s);
 
     GPid ppid;
     if (g_spawn_async(NULL, command_argv, env,
