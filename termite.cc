@@ -9,10 +9,9 @@
 #include <vte/vte.h>
 #include <vte/vteaccess.h>
 
-#define CSI "\x1b["
+#include "url_regex.h"
 
-// http://blog.dieweltistgarnichtso.net/constructing-a-regular-expression-that-matches-uris
-static const char * const url_regex = R"XXX(((?<=\()[A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+(?=\)))|([A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+))XXX";
+#define CSI "\x1b["
 
 enum class overlay_mode {
     hidden,
