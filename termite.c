@@ -6,6 +6,7 @@
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+#include <vte/vteaccess.h>
 
 #ifndef __GNUC__
 # define __attribute__(x)
@@ -192,6 +193,13 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
     update_selection(vte, select);
 }
 
+static void open_selection(VteTerminal *vte) {
+    AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
+    char *selection = atk_text_get_selection(text, 0, NULL, NULL);
+    launch_browser(selection);
+    g_free(selection);
+}
+
 /* {{{ CALLBACKS */
 void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
     const char * const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
@@ -270,6 +278,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_U:
                 search(vte, url_regex, true);
+                break;
+            case GDK_KEY_Return:
+                open_selection(vte);
                 break;
         }
         return TRUE;

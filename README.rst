@@ -36,6 +36,7 @@ COMMAND MODE
 * ``?``: reverse search
 * ``u``: forward url search
 * ``U``: reverse url search
+* ``Return``: open the current selection as a url
 * ``n``: next search match
 * ``N``: previous search match
 
