@@ -767,7 +767,7 @@ int main(int argc, char **argv) {
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &panel);
+    g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info.panel);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
