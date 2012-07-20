@@ -8,10 +8,6 @@
 #include <vte/vte.h>
 #include <vte/vteaccess.h>
 
-#ifndef __GNUC__
-# define __attribute__(x)
-#endif
-
 #define CSI "\x1b["
 
 // http://blog.dieweltistgarnichtso.net/constructing-a-regular-expression-that-matches-uris
@@ -70,7 +66,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolea
 static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
-static gboolean add_to_list_store(char *key, void *value, GtkListStore *store);
+static gboolean add_to_list_store(char *key, void *, GtkListStore *store);
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
@@ -386,9 +382,7 @@ gboolean focus_cb(GtkWindow *window) {
 }
 /* }}} */
 
-gboolean add_to_list_store(char *key,
-                           __attribute__((unused)) void *value,
-                           GtkListStore *store) {
+gboolean add_to_list_store(char *key, void *, GtkListStore *store) {
     GtkTreeIter iter;
     gtk_list_store_append(store, &iter);
     gtk_list_store_set(store, &iter, 0, key, -1);
