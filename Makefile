@@ -26,7 +26,7 @@ endif
 
 LDFLAGS := -s -Wl,--as-needed ${shell pkg-config --libs ${GTK} ${VTE}} ${LDFLAGS}
 
-termite: termite.c
+termite: termite.cc
 	${CXX} ${CXXFLAGS} -o $@ $< ${LDFLAGS}
 
 install: termite
