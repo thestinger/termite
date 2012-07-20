@@ -14,11 +14,11 @@
 // http://blog.dieweltistgarnichtso.net/constructing-a-regular-expression-that-matches-uris
 static const char * const url_regex = R"XXX(((?<=\()[A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+(?=\)))|([A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+))XXX";
 
-enum overlay_mode {
-    OVERLAY_HIDDEN = 0,
-    OVERLAY_SEARCH,
-    OVERLAY_RSEARCH,
-    OVERLAY_COMPLETION
+enum class overlay_mode {
+    hidden = 0,
+    search,
+    rsearch,
+    completion
 };
 
 enum select_mode {
@@ -261,10 +261,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 vte_terminal_copy_clipboard(vte);
                 break;
             case GDK_KEY_slash:
-                overlay_show(&info->panel, OVERLAY_SEARCH, true);
+                overlay_show(&info->panel, overlay_mode::search, true);
                 break;
             case GDK_KEY_question:
-                overlay_show(&info->panel, OVERLAY_RSEARCH, true);
+                overlay_show(&info->panel, overlay_mode::rsearch, true);
                 break;
             case GDK_KEY_n:
                 vte_terminal_search_find_next(vte);
@@ -303,7 +303,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        overlay_show(&info->panel, OVERLAY_COMPLETION, true);
+        overlay_show(&info->panel, overlay_mode::completion, true);
         return TRUE;
     }
     return FALSE;
@@ -318,23 +318,23 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
         const char *text = gtk_entry_get_text(entry);
 
         switch (info->mode) {
-            case OVERLAY_SEARCH:
+            case overlay_mode::search:
                 search(info->vte, text, false);
                 break;
-            case OVERLAY_RSEARCH:
+            case overlay_mode::rsearch:
                 search(info->vte, text, true);
                 break;
-            case OVERLAY_COMPLETION:
+            case overlay_mode::completion:
                 vte_terminal_feed_child(info->vte, text, -1);
                 break;
-            case OVERLAY_HIDDEN:
+            case overlay_mode::hidden:
                 break;
         }
         ret = TRUE;
     }
 
     if (ret) {
-        info->mode = OVERLAY_HIDDEN;
+        info->mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel);
         gtk_widget_grab_focus(GTK_WIDGET(info->vte));
     }
@@ -753,7 +753,7 @@ int main(int argc, char **argv) {
 
     search_panel_info panel = {vte, gtk_entry_new(),
                                gtk_alignment_new(0, 0, 1, 1),
-                               OVERLAY_HIDDEN};
+                               overlay_mode::hidden};
     keybind_info info = {panel, {SELECT_OFF, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
 
     load_config(GTK_WINDOW(window), vte, &info.config, &term);
