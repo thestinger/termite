@@ -194,10 +194,14 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 }
 
 static void open_selection(VteTerminal *vte) {
-    AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
-    char *selection = atk_text_get_selection(text, 0, NULL, NULL);
-    launch_browser(selection);
-    g_free(selection);
+    if (browser_cmd[0]) {
+        AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
+        char *selection = atk_text_get_selection(text, 0, NULL, NULL);
+        launch_browser(selection);
+        g_free(selection);
+    } else {
+        g_printerr("no browser to open url");
+    }
 }
 
 /* {{{ CALLBACKS */
