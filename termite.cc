@@ -41,7 +41,7 @@ struct search_panel_info {
     VteTerminal *vte;
     GtkWidget *entry;
     GtkWidget *panel;
-    enum overlay_mode mode;
+    overlay_mode mode;
 };
 
 struct config_info {
