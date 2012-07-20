@@ -14,46 +14,46 @@
 // http://blog.dieweltistgarnichtso.net/constructing-a-regular-expression-that-matches-uris
 static const char * const url_regex = R"XXX(((?<=\()[A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+(?=\)))|([A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+))XXX";
 
-typedef enum overlay_mode {
+enum overlay_mode {
     OVERLAY_HIDDEN = 0,
     OVERLAY_SEARCH,
     OVERLAY_RSEARCH,
     OVERLAY_COMPLETION
-} overlay_mode;
+};
 
-typedef enum select_mode {
+enum select_mode {
     SELECT_OFF = 0,
     SELECT_ON,
     SELECT_VISUAL,
     SELECT_VISUAL_LINE,
     SELECT_VISUAL_BLOCK
-} select_mode;
+};
 
-typedef struct select_info {
+struct select_info {
     select_mode mode;
     long begin_col;
     long begin_row;
     long cursor_col;
     long cursor_row;
-} select_info;
+};
 
-typedef struct search_panel_info {
+struct search_panel_info {
     VteTerminal *vte;
     GtkWidget *entry;
     GtkWidget *panel;
     enum overlay_mode mode;
-} search_panel_info;
+};
 
-typedef struct config_info {
+struct config_info {
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
-} config_info;
+};
 
-typedef struct keybind_info {
+struct keybind_info {
     search_panel_info panel;
     select_info select;
     config_info config;
-} keybind_info;
+};
 
 static char *browser_cmd[3] = {NULL};
 
