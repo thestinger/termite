@@ -282,6 +282,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_Return:
                 open_selection(vte);
+                end_selection(vte, &info->select);
                 break;
         }
         return TRUE;
