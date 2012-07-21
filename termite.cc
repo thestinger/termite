@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstring>
 #include <limits>
-#include <set>
 
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
@@ -67,6 +66,7 @@ static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolea
 static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
+static gboolean add_to_list_store(char *key, void *, GtkListStore *store);
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
@@ -382,6 +382,13 @@ gboolean focus_cb(GtkWindow *window) {
 }
 /* }}} */
 
+gboolean add_to_list_store(char *key, void *, GtkListStore *store) {
+    GtkTreeIter iter;
+    gtk_list_store_append(store, &iter);
+    gtk_list_store_set(store, &iter, 0, key, -1);
+    return FALSE;
+}
+
 GtkTreeModel *create_completion_model(VteTerminal *vte) {
     GtkListStore *store = gtk_list_store_new(1, G_TYPE_STRING);
 
@@ -397,22 +404,18 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     char *s_ptr = content, *saveptr;
 
-    std::set<char *> tokens;
+    GTree *tree = g_tree_new((GCompareFunc)strcmp);
 
     for (; ; s_ptr = NULL) {
         char *token = strtok_r(s_ptr, " \n\t", &saveptr);
         if (!token) {
             break;
         }
-        tokens.insert(token);
+        g_tree_insert(tree, token, NULL);
     }
 
-    for (char *token : tokens) {
-        GtkTreeIter iter;
-        gtk_list_store_append(store, &iter);
-        gtk_list_store_set(store, &iter, 0, token, -1);
-    }
-
+    g_tree_foreach(tree, (GTraverseFunc)add_to_list_store, store);
+    g_tree_destroy(tree);
     g_free(content);
     return GTK_TREE_MODEL(store);
 }
