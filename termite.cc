@@ -642,6 +642,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                     g_printerr("invalid color string: %s\n", cfgstr);
                     success = false;
                 }
+                g_free(cfgstr);
             } else {
                 if (i < 16) {
                     palette[i].blue = (i & 4) ? 0xc000 : 0;
