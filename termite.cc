@@ -588,6 +588,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
+        if (get_config_string(config, "options", "word_chars", &cfgstr)) {
+            vte_terminal_set_word_chars(vte, cfgstr);
+            g_free(cfgstr);
+        }
+
         if (get_config_integer(config, "options", "scrollback_lines", &cfgint)) {
             vte_terminal_set_scrollback_lines(vte, cfgint);
         }
