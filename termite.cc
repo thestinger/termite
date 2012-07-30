@@ -691,6 +691,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     g_key_file_free(config);
 }/*}}}*/
 
+static void exit_with_status(VteTerminal *vte) {
+    gtk_main_quit();
+    exit(vte_terminal_get_child_exit_status(vte));
+}
+
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "termite";
@@ -782,7 +787,7 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(window), overlay);
 
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte, "child-exited", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info.panel);
     g_signal_connect(overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
@@ -832,7 +837,7 @@ int main(int argc, char **argv) {
     g_strfreev(env);
 
     gtk_main();
-    return vte_terminal_get_child_exit_status(vte);
+    return EXIT_FAILURE; // child process did not exit
 }
 
 // vim: et:sts=4:sw=4:cino=(0
