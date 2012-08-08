@@ -73,7 +73,7 @@ static void overlay_show(search_panel_info *info, overlay_mode mode, bool comple
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        const char **term);
+                        const char **term, char **geometry);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -300,7 +300,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 return TRUE;
             case GDK_KEY_Escape:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
-                            vte, &info->config, NULL);
+                            vte, &info->config, NULL, NULL);
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
@@ -510,7 +510,7 @@ static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color)
 }
 
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        const char **term) {
+                        const char **term, char **geometry) {
 
     const char * const filename = "termite.cfg";
     const char *dir = g_get_user_config_dir();
@@ -525,6 +525,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         int cfgint;
         char *cfgstr;
 
+        if (geometry && get_config_string(config, "options", "geometry", &cfgstr)) {
+            *geometry = cfgstr;
+        }
         if (term && get_config_string(config, "options", "term", &cfgstr)) {
             *term = cfgstr;
         }
@@ -771,7 +774,7 @@ int main(int argc, char **argv) {
                                overlay_mode::hidden};
     keybind_info info = {panel, {vi_mode::insert, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
 
-    load_config(GTK_WINDOW(window), vte, &info.config, &term);
+    load_config(GTK_WINDOW(window), vte, &info.config, &term, &geometry);
 
     vte_terminal_set_pty_object(vte, pty);
     vte_pty_set_term(pty, term);
