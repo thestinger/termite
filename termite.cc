@@ -201,6 +201,75 @@ static void open_selection(VteTerminal *vte) {
     }
 }
 
+static void move_backward_word(VteTerminal *vte, select_info *select) {
+    char *content = vte_terminal_get_text_range(vte, select->cursor_row, 0,
+                                                select->cursor_row, select->cursor_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    glong length;
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    bool in_word = false;
+
+    for (gunichar *c = codepoints + length - 2; c > codepoints; c--) {
+        if (!vte_terminal_is_word_char(vte, *(c - 1))) {
+            if (in_word) {
+                break;
+            }
+        } else {
+            in_word = true;
+        }
+        select->cursor_col--;
+    }
+    update_selection(vte, select);
+
+    g_free(codepoints);
+    g_free(content);
+}
+
+static void move_forward_word(VteTerminal *vte, select_info *select) {
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    char *content = vte_terminal_get_text_range(vte, select->cursor_row, select->cursor_col,
+                                                select->cursor_row, end_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    bool end_of_word = false;
+
+    for (gunichar *c = codepoints; *c != 0; c++) {
+        if (vte_terminal_is_word_char(vte, *c)) {
+            if (end_of_word) {
+                break;
+            }
+        } else {
+            end_of_word = true;
+        }
+        select->cursor_col++;
+    }
+    update_selection(vte, select);
+
+    g_free(codepoints);
+    g_free(content);
+}
+
 /* {{{ CALLBACKS */
 void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
     const char * const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
@@ -233,6 +302,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_Right:
             case GDK_KEY_l:
                 move(vte, &info->select, 1, 0);
+                break;
+            case GDK_KEY_b:
+                move_backward_word(vte, &info->select);
+                break;
+            case GDK_KEY_w:
+                move_forward_word(vte, &info->select);
                 break;
             case GDK_KEY_asciicircum:
                 info->select.cursor_col = 0;
