@@ -194,7 +194,9 @@ static void open_selection(VteTerminal *vte) {
     if (browser_cmd[0]) {
         AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
         char *selection = atk_text_get_selection(text, 0, NULL, NULL);
-        launch_browser(selection);
+        if (selection[0]) {
+            launch_browser(selection);
+        }
         g_free(selection);
     } else {
         g_printerr("no browser to open url");
