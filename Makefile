@@ -24,10 +24,10 @@ ifeq (${CXX}, g++)
 	CXXFLAGS += -Wno-missing-field-initializers
 endif
 
-LDFLAGS := -s -Wl,--as-needed ${shell pkg-config --libs ${GTK} ${VTE}} ${LDFLAGS}
+LDFLAGS := -s -Wl,--as-needed ${LDFLAGS}
+LDLIBS := ${shell pkg-config --libs ${GTK} ${VTE}}
 
 termite: termite.cc
-	${CXX} ${CXXFLAGS} -o $@ $< ${LDFLAGS}
 
 install: termite
 	mkdir -p ${DESTDIR}${TERMINFO}
