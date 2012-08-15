@@ -151,14 +151,12 @@ static void toggle_visual(VteTerminal *vte, select_info *select, vi_mode mode) {
 
 static long first_row(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    const double scroll_lower = gtk_adjustment_get_lower(adjust);
-    return (long)scroll_lower;
+    return (long)gtk_adjustment_get_lower(adjust);
 }
 
 static long last_row(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    const double scroll_upper = gtk_adjustment_get_upper(adjust);
-    return (long)scroll_upper - 1;
+    return (long)gtk_adjustment_get_upper(adjust) - 1;
 }
 
 static void update_scroll(VteTerminal *vte, const select_info *select) {
