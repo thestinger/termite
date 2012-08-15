@@ -795,12 +795,12 @@ int main(int argc, char **argv) {
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("option parsing failed: %s\n", error->message);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (version) {
         g_print("termite %s\n", TERMITE_VERSION);
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -830,7 +830,7 @@ int main(int argc, char **argv) {
         g_shell_parse_argv(execute, &argcp, &argvp, &error);
         if (error) {
             g_printerr("Failed to parse command: %s\n", error->message);
-            return 1;
+            return EXIT_FAILURE;
         }
         command_argv = argvp;
     } else {
@@ -843,7 +843,7 @@ int main(int argc, char **argv) {
 
     if (!pty) {
         g_printerr("Failed to create pty: %s\n", error->message);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     search_panel_info panel = {vte, gtk_entry_new(),
@@ -905,7 +905,7 @@ int main(int argc, char **argv) {
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
         g_printerr("no window");
-        return 1;
+        return EXIT_FAILURE;
     }
     char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
     snprintf(xid_s, sizeof xid_s, "%lu", GDK_WINDOW_XID(gdk_window));
