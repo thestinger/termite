@@ -595,7 +595,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     GKeyFile *config = g_key_file_new();
 
     if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
-         g_key_file_load_from_dirs(config, filename, (const char **)g_get_system_config_dirs(),
+         g_key_file_load_from_dirs(config, filename,
+                                   const_cast<const char **>(g_get_system_config_dirs()),
                                    NULL, G_KEY_FILE_NONE, NULL))) {
         gboolean cfgbool;
         double cfgdouble;
