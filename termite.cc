@@ -386,6 +386,23 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     return FALSE;
 }
 
+static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
+    GdkEvent new_event;
+
+    new_event.key.type = GDK_KEY_PRESS;
+    new_event.key.window = gtk_widget_get_parent_window(widget);
+    new_event.key.send_event = TRUE;
+    new_event.key.time = GDK_CURRENT_TIME;
+    new_event.key.keyval = keyval;
+    new_event.key.state = GDK_KEY_PRESS_MASK;
+    new_event.key.length = 0;
+    new_event.key.string = 0;
+    new_event.key.hardware_keycode = 0;
+    new_event.key.group = 0;
+
+    gdk_event_put(&new_event);
+}
+
 gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
     gboolean ret = FALSE;
 
@@ -408,6 +425,14 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
                 break;
         }
         ret = TRUE;
+    } else if (info->mode == overlay_mode::completion) {
+        if (event->keyval == GDK_KEY_Tab) {
+            synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
+            return TRUE;
+        } else if (event->keyval == GDK_KEY_ISO_Left_Tab) {
+            synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Up);
+            return TRUE;
+        }
     }
 
     if (ret) {
