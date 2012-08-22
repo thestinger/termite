@@ -45,7 +45,7 @@ struct search_panel_info {
 };
 
 struct config_info {
-    gboolean dynamic_title, urgent_on_bell, clickable_url;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, multi_url;
     int tag;
 };
 
@@ -358,7 +358,8 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_Return:
                 open_selection(vte);
-                end_selection(vte, &info->select);
+                if (!info->config.multi_url)
+                    end_selection(vte, &info->select);
                 break;
         }
         return TRUE;
@@ -663,6 +664,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         if (get_config_boolean(config, "options", "urgent_on_bell", &cfgbool)) {
             info->urgent_on_bell = cfgbool;
         }
+        if (get_config_boolean(config, "options", "multi_url", &cfgbool)) {
+            info->multi_url = cfgbool;
+        }
         if (get_config_boolean(config, "options", "search_wrap", &cfgbool)) {
             vte_terminal_search_set_wrap_around(vte, cfgbool);
         }
@@ -877,7 +881,7 @@ int main(int argc, char **argv) {
     search_panel_info panel = {vte, gtk_entry_new(),
                                gtk_alignment_new(0, 0, 1, 1),
                                overlay_mode::hidden};
-    keybind_info info = {panel, {vi_mode::insert, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
+    keybind_info info = {panel, {vi_mode::insert, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, FALSE, -1}};
 
     load_config(GTK_WINDOW(window), vte, &info.config, &term, &geometry);
 
