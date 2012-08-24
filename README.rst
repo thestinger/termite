@@ -37,7 +37,8 @@ COMMAND MODE
 * ``?``: reverse search
 * ``u``: forward url search
 * ``U``: reverse url search
-* ``Return``: open the current selection as a url
+* ``o``: open the current selection as a url
+* ``Return``: open the current selection as a url and exit command mode
 * ``n``: next search match
 * ``N``: previous search match
 
