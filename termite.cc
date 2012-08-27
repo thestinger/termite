@@ -952,7 +952,7 @@ int main(int argc, char **argv) {
         vte_terminal_watch_child(vte, ppid);
     } else {
         g_printerr("The new terminal's command failed to run: %s\n", error->message);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     g_strfreev(env);
