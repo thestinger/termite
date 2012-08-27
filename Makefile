@@ -16,6 +16,7 @@ CXXFLAGS := -std=c++11 -O3 \
 	    -Wconversion \
 	    -Wunused-macros \
 	    -Wwrite-strings \
+	    -D_POSIX_C_SOURCE=200809L \
 	    -DTERMITE_VERSION=\"${VERSION}\" \
 	    ${shell pkg-config --cflags ${GTK} ${VTE}} \
 	    ${CXXFLAGS}
