@@ -12,8 +12,6 @@
 
 #include "url_regex.h"
 
-#define CSI "\x1b["
-
 enum class overlay_mode {
     hidden,
     search,
@@ -120,19 +118,17 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_copy_primary(vte);
 }
 
-static void feed_str(VteTerminal *vte, const char *s) {
-    vte_terminal_feed(vte, s, (long)strlen(s));
-}
-
 static void start_selection(VteTerminal *vte, select_info *select) {
-    feed_str(vte, CSI "?25l"); // hide cursor
+    vte_terminal_set_cursor_visible(vte, FALSE);
+    vte_terminal_disconnect_pty_read(vte);
     select->mode = vi_mode::command;
     vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
     update_selection(vte, select);
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
-    feed_str(vte, CSI "?25h"); // show cursor
+    vte_terminal_set_cursor_visible(vte, TRUE);
+    vte_terminal_connect_pty_read(vte);
     vte_terminal_select_none(vte);
     select->mode = vi_mode::insert;
 }
