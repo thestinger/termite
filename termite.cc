@@ -393,7 +393,7 @@ static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
     new_event.key.keyval = keyval;
     new_event.key.state = GDK_KEY_PRESS_MASK;
     new_event.key.length = 0;
-    new_event.key.string = 0;
+    new_event.key.string = nullptr;
     new_event.key.hardware_keycode = 0;
     new_event.key.group = 0;
 
