@@ -6,8 +6,8 @@ unset) and then falls back to ``$XDG_CONFIG_DIRS``.
 DEPENDENCIES
 ============
 
-A vte version >= 0.30. A patch is currently required to expose the
-functions needed for keyboard selection.
+A vte version >= 0.30. A patch is required to expose the functions needed for
+keyboard selection.
 
 KEYBINDINGS
 ===========
