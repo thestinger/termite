@@ -846,8 +846,7 @@ int main(int argc, char **argv) {
     }
 
     char **command_argv;
-    char fallback[] = "/bin/sh";
-    char *default_argv[2] = {fallback, NULL};
+    char *default_argv[2] = {NULL, NULL};
 
     if (execute) {
         int argcp;
@@ -859,8 +858,7 @@ int main(int argc, char **argv) {
         }
         command_argv = argvp;
     } else {
-        char *shell = vte_get_user_shell();
-        if (shell) default_argv[0] = shell;
+        default_argv[0] = vte_terminal_get_user_shell_with_fallback();
         command_argv = default_argv;
     }
 

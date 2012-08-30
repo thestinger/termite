@@ -1,6 +1,6 @@
 diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
 --- vte-0.32.2-old/src/vte.c	2012-07-13 21:09:04.003969877 -0400
-+++ vte-0.32.2/src/vte.c	2012-08-27 00:38:20.036602880 -0400
++++ vte-0.32.2/src/vte.c	2012-08-30 00:53:52.874582449 -0400
 @@ -129,7 +129,6 @@
  						 gpointer data,
  						 GArray *attributes,
@@ -31,6 +31,26 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  {
  	if (terminal->pvt->pty_input_source != 0) {
  		_vte_debug_print (VTE_DEBUG_IO, "disconnecting poll of vte_terminal_io_read\n");
+@@ -3708,8 +3707,8 @@
+         return NULL;
+ }
+ 
+-static char *
+-_vte_terminal_get_user_shell_with_fallback (void)
++char *
++vte_terminal_get_user_shell_with_fallback (void)
+ {
+         char *command;
+         const gchar *env;
+@@ -3744,7 +3743,7 @@
+ 	char **argv2;
+         char *shell = NULL;
+ 
+-        argv2 = __vte_pty_get_argv(command ? command : (shell = _vte_terminal_get_user_shell_with_fallback ()),
++        argv2 = __vte_pty_get_argv(command ? command : (shell = vte_terminal_get_user_shell_with_fallback ()),
+                                    argv,
+                                    flags);
+         g_free(shell);
 @@ -6676,7 +6675,7 @@
  			terminal->pvt->selection_start.row);
  
@@ -143,7 +163,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  			  long start_col, long start_row,
 diff -aur vte-0.32.2-old/src/vte.h vte-0.32.2/src/vte.h
 --- vte-0.32.2-old/src/vte.h	2012-07-13 21:09:04.003969877 -0400
-+++ vte-0.32.2/src/vte.h	2012-08-27 00:35:43.754405161 -0400
++++ vte-0.32.2/src/vte.h	2012-08-30 00:54:19.738281795 -0400
 @@ -296,6 +296,15 @@
  /* simple manipulation of selection */
  void vte_terminal_select_all(VteTerminal *terminal);
@@ -170,3 +190,11 @@ diff -aur vte-0.32.2-old/src/vte.h vte-0.32.2/src/vte.h
  /* Set whether or not the cursor blinks. */
  void vte_terminal_set_cursor_blink_mode(VteTerminal *terminal,
  					VteTerminalCursorBlinkMode mode);
+@@ -484,6 +496,7 @@
+ VtePty *vte_terminal_get_pty_object(VteTerminal *terminal);
+ 
+ char *vte_get_user_shell (void);
++char *vte_terminal_get_user_shell_with_fallback(void);
+ 
+ /* Accessors for bindings. */
+ #if !GTK_CHECK_VERSION (2, 91, 2)
