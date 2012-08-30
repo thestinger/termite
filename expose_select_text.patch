@@ -1,6 +1,6 @@
 diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
 --- vte-0.32.2-old/src/vte.c	2012-07-13 21:09:04.003969877 -0400
-+++ vte-0.32.2/src/vte.c	2012-08-30 00:53:52.874582449 -0400
++++ vte-0.32.2/src/vte.c	2012-08-30 04:11:30.827265668 -0400
 @@ -129,7 +129,6 @@
  						 gpointer data,
  						 GArray *attributes,
@@ -51,7 +51,36 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
                                     argv,
                                     flags);
          g_free(shell);
-@@ -6676,7 +6675,7 @@
+@@ -6545,6 +6544,28 @@
+ 	}
+ }
+ 
++/**
++ * vte_terminal_set_cursor_position:
++ * @terminal: a #VteTerminal
++ * @column: the new cursor column
++ * @row: the new cursor row
++ *
++ * Set the location of the cursor.
++ */
++void
++vte_terminal_set_cursor_position(VteTerminal *terminal,
++				 long column, long row)
++{
++	g_return_if_fail(VTE_IS_TERMINAL(terminal));
++
++	_vte_invalidate_cursor_once(terminal, FALSE);
++	terminal->pvt->screen->cursor_current.col = column;
++	terminal->pvt->screen->cursor_current.row = row;
++	_vte_invalidate_cursor_once(terminal, FALSE);
++	_vte_check_cursor_blink(terminal);
++	vte_terminal_queue_cursor_moved(terminal);
++}
++
+ static GtkClipboard *
+ vte_terminal_clipboard_get(VteTerminal *terminal, GdkAtom board)
+ {
+@@ -6676,7 +6697,7 @@
  			terminal->pvt->selection_start.row);
  
  	/* Temporarily stop caring about input from the child. */
@@ -60,7 +89,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  }
  
  static gboolean
-@@ -6693,7 +6692,7 @@
+@@ -6693,7 +6714,7 @@
  		terminal->pvt->selecting = FALSE;
  
  		/* Reconnect to input from the child if we paused it. */
@@ -69,7 +98,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  
  		return TRUE;
  	}
-@@ -8994,7 +8993,7 @@
+@@ -8994,7 +9015,7 @@
  #endif
  		kill(terminal->pvt->pty_pid, SIGHUP);
  	}
@@ -78,7 +107,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  	_vte_terminal_disconnect_pty_write(terminal);
  	if (terminal->pvt->pty_channel != NULL) {
  		g_io_channel_unref (terminal->pvt->pty_channel);
-@@ -13641,6 +13640,12 @@
+@@ -13641,6 +13662,12 @@
          g_object_notify(G_OBJECT(terminal), "cursor-blink-mode");
  }
  
@@ -91,7 +120,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  /**
   * vte_terminal_get_cursor_blink_mode:
   * @terminal: a #VteTerminal
-@@ -14384,7 +14389,7 @@
+@@ -14384,7 +14411,7 @@
          g_object_freeze_notify(object);
  
          if (pvt->pty != NULL) {
@@ -100,7 +129,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
                  _vte_terminal_disconnect_pty_write(terminal);
  
                  if (terminal->pvt->pty_channel != NULL) {
-@@ -14440,7 +14445,7 @@
+@@ -14440,7 +14467,7 @@
          _vte_terminal_setup_utf8 (terminal);
  
          /* Open channels to listen for input on. */
@@ -109,7 +138,7 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
  
          g_object_notify(object, "pty");
          g_object_notify(object, "pty-object");
-@@ -14567,6 +14572,51 @@
+@@ -14567,6 +14594,50 @@
  	}
  }
  
@@ -157,13 +186,12 @@ diff -aur vte-0.32.2-old/src/vte.c vte-0.32.2/src/vte.c
 +	_vte_terminal_select_text(terminal, start_col, start_row, end_col, end_row, 0, 0);
 +}
 +
-+
  void
  _vte_terminal_select_text(VteTerminal *terminal,
  			  long start_col, long start_row,
 diff -aur vte-0.32.2-old/src/vte.h vte-0.32.2/src/vte.h
 --- vte-0.32.2-old/src/vte.h	2012-07-13 21:09:04.003969877 -0400
-+++ vte-0.32.2/src/vte.h	2012-08-30 00:54:19.738281795 -0400
++++ vte-0.32.2/src/vte.h	2012-08-30 04:06:04.192768680 -0400
 @@ -296,6 +296,15 @@
  /* simple manipulation of selection */
  void vte_terminal_select_all(VteTerminal *terminal);
@@ -190,7 +218,16 @@ diff -aur vte-0.32.2-old/src/vte.h vte-0.32.2/src/vte.h
  /* Set whether or not the cursor blinks. */
  void vte_terminal_set_cursor_blink_mode(VteTerminal *terminal,
  					VteTerminalCursorBlinkMode mode);
-@@ -484,6 +496,7 @@
+@@ -435,6 +447,8 @@
+ 				  GArray *attributes);
+ void vte_terminal_get_cursor_position(VteTerminal *terminal,
+ 				      glong *column, glong *row);
++void vte_terminal_set_cursor_position(VteTerminal *terminal,
++				      long column, long row);
+ /* Display string matching:  clear all matching expressions. */
+ void vte_terminal_match_clear_all(VteTerminal *terminal);
+ 
+@@ -484,6 +498,7 @@
  VtePty *vte_terminal_get_pty_object(VteTerminal *terminal);
  
  char *vte_get_user_shell (void);

@@ -29,8 +29,8 @@ struct select_info {
     vi_mode mode;
     long begin_col;
     long begin_row;
-    long cursor_col;
-    long cursor_row;
+    long cursor_col_save;
+    long cursor_row_save;
 };
 
 struct search_panel_info {
@@ -79,11 +79,12 @@ void launch_browser(char *url) {
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
     if (select->mode == vi_mode::command) {
-        // a hack to use the selection as a cursor until a real one is implemented
-        vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
-                                 select->cursor_col, select->cursor_row);
+        vte_terminal_select_none(vte);
         return; // not in visual mode
     }
+
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
     vte_terminal_select_none(vte);
     vte_terminal_set_selection_block_mode(vte, select->mode == vi_mode::visual_block);
@@ -92,40 +93,39 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
 
     if (select->mode == vi_mode::visual) {
         const long begin = select->begin_row * n_columns + select->begin_col;
-        const long end = select->cursor_row * n_columns + select->cursor_col;
+        const long end = cursor_row * n_columns + cursor_col;
         if (begin < end) {
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
-                                     select->cursor_col, select->cursor_row);
+                                     cursor_col, cursor_row);
         } else {
-            vte_terminal_select_text(vte, select->cursor_col, select->cursor_row,
+            vte_terminal_select_text(vte, cursor_col, cursor_row,
                                      select->begin_col, select->begin_row);
         }
     } else if (select->mode == vi_mode::visual_line) {
         vte_terminal_select_text(vte, 0,
-                                 std::min(select->begin_row, select->cursor_row),
+                                 std::min(select->begin_row, cursor_row),
                                  n_columns - 1,
-                                 std::max(select->begin_row, select->cursor_row));
+                                 std::max(select->begin_row, cursor_row));
     } else if (select->mode == vi_mode::visual_block) {
         vte_terminal_select_text(vte,
-                                 std::min(select->begin_col, select->cursor_col),
-                                 std::min(select->begin_row, select->cursor_row),
-                                 std::max(select->begin_col, select->cursor_col),
-                                 std::max(select->begin_row, select->cursor_row));
+                                 std::min(select->begin_col, cursor_col),
+                                 std::min(select->begin_row, cursor_row),
+                                 std::max(select->begin_col, cursor_col),
+                                 std::max(select->begin_row, cursor_row));
     }
 
     vte_terminal_copy_primary(vte);
 }
 
 static void start_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_set_cursor_visible(vte, FALSE);
     vte_terminal_disconnect_pty_read(vte);
     select->mode = vi_mode::command;
-    vte_terminal_get_cursor_position(vte, &select->cursor_col, &select->cursor_row);
+    vte_terminal_get_cursor_position(vte, &select->cursor_col_save, &select->cursor_row_save);
     update_selection(vte, select);
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_set_cursor_visible(vte, TRUE);
+    vte_terminal_set_cursor_position(vte, select->cursor_col_save, select->cursor_row_save);
     vte_terminal_connect_pty_read(vte);
     vte_terminal_select_none(vte);
     select->mode = vi_mode::insert;
@@ -136,8 +136,7 @@ static void toggle_visual(VteTerminal *vte, select_info *select, vi_mode mode) {
         select->mode = vi_mode::command;
     } else {
         if (select->mode == vi_mode::command) {
-            select->begin_col = select->cursor_col;
-            select->begin_row = select->cursor_row;
+            vte_terminal_get_cursor_position(vte, &select->begin_col, &select->begin_row);
         }
         select->mode = mode;
     }
@@ -158,27 +157,32 @@ static void update_scroll(VteTerminal *vte, const select_info *select) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     const double scroll_row = gtk_adjustment_get_value(adjust);
     const long n_rows = vte_terminal_get_row_count(vte);
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    if (select->cursor_row < scroll_row) {
-        gtk_adjustment_set_value(adjust, (double)select->cursor_row);
-    } else if (select->cursor_row - n_rows >= (long)scroll_row) {
-        gtk_adjustment_set_value(adjust, (double)(select->cursor_row - n_rows + 1));
+    if (cursor_row < scroll_row) {
+        gtk_adjustment_set_value(adjust, (double)cursor_row);
+    } else if (cursor_row - n_rows >= (long)scroll_row) {
+        gtk_adjustment_set_value(adjust, (double)(cursor_row - n_rows + 1));
     }
 }
 
 static void move(VteTerminal *vte, select_info *select, long col, long row) {
     const long end_col = vte_terminal_get_column_count(vte) - 1;
 
-    select->cursor_col = CLAMP(select->cursor_col + col, 0, end_col);
-    select->cursor_row = CLAMP(select->cursor_row + row, first_row(vte), last_row(vte));
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
+    vte_terminal_set_cursor_position(vte,
+                                     CLAMP(cursor_col + col, 0, end_col),
+                                     CLAMP(cursor_row + row, first_row(vte), last_row(vte)));
 
     update_scroll(vte, select);
     update_selection(vte, select);
 }
 
 static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
-    select->cursor_col = 0;
-    select->cursor_row = row;
+    vte_terminal_set_cursor_position(vte, 0, row);
     update_scroll(vte, select);
     update_selection(vte, select);
 }
@@ -197,8 +201,11 @@ static void open_selection(VteTerminal *vte) {
 }
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
-    char *content = vte_terminal_get_text_range(vte, select->cursor_row, 0,
-                                                select->cursor_row, select->cursor_col,
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
+                                                cursor_row, cursor_col,
                                                 NULL, NULL, NULL);
 
     if (!content) {
@@ -222,8 +229,9 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
         } else {
             in_word = true;
         }
-        select->cursor_col--;
+        cursor_col--;
     }
+    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
     update_selection(vte, select);
 
     g_free(codepoints);
@@ -231,10 +239,13 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
 }
 
 static void move_forward_word(VteTerminal *vte, select_info *select) {
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
     const long end_col = vte_terminal_get_column_count(vte) - 1;
 
-    char *content = vte_terminal_get_text_range(vte, select->cursor_row, select->cursor_col,
-                                                select->cursor_row, end_col,
+    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
+                                                cursor_row, end_col,
                                                 NULL, NULL, NULL);
 
     if (!content) {
@@ -257,12 +268,19 @@ static void move_forward_word(VteTerminal *vte, select_info *select) {
         } else {
             end_of_word = true;
         }
-        select->cursor_col++;
+        cursor_col++;
     }
+    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
     update_selection(vte, select);
 
     g_free(codepoints);
     g_free(content);
+}
+
+static void set_cursor_column(VteTerminal *vte, long column) {
+    long cursor_row;
+    vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
+    vte_terminal_set_cursor_position(vte, column, cursor_row);
 }
 
 /* {{{ CALLBACKS */
@@ -305,11 +323,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 move_forward_word(vte, &info->select);
                 break;
             case GDK_KEY_asciicircum:
-                info->select.cursor_col = 0;
+                set_cursor_column(vte, 0);
                 update_selection(vte, &info->select);
                 break;
             case GDK_KEY_dollar:
-                info->select.cursor_col = vte_terminal_get_column_count(vte) - 1;
+                set_cursor_column(vte, vte_terminal_get_column_count(vte) - 1);
                 update_selection(vte, &info->select);
                 break;
             case GDK_KEY_g:
