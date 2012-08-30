@@ -153,7 +153,7 @@ static long last_row(VteTerminal *vte) {
     return (long)gtk_adjustment_get_upper(adjust) - 1;
 }
 
-static void update_scroll(VteTerminal *vte, const select_info *select) {
+static void update_scroll(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     const double scroll_row = gtk_adjustment_get_value(adjust);
     const long n_rows = vte_terminal_get_row_count(vte);
@@ -177,13 +177,13 @@ static void move(VteTerminal *vte, select_info *select, long col, long row) {
                                      CLAMP(cursor_col + col, 0, end_col),
                                      CLAMP(cursor_row + row, first_row(vte), last_row(vte)));
 
-    update_scroll(vte, select);
+    update_scroll(vte);
     update_selection(vte, select);
 }
 
 static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
     vte_terminal_set_cursor_position(vte, 0, row);
-    update_scroll(vte, select);
+    update_scroll(vte);
     update_selection(vte, select);
 }
 
