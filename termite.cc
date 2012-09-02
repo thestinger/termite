@@ -821,7 +821,7 @@ static void exit_with_status(VteTerminal *vte) {
 
 int main(int argc, char **argv) {
     GError *error = NULL;
-    const char *term = "termite";
+    const char *term = "xterm-termite";
     gboolean version = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);

@@ -1,5 +1,5 @@
 # vim: noet:ts=8:sw=8:sts=0
-termite|VTE-based terminal,
+xterm-termite|VTE-based terminal,
 	am,
 	bce,
 	ccc,
