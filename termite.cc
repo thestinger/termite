@@ -81,7 +81,7 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_select_none(vte);
 
     if (select->mode == vi_mode::command) {
-        return; // not in visual mode
+        return;
     }
 
     const long n_columns = vte_terminal_get_column_count(vte);
