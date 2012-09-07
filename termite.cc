@@ -78,18 +78,17 @@ void launch_browser(char *url) {
 }
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
+    vte_terminal_select_none(vte);
+
     if (select->mode == vi_mode::command) {
-        vte_terminal_select_none(vte);
         return; // not in visual mode
     }
 
+    const long n_columns = vte_terminal_get_column_count(vte);
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    vte_terminal_select_none(vte);
     vte_terminal_set_selection_block_mode(vte, select->mode == vi_mode::visual_block);
-
-    const long n_columns = vte_terminal_get_column_count(vte);
 
     if (select->mode == vi_mode::visual) {
         const long begin = select->begin_row * n_columns + select->begin_col;
