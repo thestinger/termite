@@ -632,8 +632,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         const char **term, char **geometry) {
 
     const char * const filename = "termite.cfg";
-    const char *dir = g_get_user_config_dir();
-    char *path = g_build_filename(dir, filename, NULL);
+    char *path = g_build_filename(g_get_user_config_dir(), filename, nullptr);
     GKeyFile *config = g_key_file_new();
 
     if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
