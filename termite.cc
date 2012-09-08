@@ -29,8 +29,8 @@ struct select_info {
     vi_mode mode;
     long begin_col;
     long begin_row;
-    long cursor_col_save;
-    long cursor_row_save;
+    long origin_col;
+    long origin_row;
 };
 
 struct search_panel_info {
@@ -119,12 +119,12 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
 static void start_selection(VteTerminal *vte, select_info *select) {
     vte_terminal_disconnect_pty_read(vte);
     select->mode = vi_mode::command;
-    vte_terminal_get_cursor_position(vte, &select->cursor_col_save, &select->cursor_row_save);
+    vte_terminal_get_cursor_position(vte, &select->origin_col, &select->origin_row);
     update_selection(vte, select);
 }
 
 static void end_selection(VteTerminal *vte, select_info *select) {
-    vte_terminal_set_cursor_position(vte, select->cursor_col_save, select->cursor_row_save);
+    vte_terminal_set_cursor_position(vte, select->origin_col, select->origin_row);
     vte_terminal_connect_pty_read(vte);
     vte_terminal_select_none(vte);
     select->mode = vi_mode::insert;
