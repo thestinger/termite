@@ -755,16 +755,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         char color_key[] = "color000";
 
-        bool success = true;
-        for (unsigned i = 0; success && i < palette_size; i++) {
+        for (unsigned i = 0; i < palette_size; i++) {
             snprintf(color_key, sizeof color_key, "color%u", i);
-            if (get_config_string(config, "colors", color_key, &cfgstr)) {
-                if (!gdk_color_parse(cfgstr, &palette[i])) {
-                    g_printerr("invalid color string: %s\n", cfgstr);
-                    success = false;
-                }
-                g_free(cfgstr);
-            } else {
+            if (!get_config_color(config, color_key, &palette[i])) {
                 if (i < 16) {
                     palette[i].blue = (i & 4) ? 0xc000 : 0;
                     palette[i].green = (i & 2) ? 0xc000 : 0;
@@ -789,9 +782,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                 }
             }
         }
-        if (success) {
-            vte_terminal_set_colors(vte, NULL, NULL, palette, palette_size);
-        }
+        vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
         if (get_config_color(config, "foreground", &color)) {
             vte_terminal_set_color_foreground(vte, &color);
         }
