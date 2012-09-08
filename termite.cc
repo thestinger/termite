@@ -237,6 +237,44 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
     g_free(content);
 }
 
+static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
+                                                cursor_row, cursor_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    glong length;
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    bool in_word = false;
+
+    for (gunichar *c = codepoints + length - 2; c > codepoints; c--) {
+        if (g_unichar_isspace(*(c - 1))) {
+            if (in_word) {
+                break;
+            }
+        } else {
+            in_word = true;
+        }
+        cursor_col--;
+    }
+    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
+    update_selection(vte, select);
+
+    g_free(codepoints);
+    g_free(content);
+}
+
 static void move_forward_word(VteTerminal *vte, select_info *select) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
@@ -261,6 +299,45 @@ static void move_forward_word(VteTerminal *vte, select_info *select) {
 
     for (gunichar *c = codepoints; *c != 0; c++) {
         if (vte_terminal_is_word_char(vte, *c)) {
+            if (end_of_word) {
+                break;
+            }
+        } else {
+            end_of_word = true;
+        }
+        cursor_col++;
+    }
+    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
+    update_selection(vte, select);
+
+    g_free(codepoints);
+    g_free(content);
+}
+
+static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
+                                                cursor_row, end_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    bool end_of_word = false;
+
+    for (gunichar *c = codepoints; *c != 0; c++) {
+        if (!g_unichar_isspace(*c)) {
             if (end_of_word) {
                 break;
             }
@@ -319,8 +396,14 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_b:
                 move_backward_word(vte, &info->select);
                 break;
+            case GDK_KEY_B:
+                move_backward_blank_word(vte, &info->select);
+                break;
             case GDK_KEY_w:
                 move_forward_word(vte, &info->select);
+                break;
+            case GDK_KEY_W:
+                move_forward_blank_word(vte, &info->select);
                 break;
             case GDK_KEY_asciicircum:
                 set_cursor_column(vte, &info->select, 0);
