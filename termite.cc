@@ -829,6 +829,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         if (get_config_color(config, "cursor", &color)) {
             vte_terminal_set_color_cursor(vte, &color);
         }
+        if (get_config_color(config, "highlight", &color)) {
+            vte_terminal_set_color_highlight(vte, &color);
+        }
     }
     g_free(path);
     g_key_file_free(config);
