@@ -245,9 +245,7 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
 }
 
 static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
-    move_backward(vte, select, [](gunichar c) {
-        return g_unichar_isspace(c);
-    });
+    move_backward(vte, select, g_unichar_isspace);
 }
 
 template<typename F>
