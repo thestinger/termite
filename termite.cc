@@ -212,7 +212,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F predicate) {
         return;
     }
 
-    glong length;
+    long length;
     gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
 
     if (!codepoints) {
@@ -263,10 +263,16 @@ static void move_forward(VteTerminal *vte, select_info *select, F predicate) {
         return;
     }
 
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
+    long length;
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
 
     if (!codepoints) {
         return;
+    }
+
+    // prevent going past the end (get_text_range adds a \n)
+    if (codepoints[length - 1] == '\n') {
+        codepoints[--length] = '\0';
     }
 
     bool end_of_word = false;
