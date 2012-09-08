@@ -276,10 +276,11 @@ static void move_forward_word(VteTerminal *vte, select_info *select) {
     g_free(content);
 }
 
-static void set_cursor_column(VteTerminal *vte, long column) {
+static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
     long cursor_row;
     vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
     vte_terminal_set_cursor_position(vte, column, cursor_row);
+    update_selection(vte, select);
 }
 
 /* {{{ CALLBACKS */
@@ -322,12 +323,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 move_forward_word(vte, &info->select);
                 break;
             case GDK_KEY_asciicircum:
-                set_cursor_column(vte, 0);
-                update_selection(vte, &info->select);
+                set_cursor_column(vte, &info->select, 0);
                 break;
             case GDK_KEY_dollar:
-                set_cursor_column(vte, vte_terminal_get_column_count(vte) - 1);
-                update_selection(vte, &info->select);
+                set_cursor_column(vte, &info->select, vte_terminal_get_column_count(vte) - 1);
                 break;
             case GDK_KEY_g:
                 move_to_row_start(vte, &info->select, first_row(vte));
