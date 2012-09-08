@@ -199,7 +199,8 @@ static void open_selection(VteTerminal *vte) {
     }
 }
 
-static void move_backward_word(VteTerminal *vte, select_info *select) {
+template<typename F>
+static void move_backward(VteTerminal *vte, select_info *select, F predicate) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
@@ -221,7 +222,7 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
     bool in_word = false;
 
     for (gunichar *c = codepoints + length - 2; c > codepoints; c--) {
-        if (!vte_terminal_is_word_char(vte, *(c - 1))) {
+        if (predicate(*(c - 1))) {
             if (in_word) {
                 break;
             }
@@ -237,36 +238,50 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
     g_free(content);
 }
 
+static void move_backward_word(VteTerminal *vte, select_info *select) {
+    move_backward(vte, select, [vte](gunichar c) {
+        return !vte_terminal_is_word_char(vte, c);
+    });
+}
+
 static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
+    move_backward(vte, select, [](gunichar c) {
+        return g_unichar_isspace(c);
+    });
+}
+
+template<typename F>
+static void move_forward(VteTerminal *vte, select_info *select, F predicate) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
-                                                cursor_row, cursor_col,
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
+                                                cursor_row, end_col,
                                                 NULL, NULL, NULL);
 
     if (!content) {
         return;
     }
 
-    glong length;
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
 
     if (!codepoints) {
         return;
     }
 
-    bool in_word = false;
+    bool end_of_word = false;
 
-    for (gunichar *c = codepoints + length - 2; c > codepoints; c--) {
-        if (g_unichar_isspace(*(c - 1))) {
-            if (in_word) {
+    for (gunichar *c = codepoints; *c != 0; c++) {
+        if (predicate(*c)) {
+            if (end_of_word) {
                 break;
             }
         } else {
-            in_word = true;
+            end_of_word = true;
         }
-        cursor_col--;
+        cursor_col++;
     }
     vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
     update_selection(vte, select);
@@ -276,81 +291,15 @@ static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
 }
 
 static void move_forward_word(VteTerminal *vte, select_info *select) {
-    long cursor_col, cursor_row;
-    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
-
-    const long end_col = vte_terminal_get_column_count(vte) - 1;
-
-    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
-                                                cursor_row, end_col,
-                                                NULL, NULL, NULL);
-
-    if (!content) {
-        return;
-    }
-
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
-
-    if (!codepoints) {
-        return;
-    }
-
-    bool end_of_word = false;
-
-    for (gunichar *c = codepoints; *c != 0; c++) {
-        if (vte_terminal_is_word_char(vte, *c)) {
-            if (end_of_word) {
-                break;
-            }
-        } else {
-            end_of_word = true;
-        }
-        cursor_col++;
-    }
-    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
-    update_selection(vte, select);
-
-    g_free(codepoints);
-    g_free(content);
+    move_forward(vte, select, [vte](gunichar c) {
+        return vte_terminal_is_word_char(vte, c);
+    });
 }
 
 static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
-    long cursor_col, cursor_row;
-    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
-
-    const long end_col = vte_terminal_get_column_count(vte) - 1;
-
-    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
-                                                cursor_row, end_col,
-                                                NULL, NULL, NULL);
-
-    if (!content) {
-        return;
-    }
-
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, NULL, NULL);
-
-    if (!codepoints) {
-        return;
-    }
-
-    bool end_of_word = false;
-
-    for (gunichar *c = codepoints; *c != 0; c++) {
-        if (!g_unichar_isspace(*c)) {
-            if (end_of_word) {
-                break;
-            }
-        } else {
-            end_of_word = true;
-        }
-        cursor_col++;
-    }
-    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
-    update_selection(vte, select);
-
-    g_free(codepoints);
-    g_free(content);
+    move_forward(vte, select, [](gunichar c) {
+        return !g_unichar_isspace(c);
+    });
 }
 
 static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
