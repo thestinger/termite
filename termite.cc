@@ -156,8 +156,8 @@ static void update_scroll(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     const double scroll_row = gtk_adjustment_get_value(adjust);
     const long n_rows = vte_terminal_get_row_count(vte);
-    long cursor_col, cursor_row;
-    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+    long cursor_row;
+    vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
 
     if (cursor_row < scroll_row) {
         gtk_adjustment_set_value(adjust, (double)cursor_row);
