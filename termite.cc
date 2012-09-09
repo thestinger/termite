@@ -241,7 +241,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
     move_backward(vte, select, [vte](gunichar c) {
-        return !vte_terminal_is_word_char(vte, c);
+        return vte_terminal_is_word_char(vte, c);
     });
 }
 
