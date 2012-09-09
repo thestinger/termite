@@ -201,7 +201,7 @@ static void open_selection(VteTerminal *vte) {
 }
 
 template<typename F>
-static void move_backward(VteTerminal *vte, select_info *select, F predicate) {
+static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
@@ -223,7 +223,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F predicate) {
     bool in_word = false;
 
     for (long i = length - 2; i > 0; i--) {
-        if (predicate(codepoints[i - 1])) {
+        if (!is_word(codepoints[i - 1])) {
             if (in_word) {
                 break;
             }
@@ -246,7 +246,7 @@ static void move_backward_word(VteTerminal *vte, select_info *select) {
 }
 
 static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
-    move_backward(vte, select, g_unichar_isspace);
+    move_backward(vte, select, std::not1(std::ref(g_unichar_isspace)));
 }
 
 template<typename F>
