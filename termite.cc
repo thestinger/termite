@@ -222,8 +222,8 @@ static void move_backward(VteTerminal *vte, select_info *select, F predicate) {
 
     bool in_word = false;
 
-    for (gunichar *c = codepoints + length - 2; c > codepoints; c--) {
-        if (predicate(*(c - 1))) {
+    for (long i = length - 2; i > 0; i--) {
+        if (predicate(codepoints[i - 1])) {
             if (in_word) {
                 break;
             }
@@ -278,8 +278,8 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
 
     bool end_of_word = false;
 
-    for (gunichar *c = codepoints + 1; *c != 0; c++) {
-        if (is_word(*(c - 1))) {
+    for (long i = 1; i < length; i++) {
+        if (is_word(codepoints[i - 1])) {
             if (end_of_word) {
                 break;
             }
