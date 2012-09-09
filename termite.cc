@@ -11,6 +11,8 @@
 
 #include "url_regex.h"
 
+using namespace std::placeholders;
+
 enum class overlay_mode {
     hidden,
     search,
@@ -240,9 +242,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
 }
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
-    move_backward(vte, select, [vte](gunichar c) {
-        return vte_terminal_is_word_char(vte, c);
-    });
+    move_backward(vte, select, std::bind(vte_terminal_is_word_char, vte, _1));
 }
 
 static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
@@ -296,9 +296,7 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
 }
 
 static void move_forward_word(VteTerminal *vte, select_info *select) {
-    move_forward(vte, select, [vte](gunichar c) {
-        return vte_terminal_is_word_char(vte, c);
-    });
+    move_forward(vte, select, std::bind(vte_terminal_is_word_char, vte, _1));
 }
 
 static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
