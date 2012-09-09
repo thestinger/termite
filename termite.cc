@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <limits>
 
 #include <gdk/gdkx.h>
@@ -301,9 +302,7 @@ static void move_forward_word(VteTerminal *vte, select_info *select) {
 }
 
 static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
-    move_forward(vte, select, [](gunichar c) {
-        return !g_unichar_isspace(c);
-    });
+    move_forward(vte, select, std::not1(std::ref(g_unichar_isspace)));
 }
 
 static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
