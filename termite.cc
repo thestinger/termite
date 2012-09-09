@@ -250,7 +250,7 @@ static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
 }
 
 template<typename F>
-static void move_forward(VteTerminal *vte, select_info *select, F predicate) {
+static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
@@ -273,13 +273,13 @@ static void move_forward(VteTerminal *vte, select_info *select, F predicate) {
 
     // prevent going past the end (get_text_range adds a \n)
     if (codepoints[length - 1] == '\n') {
-        codepoints[--length] = '\0';
+        codepoints[--length] = 0;
     }
 
     bool end_of_word = false;
 
-    for (gunichar *c = codepoints; *c != 0; c++) {
-        if (predicate(*c)) {
+    for (gunichar *c = codepoints + 1; *c != 0; c++) {
+        if (is_word(*(c - 1))) {
             if (end_of_word) {
                 break;
             }
