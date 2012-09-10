@@ -273,7 +273,7 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
 
     // prevent going past the end (get_text_range adds a \n)
     if (codepoints[length - 1] == '\n') {
-        codepoints[--length] = 0;
+        length--;
     }
 
     bool end_of_word = false;
