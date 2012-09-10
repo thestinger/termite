@@ -35,7 +35,6 @@ install: termite
 	mkdir -p ${DESTDIR}${TERMINFO}
 	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
 	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
-	install -Dm644 termite.vim ${DESTDIR}${PREFIX}/share/vim/vimfiles/plugin/termite.vim
 
 uninstall:
 	rm -f ${DESTDIR}${PREFIX}/bin/termite
