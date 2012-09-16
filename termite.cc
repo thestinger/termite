@@ -3,6 +3,7 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <vector>
 
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
@@ -63,7 +64,7 @@ struct keybind_info {
 };
 
 static char *browser_cmd[3] = {NULL};
-GList *url_list = nullptr;
+std::vector<url_data> url_list;
 
 static void launch_browser(char *url);
 
@@ -107,19 +108,19 @@ static void find_urls(VteTerminal *vte) {
 
         g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
         while (g_match_info_matches(info)) {
-            url_data *node = (url_data *)g_malloc(sizeof(url_data));
+            url_data node;
 
-            node->url = g_match_info_fetch(info, 0);
-            node->line = line;
-            g_match_info_fetch_pos(info, 0, &node->pos, NULL);
+            node.url = g_match_info_fetch(info, 0);
+            node.line = line;
+            g_match_info_fetch_pos(info, 0, &node.pos, NULL);
 
-            char c = token[node->pos];
-            token[node->pos] = '\0';
+            char c = token[node.pos];
+            token[node.pos] = '\0';
             size_t len = mbstowcs(NULL, token, 0);
-            token[node->pos] = c;
-            node->pos = len;
+            token[node.pos] = c;
+            node.pos = len;
 
-            url_list = g_list_append(url_list, node);
+            url_list.push_back(node);
             g_match_info_next(info, &error);
         }
 
@@ -134,9 +135,8 @@ static void find_urls(VteTerminal *vte) {
 }
 
 static void launch_url(unsigned id) {
-    url_data *url = (url_data *)g_list_nth_data(url_list, id);
-    if (url) {
-        browser_cmd[1] = url->url;
+    if (id < url_list.size()) {
+        browser_cmd[1] = url_list[id].url;
         g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
         g_printerr("url not found\n");
@@ -162,9 +162,7 @@ static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
 }
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
-    if (url_list) {
-        GList *l = url_list;
-
+    if (!url_list.empty()) {
         glong cols = vte_terminal_get_column_count(vte);
         glong cw = vte_terminal_get_char_width(vte);
         glong ch = vte_terminal_get_char_height(vte);
@@ -173,16 +171,15 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        unsigned offset = 0, id = 1;
+        unsigned offset = 0;
 
-        for (; l != NULL; l = l->next, ++id) {
-            url_data *data = (url_data *)l->data;
+        for (unsigned i = 0; i < url_list.size(); i++) {
+            url_data data = url_list[i];
+            glong x = data.pos % cols * cw;
+            offset += data.pos / cols;
+            glong y = (data.line + offset) * ch;
 
-            glong x = data->pos % cols * cw;
-            offset += data->pos / cols;
-            glong y = (data->line + offset) * ch;
-
-            draw_marker(cr, x, y, id);
+            draw_marker(cr, x, y, i + 1);
         }
     }
 
@@ -604,8 +601,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         if (info->mode == overlay_mode::urlselect) {
             gtk_widget_hide(info->da);
-            g_list_free(url_list);
-            url_list = nullptr;
+            url_list.clear();
         }
         info->mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel);
