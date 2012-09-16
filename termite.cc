@@ -92,7 +92,7 @@ void launch_browser(char *url) {
 
 static void find_urls(VteTerminal *vte) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
-    gchar *content = vte_terminal_get_text(vte, NULL, NULL, NULL);
+    char *content = vte_terminal_get_text(vte, NULL, NULL, NULL);
 
     char *s_ptr = content, *saveptr;
 
@@ -137,13 +137,13 @@ static void find_urls(VteTerminal *vte) {
 static void launch_url(unsigned id) {
     if (id < url_list.size()) {
         browser_cmd[1] = url_list[id].url;
-        g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+        g_spawn_async(NULL, (char **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
         g_printerr("url not found\n");
     }
 }
 
-static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
+static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
     char buffer[3];
 
     cairo_set_source_rgb(cr, 1, 1, 1);
@@ -163,9 +163,9 @@ static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
     if (!url_list.empty()) {
-        glong cols = vte_terminal_get_column_count(vte);
-        glong cw = vte_terminal_get_char_width(vte);
-        glong ch = vte_terminal_get_char_height(vte);
+        long cols = vte_terminal_get_column_count(vte);
+        long cw = vte_terminal_get_char_width(vte);
+        long ch = vte_terminal_get_char_height(vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
@@ -175,9 +175,9 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
 
         for (unsigned i = 0; i < url_list.size(); i++) {
             url_data data = url_list[i];
-            glong x = data.pos % cols * cw;
+            long x = data.pos % cols * cw;
             offset += data.pos / cols;
-            glong y = (data.line + offset) * ch;
+            long y = (data.line + offset) * ch;
 
             draw_marker(cr, x, y, i + 1);
         }
