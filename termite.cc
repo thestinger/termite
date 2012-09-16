@@ -602,6 +602,11 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     }
 
     if (ret) {
+        if (info->mode == overlay_mode::urlselect) {
+            gtk_widget_hide(info->da);
+            g_list_free(list);
+            list = nullptr;
+        }
         info->mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel);
         gtk_widget_grab_focus(GTK_WIDGET(info->vte));
