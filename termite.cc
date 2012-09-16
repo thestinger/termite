@@ -46,11 +46,11 @@ struct search_panel_info {
     overlay_mode mode;
 };
 
-typedef struct url_data {
+struct url_data {
     char *url;
     unsigned line;
     int pos;
-} url_data;
+};
 
 struct config_info {
     gboolean dynamic_title, urgent_on_bell, clickable_url;
