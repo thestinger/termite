@@ -116,9 +116,9 @@ static void find_urls(VteTerminal *vte) {
 
             char c = token[node.pos];
             token[node.pos] = '\0';
-            size_t len = mbstowcs(NULL, token, 0);
+            long len = g_utf8_strlen(token, -1);
             token[node.pos] = c;
-            node.pos = len;
+            node.pos = static_cast<int>(len);
 
             url_list.push_back(node);
             g_match_info_next(info, &error);
