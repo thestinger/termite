@@ -147,7 +147,7 @@ static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
     char buffer[3];
 
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, x, y, 8, 8);
+    cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y), 8, 8);
     cairo_stroke_preserve(cr);
     cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_fill(cr);
@@ -155,7 +155,7 @@ static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
     cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_source_rgb(cr, 1, 1, 1);
     cairo_set_font_size(cr, 9);
-    cairo_move_to(cr, x, y + 7);
+    cairo_move_to(cr, static_cast<double>(x), static_cast<double>(y + 7));
 
     snprintf(buffer, 10, "%d", id);
     cairo_show_text(cr, buffer);
