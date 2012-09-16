@@ -161,7 +161,7 @@ static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
     cairo_show_text(cr, buffer);
 }
 
-static gboolean draw_cb(GtkDrawingArea *da, cairo_t *cr, VteTerminal *vte) {
+static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
     if (list) {
         GList *l = list;
 
