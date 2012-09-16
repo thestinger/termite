@@ -63,7 +63,7 @@ struct keybind_info {
 };
 
 static char *browser_cmd[3] = {NULL};
-GList *list = nullptr;
+GList *url_list = nullptr;
 
 static void launch_browser(char *url);
 
@@ -119,7 +119,7 @@ static void find_urls(VteTerminal *vte) {
             token[node->pos] = c;
             node->pos = len;
 
-            list = g_list_append(list, node);
+            url_list = g_list_append(url_list, node);
             g_match_info_next(info, &error);
         }
 
@@ -134,7 +134,7 @@ static void find_urls(VteTerminal *vte) {
 }
 
 static void launch_url(unsigned id) {
-    url_data *url = (url_data *)g_list_nth_data(list, id);
+    url_data *url = (url_data *)g_list_nth_data(url_list, id);
     if (url) {
         browser_cmd[1] = url->url;
         g_spawn_async(NULL, (gchar **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
@@ -162,8 +162,8 @@ static void draw_marker(cairo_t *cr, glong x, glong y, unsigned id) {
 }
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
-    if (list) {
-        GList *l = list;
+    if (url_list) {
+        GList *l = url_list;
 
         glong cols = vte_terminal_get_column_count(vte);
         glong cw = vte_terminal_get_char_width(vte);
@@ -604,8 +604,8 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         if (info->mode == overlay_mode::urlselect) {
             gtk_widget_hide(info->da);
-            g_list_free(list);
-            list = nullptr;
+            g_list_free(url_list);
+            url_list = nullptr;
         }
         info->mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel);
