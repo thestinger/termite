@@ -171,7 +171,7 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        unsigned offset = 0;
+        unsigned long offset = 0;
 
         for (unsigned i = 0; i < url_list.size(); i++) {
             url_data data = url_list[i];
