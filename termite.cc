@@ -142,7 +142,7 @@ static void launch_url(unsigned id) {
 }
 
 static void draw_marker(cairo_t *cr, const char *font, long x, long y, int padding, unsigned id) {
-    char buffer[3];
+    char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
 
     cairo_select_font_face(cr, font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
