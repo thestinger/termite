@@ -162,7 +162,7 @@ static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
     cairo_set_font_size(cr, 9);
     cairo_move_to(cr, static_cast<double>(x), static_cast<double>(y + 7));
 
-    snprintf(buffer, 10, "%d", id);
+    snprintf(buffer, 10, "%u", id);
     cairo_show_text(cr, buffer);
 }
 
