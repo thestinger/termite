@@ -48,7 +48,7 @@ struct search_panel_info {
 
 struct url_data {
     char *url;
-    unsigned line;
+    long line;
     int pos;
 };
 
