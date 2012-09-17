@@ -166,6 +166,8 @@ static void draw_marker(cairo_t *cr, const char *font, long x, long y, int paddi
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
     if (!url_list.empty()) {
+        const PangoFontDescription *desc = vte_terminal_get_font(vte);
+        const char *font = pango_font_description_get_family(desc);
         const long cw = vte_terminal_get_char_width(vte);
         const long ch = vte_terminal_get_char_height(vte);
 
@@ -177,8 +179,7 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
             url_data data = url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-
-            draw_marker(cr, "Monospaced", x, y, 3, i + 1);
+            draw_marker(cr, font, x, y, 3, i + 1);
         }
     }
 
