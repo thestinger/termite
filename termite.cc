@@ -114,9 +114,9 @@ static void find_urls(VteTerminal *vte) {
             node.line = line;
             g_match_info_fetch_pos(info, 0, &node.pos, NULL);
 
-            char c = token[node.pos];
+            const char c = token[node.pos];
             token[node.pos] = '\0';
-            long len = g_utf8_strlen(token, -1);
+            const long len = g_utf8_strlen(token, -1);
             token[node.pos] = c;
             node.pos = static_cast<int>(len);
 
@@ -163,9 +163,9 @@ static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
     if (!url_list.empty()) {
-        long cols = vte_terminal_get_column_count(vte);
-        long cw = vte_terminal_get_char_width(vte);
-        long ch = vte_terminal_get_char_height(vte);
+        const long cols = vte_terminal_get_column_count(vte);
+        const long cw = vte_terminal_get_char_width(vte);
+        const long ch = vte_terminal_get_char_height(vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
@@ -175,9 +175,9 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
 
         for (unsigned i = 0; i < url_list.size(); i++) {
             url_data data = url_list[i];
-            long x = data.pos % cols * cw;
+            const long x = data.pos % cols * cw;
             offset += data.pos / cols;
-            long y = (data.line + offset) * ch;
+            const long y = (data.line + offset) * ch;
 
             draw_marker(cr, x, y, i + 1);
         }
