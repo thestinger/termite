@@ -110,18 +110,15 @@ static void find_urls(VteTerminal *vte) {
 
         g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
         while (g_match_info_matches(info)) {
-            url_data node;
-            node.url = g_match_info_fetch(info, 0);
-
             int pos;
             g_match_info_fetch_pos(info, 0, &pos, NULL);
 
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
             const vte_char_attributes attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
-            node.line = attr.row - first_row;
-            node.pos = attr.column;
 
-            url_list.push_back(node);
+            url_list.push_back(url_data{g_match_info_fetch(info, 0),
+                                        attr.row - first_row,
+                                        attr.column});
             g_match_info_next(info, &error);
         }
 
