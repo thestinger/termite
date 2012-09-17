@@ -116,8 +116,8 @@ static void find_urls(VteTerminal *vte) {
             const vte_char_attributes attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
 
             url_list.push_back(url_data{g_match_info_fetch(info, 0),
-                                        attr.row - first_row,
-                                        attr.column});
+                                        attr.column,
+                                        attr.row - first_row});
             g_match_info_next(info, &error);
         }
 
