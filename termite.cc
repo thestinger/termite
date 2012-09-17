@@ -148,7 +148,7 @@ static void draw_marker(cairo_t *cr, const char *font, long x, long y, int paddi
     cairo_select_font_face(cr, font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_font_size(cr, 9);
 
-    snprintf(buffer, 10, "%u", id);
+    snprintf(buffer, sizeof(buffer), "%u", id);
     cairo_text_extents(cr, buffer, &ext);
 
     cairo_set_source_rgb(cr, 1, 1, 1);
