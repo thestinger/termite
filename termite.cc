@@ -49,7 +49,7 @@ struct search_panel_info {
 struct url_data {
     char *url;
     long line;
-    int pos;
+    long pos;
 };
 
 struct config_info {
@@ -111,18 +111,15 @@ static void find_urls(VteTerminal *vte) {
         g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
         while (g_match_info_matches(info)) {
             url_data node;
-
             node.url = g_match_info_fetch(info, 0);
-            g_match_info_fetch_pos(info, 0, &node.pos, NULL);
+
+            int pos;
+            g_match_info_fetch_pos(info, 0, &pos, NULL);
 
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
-            node.line = g_array_index(attributes, vte_char_attributes, token + node.pos - content).row - first_row;
-
-            const char c = token[node.pos];
-            token[node.pos] = '\0';
-            const long len = g_utf8_strlen(token, -1);
-            token[node.pos] = c;
-            node.pos = static_cast<int>(len);
+            const vte_char_attributes attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
+            node.line = attr.row - first_row;
+            node.pos = attr.column;
 
             url_list.push_back(node);
             g_match_info_next(info, &error);
