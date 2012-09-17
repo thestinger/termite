@@ -48,8 +48,7 @@ struct search_panel_info {
 
 struct url_data {
     char *url;
-    long line;
-    long pos;
+    long col, row;
 };
 
 struct config_info {
@@ -162,7 +161,6 @@ static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
 
 static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
     if (!url_list.empty()) {
-        const long cols = vte_terminal_get_column_count(vte);
         const long cw = vte_terminal_get_char_width(vte);
         const long ch = vte_terminal_get_char_height(vte);
 
@@ -172,8 +170,8 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
 
         for (unsigned i = 0; i < url_list.size(); i++) {
             url_data data = url_list[i];
-            const long x = data.pos % cols * cw;
-            const long y = data.line * ch;
+            const long x = data.col * cw;
+            const long y = data.row * ch;
 
             draw_marker(cr, x, y, i + 1);
         }
