@@ -84,6 +84,7 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         const char **term, char **geometry);
+static long first_row(VteTerminal *vte);
 
 void launch_browser(char *url) {
     browser_cmd[1] = url;
@@ -92,11 +93,12 @@ void launch_browser(char *url) {
 
 static void find_urls(VteTerminal *vte) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
-    char *content = vte_terminal_get_text(vte, NULL, NULL, NULL);
+    GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
+    char *content = vte_terminal_get_text(vte, NULL, NULL, attributes);
 
     char *s_ptr = content, *saveptr;
 
-    for (unsigned line = 0; ; line++, s_ptr = NULL) {
+    for (; ; s_ptr = NULL) {
         char *token = strtok_r(s_ptr, "\n", &saveptr);
 
         if (!token) {
@@ -111,8 +113,10 @@ static void find_urls(VteTerminal *vte) {
             url_data node;
 
             node.url = g_match_info_fetch(info, 0);
-            node.line = line;
             g_match_info_fetch_pos(info, 0, &node.pos, NULL);
+
+            const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
+            node.line = g_array_index(attributes, vte_char_attributes, token + node.pos - content).row - first_row;
 
             const char c = token[node.pos];
             token[node.pos] = '\0';
@@ -132,6 +136,7 @@ static void find_urls(VteTerminal *vte) {
         }
     }
     g_regex_unref(regex);
+    g_array_free(attributes, TRUE);
 }
 
 static void launch_url(unsigned id) {
@@ -171,13 +176,10 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        unsigned long offset = 0;
-
         for (unsigned i = 0; i < url_list.size(); i++) {
             url_data data = url_list[i];
             const long x = data.pos % cols * cw;
-            offset += data.pos / cols;
-            const long y = (data.line + offset) * ch;
+            const long y = data.line * ch;
 
             draw_marker(cr, x, y, i + 1);
         }
