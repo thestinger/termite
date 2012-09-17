@@ -141,21 +141,26 @@ static void launch_url(unsigned id) {
     }
 }
 
-static void draw_marker(cairo_t *cr, long x, long y, unsigned id) {
+static void draw_marker(cairo_t *cr, const char *font, long x, long y, int padding, unsigned id) {
     char buffer[3];
+    cairo_text_extents_t ext;
+
+    cairo_select_font_face(cr, font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, 9);
+
+    snprintf(buffer, 10, "%u", id);
+    cairo_text_extents(cr, buffer, &ext);
 
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y), 8, 8);
+    cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
+                    ext.width + padding * 2, ext.height + padding * 2);
     cairo_stroke_preserve(cr);
     cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_fill(cr);
-
-    cairo_select_font_face(cr, "Monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
     cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_set_font_size(cr, 9);
-    cairo_move_to(cr, static_cast<double>(x), static_cast<double>(y + 7));
+    cairo_move_to(cr, static_cast<double>(x + padding) - ext.x_bearing,
+                  static_cast<double>(y + padding) - ext.y_bearing);
 
-    snprintf(buffer, 10, "%u", id);
     cairo_show_text(cr, buffer);
 }
 
@@ -173,7 +178,7 @@ static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
             const long x = data.col * cw;
             const long y = data.row * ch;
 
-            draw_marker(cr, x, y, i + 1);
+            draw_marker(cr, "Monospaced", x, y, 3, i + 1);
         }
     }
 
