@@ -137,8 +137,8 @@ static void launch_url(const char *text, search_panel_info *info) {
     errno = 0;
     unsigned long id = strtoul(text, &end, 10);
 
-    if (!errno && end != text && *end == '\0' && id < info->url_list.size()) {
-        browser_cmd[1] = info->url_list[id].url;
+    if (!errno && end != text && *end == '\0' && id && id < info->url_list.size()) {
+        browser_cmd[1] = info->url_list[id - 1].url;
         g_spawn_async(NULL, (char **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
         g_printerr("url hint invalid\n");
