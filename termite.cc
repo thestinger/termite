@@ -597,8 +597,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
             synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Up);
             return TRUE;
         } else if (event->keyval == GDK_KEY_Down) {
-            // this stops the down key from leaving the GtkEntry...
-            event->hardware_keycode = 0;
+            return TRUE; // no focus cycling
         }
     }
 
