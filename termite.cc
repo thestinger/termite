@@ -1095,6 +1095,7 @@ int main(int argc, char **argv) {
     gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
     gtk_widget_hide(panel.panel);
+    gtk_widget_hide(panel.da);
 
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
