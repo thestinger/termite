@@ -900,15 +900,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
 
         if (get_config_double(config, "options", "transparency", &cfgdouble)) {
-            if (cfgdouble > 0.0) {
-                GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-                GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-                if (!visual) {
-                    visual = gdk_screen_get_system_visual(screen);
-                }
-                gtk_widget_set_visual(GTK_WIDGET(window), visual);
-            }
-
             vte_terminal_set_background_saturation(vte, cfgdouble);
             vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
         }
@@ -1008,6 +999,15 @@ int main(int argc, char **argv) {
 
     GtkWidget *vte_widget = vte_terminal_new();
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
+
+#if 0
+    GdkScreen *screen = gtk_widget_get_screen(window);
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+    if (!visual) {
+        visual = gdk_screen_get_system_visual(screen);
+    }
+    gtk_widget_set_visual(window, visual);
+#endif
 
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
