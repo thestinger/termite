@@ -132,12 +132,16 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     g_array_free(attributes, TRUE);
 }
 
-static void launch_url(unsigned id, search_panel_info *info) {
-    if (id < info->url_list.size()) {
+static void launch_url(const char *text, search_panel_info *info) {
+    char *end;
+    errno = 0;
+    unsigned long id = strtoul(text, &end, 10);
+
+    if (!errno && *end == '\0' && id < info->url_list.size()) {
         browser_cmd[1] = info->url_list[id].url;
         g_spawn_async(NULL, (char **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
-        g_printerr("url not found\n");
+        g_printerr("url hint invalid\n");
     }
 }
 
@@ -579,7 +583,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
                 vte_terminal_feed_child(info->vte, text, -1);
                 break;
             case overlay_mode::urlselect:
-                launch_url((unsigned)atoi(text) - 1, info);
+                launch_url(text, info);
                 break;
             case overlay_mode::hidden:
                 break;
