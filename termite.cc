@@ -164,7 +164,7 @@ static void draw_marker(cairo_t *cr, const char *font, long x, long y, int paddi
     cairo_show_text(cr, buffer);
 }
 
-static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, search_panel_info *info) {
+static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
     if (!info->url_list.empty()) {
         const PangoFontDescription *desc = vte_terminal_get_font(info->vte);
         const char *font = pango_font_description_get_family(desc);
@@ -1072,7 +1072,7 @@ int main(int argc, char **argv) {
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
-    g_signal_connect(panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
+    g_signal_connect_swapped(panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
