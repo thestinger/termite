@@ -38,17 +38,18 @@ struct select_info {
     long origin_row;
 };
 
+struct url_data {
+    char *url;
+    long col, row;
+};
+
 struct search_panel_info {
     VteTerminal *vte;
     GtkWidget *entry;
     GtkWidget *panel;
     GtkWidget *da;
     overlay_mode mode;
-};
-
-struct url_data {
-    char *url;
-    long col, row;
+    std::vector<url_data> url_list;
 };
 
 struct config_info {
@@ -63,7 +64,6 @@ struct keybind_info {
 };
 
 static char *browser_cmd[3] = {NULL};
-std::vector<url_data> url_list;
 
 static void launch_browser(char *url);
 
@@ -90,7 +90,7 @@ void launch_browser(char *url) {
     g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
 
-static void find_urls(VteTerminal *vte) {
+static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
     GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
     char *content = vte_terminal_get_text(vte, NULL, NULL, attributes);
@@ -115,9 +115,9 @@ static void find_urls(VteTerminal *vte) {
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
             const vte_char_attributes attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
 
-            url_list.push_back(url_data{g_match_info_fetch(info, 0),
-                                        attr.column,
-                                        attr.row - first_row});
+            panel_info->url_list.push_back(url_data{g_match_info_fetch(info, 0),
+                                                    attr.column,
+                                                    attr.row - first_row});
             g_match_info_next(info, &error);
         }
 
@@ -132,9 +132,9 @@ static void find_urls(VteTerminal *vte) {
     g_array_free(attributes, TRUE);
 }
 
-static void launch_url(unsigned id) {
-    if (id < url_list.size()) {
-        browser_cmd[1] = url_list[id].url;
+static void launch_url(unsigned id, search_panel_info *info) {
+    if (id < info->url_list.size()) {
+        browser_cmd[1] = info->url_list[id].url;
         g_spawn_async(NULL, (char **)browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
     } else {
         g_printerr("url not found\n");
@@ -164,19 +164,19 @@ static void draw_marker(cairo_t *cr, const char *font, long x, long y, int paddi
     cairo_show_text(cr, buffer);
 }
 
-static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, VteTerminal *vte) {
-    if (!url_list.empty()) {
-        const PangoFontDescription *desc = vte_terminal_get_font(vte);
+static gboolean draw_cb(GtkDrawingArea *, cairo_t *cr, search_panel_info *info) {
+    if (!info->url_list.empty()) {
+        const PangoFontDescription *desc = vte_terminal_get_font(info->vte);
         const char *font = pango_font_description_get_family(desc);
-        const long cw = vte_terminal_get_char_width(vte);
-        const long ch = vte_terminal_get_char_height(vte);
+        const long cw = vte_terminal_get_char_width(info->vte);
+        const long ch = vte_terminal_get_char_height(info->vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        for (unsigned i = 0; i < url_list.size(); i++) {
-            url_data data = url_list[i];
+        for (unsigned i = 0; i < info->url_list.size(); i++) {
+            url_data data = info->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
             draw_marker(cr, font, x, y, 3, i + 1);
@@ -513,7 +513,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 end_selection(vte, &info->select);
                 break;
             case GDK_KEY_x:
-                find_urls(vte);
+                find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
                 break;
@@ -579,7 +579,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
                 vte_terminal_feed_child(info->vte, text, -1);
                 break;
             case overlay_mode::urlselect:
-                launch_url((unsigned)atoi(text) - 1);
+                launch_url((unsigned)atoi(text) - 1, info);
                 break;
             case overlay_mode::hidden:
                 break;
@@ -601,7 +601,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         if (info->mode == overlay_mode::urlselect) {
             gtk_widget_hide(info->da);
-            url_list.clear();
+            info->url_list.clear();
         }
         info->mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel);
@@ -1072,7 +1072,7 @@ int main(int argc, char **argv) {
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
-    g_signal_connect(panel.da, "draw", G_CALLBACK(draw_cb), vte);
+    g_signal_connect(panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
