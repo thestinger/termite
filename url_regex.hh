@@ -1,4 +1,18 @@
-#ifndef URL_REGEX
-#define URL_REGEX
-const char * const url_regex = R"XXX(((?<=\()[A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+(?=\)))|([A-Za-z][A-Za-z0-9\+\.\-]*:([A-Za-z0-9\.\-_~:/\?#\[\]@!\$&'\(\)\*\+,;=]|%[A-Fa-f0-9]{2})+))XXX";
+#ifndef URL_REGEX_HH
+#define URL_REGEX_HH
+
+#define USERCHARS       "-[:alnum:]"
+#define USERCHARS_CLASS "[" USERCHARS "]"
+#define PASSCHARS_CLASS "[-[:alnum:]\\Q,?;.:/!%$^*&~\"#'\\E]"
+#define HOSTCHARS_CLASS "[-[:alnum:]]"
+#define HOST            HOSTCHARS_CLASS "+(\\." HOSTCHARS_CLASS "+)*"
+#define PORT            "(?:\\:[[:digit:]]{1,5})?"
+#define PATHCHARS_CLASS "[-[:alnum:]\\Q_$.+!*,;@&=?/~#%\\E]"
+#define PATHTERM_CLASS  "[^\\Q]'.}>) \t\r\n,\"\\E]"
+#define SCHEME          "(?:news:|telnet:|nntp:|file:\\/|https?:|ftps?:|sftp:|webcal:)"
+#define USERPASS        USERCHARS_CLASS "+(?:" PASSCHARS_CLASS "+)?"
+#define URLPATH         "(?:(/" PATHCHARS_CLASS "+(?:[(]" PATHCHARS_CLASS "*[)])*" PATHCHARS_CLASS "*)*" PATHTERM_CLASS ")?"
+
+const char * const url_regex = SCHEME "//(?:" USERPASS "\\@)?" HOST PORT URLPATH;
+
 #endif
