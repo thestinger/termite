@@ -125,6 +125,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             g_error_free(error);
         }
     }
+    g_free(content);
     g_regex_unref(regex);
     g_array_free(attributes, TRUE);
 }
