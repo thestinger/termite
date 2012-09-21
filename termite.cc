@@ -11,7 +11,7 @@
 #include <vte/vte.h>
 #include <vte/vteaccess.h>
 
-#include "url_regex.h"
+#include "url_regex.hh"
 
 using namespace std::placeholders;
 
