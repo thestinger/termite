@@ -9,7 +9,7 @@
 #define PORT            "(?:\\:[[:digit:]]{1,5})?"
 #define PATHCHARS_CLASS "[-[:alnum:]\\Q_$.+!*,;@&=?/~#%\\E]"
 #define PATHTERM_CLASS  "[^\\Q]'.}>) \t\r\n,\"\\E]"
-#define SCHEME          "(?:news:|telnet:|nntp:|file:\\/|https?:|ftps?:|sftp:|webcal:)"
+#define SCHEME          "(?:[[:alpha:]][+-.[:alnum:]]*:)"
 #define USERPASS        USERCHARS_CLASS "+(?:" PASSCHARS_CLASS "+)?"
 #define URLPATH         "(?:(/" PATHCHARS_CLASS "+(?:[(]" PATHCHARS_CLASS "*[)])*" PATHCHARS_CLASS "*)*" PATHTERM_CLASS ")?"
 
