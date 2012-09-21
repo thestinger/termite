@@ -5,7 +5,7 @@
 #define USERCHARS_CLASS "[" USERCHARS "]"
 #define PASSCHARS_CLASS "[-[:alnum:]\\Q,?;.:/!%$^*&~\"#'\\E]"
 #define HOSTCHARS_CLASS "[-[:alnum:]]"
-#define HOST            HOSTCHARS_CLASS "+(\\." HOSTCHARS_CLASS "+)*"
+#define HOST            "(?:" HOSTCHARS_CLASS "+(\\." HOSTCHARS_CLASS "+)*)?"
 #define PORT            "(?:\\:[[:digit:]]{1,5})?"
 #define PATHCHARS_CLASS "[-[:alnum:]\\Q_$.+!*,;@&=?/~#%\\E]"
 #define PATHTERM_CLASS  "[^\\Q]'.}>) \t\r\n,\"\\E]"
