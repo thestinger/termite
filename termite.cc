@@ -96,7 +96,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     char *content = vte_terminal_get_text(vte, NULL, NULL, attributes);
 
     for (char *s_ptr = content, *saveptr; ; s_ptr = nullptr) {
-        char *token = strtok_r(s_ptr, "\n", &saveptr);
+        const char *token = strtok_r(s_ptr, "\n", &saveptr);
         if (!token) {
             break;
         }
@@ -669,7 +669,7 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
     std::set<const char *, decltype(less)> tokens(less);
 
     for (char *s_ptr = content, *saveptr; ; s_ptr = nullptr) {
-        char *token = strtok_r(s_ptr, " \n\t", &saveptr);
+        const char *token = strtok_r(s_ptr, " \n\t", &saveptr);
         if (!token) {
             break;
         }
