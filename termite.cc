@@ -110,7 +110,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             g_match_info_fetch_pos(info, 0, &pos, NULL);
 
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
-            const vte_char_attributes attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
+            const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
 
             panel_info->url_list.push_back(url_data{g_match_info_fetch(info, 0),
                                                     attr.column,
