@@ -893,9 +893,15 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
-        if (get_config_double(config, "options", "transparency", &cfgdouble)) {
+        if (get_config_double(config, "options", "transparency", &cfgdouble) && cfgdouble) {
             vte_terminal_set_background_saturation(vte, cfgdouble);
-            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
+            get_config_boolean(config, "options", "pseudo_transparency", &cfgbool);
+            vte_terminal_set_background_transparent(vte, cfgbool);
+            if (!cfgbool) {
+                vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
+            } else {
+                vte_terminal_set_opacity(vte, 0);
+            }
         }
 
         const long palette_size = 255;
@@ -942,6 +948,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
         if (get_config_color(config, "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
+            vte_terminal_set_background_tint_color(vte, &color);
         }
         if (get_config_color(config, "cursor", &color)) {
             vte_terminal_set_color_cursor(vte, &color);
