@@ -603,6 +603,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         if (info->mode == overlay_mode::urlselect) {
             gtk_widget_hide(info->da);
+            for (url_data d : info->url_list) g_free(d.url);
             info->url_list.clear();
         }
         info->mode = overlay_mode::hidden;
