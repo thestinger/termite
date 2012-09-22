@@ -226,14 +226,14 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_copy_primary(vte);
 }
 
-static void start_selection(VteTerminal *vte, select_info *select) {
+static void enter_command_mode(VteTerminal *vte, select_info *select) {
     vte_terminal_disconnect_pty_read(vte);
     select->mode = vi_mode::command;
     vte_terminal_get_cursor_position(vte, &select->origin_col, &select->origin_row);
     update_selection(vte, select);
 }
 
-static void end_selection(VteTerminal *vte, select_info *select) {
+static void exit_command_mode(VteTerminal *vte, select_info *select) {
     vte_terminal_set_cursor_position(vte, select->origin_col, select->origin_row);
     vte_terminal_connect_pty_read(vte);
     vte_terminal_select_none(vte);
@@ -481,7 +481,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 toggle_visual(vte, &info->select, vi_mode::visual_line);
                 break;
             case GDK_KEY_Escape:
-                end_selection(vte, &info->select);
+                exit_command_mode(vte, &info->select);
                 break;
             case GDK_KEY_y:
                 vte_terminal_copy_clipboard(vte);
@@ -511,7 +511,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_Return:
                 open_selection(vte);
-                end_selection(vte, &info->select);
+                exit_command_mode(vte, &info->select);
                 break;
             case GDK_KEY_x:
                 find_urls(vte, &info->panel);
@@ -524,7 +524,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_space:
-                start_selection(vte, &info->select);
+                enter_command_mode(vte, &info->select);
                 return TRUE;
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
