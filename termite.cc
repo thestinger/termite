@@ -901,7 +901,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
             GdkVisual *visual;
 
-            if (!cfgbool && (visual = gdk_screen_get_rgba_visual(screen))) {
+            if (cfgdouble && !cfgbool && (visual = gdk_screen_get_rgba_visual(screen))) {
                 vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
             } else {
                 visual = gdk_screen_get_system_visual(screen);
