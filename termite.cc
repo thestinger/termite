@@ -905,7 +905,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                 vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
             } else {
                 visual = gdk_screen_get_system_visual(screen);
-                vte_terminal_set_opacity(vte, 0);
+                vte_terminal_set_opacity(vte, G_MAXUINT16);
             }
             if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
                 gtk_widget_set_visual(GTK_WIDGET(window), visual);
