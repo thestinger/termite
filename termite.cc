@@ -16,9 +16,6 @@
 
 using namespace std::placeholders;
 
-template<typename T>
-using g_unique_ptr = std::unique_ptr<T, decltype(&g_free)>;
-
 enum class overlay_mode {
     hidden,
     search,
@@ -45,7 +42,7 @@ struct select_info {
 
 struct url_data {
     url_data(char *u, long c, long r) : url(u, g_free), col(c), row(r) {}
-    g_unique_ptr<char> url;
+    std::unique_ptr<char, decltype(&g_free)> url;
     long col, row;
 };
 
