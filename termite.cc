@@ -893,14 +893,25 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
-        if (get_config_double(config, "options", "transparency", &cfgdouble) && cfgdouble) {
+        if (get_config_double(config, "options", "transparency", &cfgdouble)) {
             vte_terminal_set_background_saturation(vte, cfgdouble);
             get_config_boolean(config, "options", "pseudo_transparency", &cfgbool);
             vte_terminal_set_background_transparent(vte, cfgbool);
-            if (!cfgbool) {
+
+            GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+            GdkVisual *visual;
+
+            if (!cfgbool && (visual = gdk_screen_get_rgba_visual(screen))) {
                 vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
             } else {
+                visual = gdk_screen_get_system_visual(screen);
                 vte_terminal_set_opacity(vte, 0);
+            }
+            if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+                gtk_widget_set_visual(GTK_WIDGET(window), visual);
+
+                // TODO: need to make dynamic changes to the visual work
+                // the obvious way is simply to hide the window and then restore shown widgets
             }
         }
 
@@ -1000,15 +1011,6 @@ int main(int argc, char **argv) {
 
     GtkWidget *vte_widget = vte_terminal_new();
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
-
-#if 0
-    GdkScreen *screen = gtk_widget_get_screen(window);
-    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
-    if (!visual) {
-        visual = gdk_screen_get_system_visual(screen);
-    }
-    gtk_widget_set_visual(window, visual);
-#endif
 
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
