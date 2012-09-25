@@ -3,6 +3,7 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <vector>
 #include <set>
 
@@ -14,6 +15,9 @@
 #include "url_regex.hh"
 
 using namespace std::placeholders;
+
+template<typename T>
+using g_unique_ptr = std::unique_ptr<T, decltype(&g_free)>;
 
 enum class overlay_mode {
     hidden,
@@ -40,7 +44,8 @@ struct select_info {
 };
 
 struct url_data {
-    char *url;
+    url_data(char *u, long c, long r) : url(u, g_free), col(c), row(r) {}
+    g_unique_ptr<char> url;
     long col, row;
 };
 
@@ -112,9 +117,9 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
             const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
 
-            panel_info->url_list.push_back(url_data{g_match_info_fetch(info, 0),
-                                                    attr.column,
-                                                    attr.row - first_row});
+            panel_info->url_list.emplace_back(g_match_info_fetch(info, 0),
+                                              attr.column,
+                                              attr.row - first_row);
             g_match_info_next(info, &error);
         }
 
@@ -136,7 +141,7 @@ static void launch_url(const char *text, search_panel_info *info) {
     unsigned long id = strtoul(text, &end, 10);
 
     if (!errno && end != text && *end == '\0' && id && id <= info->url_list.size()) {
-        launch_browser(info->url_list[id - 1].url);
+        launch_browser(info->url_list[id - 1].url.get());
     } else {
         g_printerr("url hint invalid\n");
     }
@@ -177,7 +182,7 @@ static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
         cairo_stroke(cr);
 
         for (unsigned i = 0; i < info->url_list.size(); i++) {
-            url_data data = info->url_list[i];
+            const url_data &data = info->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
             draw_marker(cr, font, x, y, 3, i + 1);
@@ -602,7 +607,6 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     if (ret) {
         if (info->mode == overlay_mode::urlselect) {
             gtk_widget_hide(info->da);
-            for (url_data d : info->url_list) g_free(d.url);
             info->url_list.clear();
         }
         info->mode = overlay_mode::hidden;
