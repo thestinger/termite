@@ -1041,11 +1041,14 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    search_panel_info panel = {vte, gtk_entry_new(),
-                               gtk_alignment_new(0, 0, 1, 1),
-                               gtk_drawing_area_new(),
-                               overlay_mode::hidden};
-    keybind_info info = {panel, {vi_mode::insert, 0, 0, 0, 0}, {FALSE, FALSE, FALSE, -1}};
+    keybind_info info = {
+        {vte, gtk_entry_new(),
+         gtk_alignment_new(0, 0, 1, 1),
+         gtk_drawing_area_new(),
+         overlay_mode::hidden},
+        {vi_mode::insert, 0, 0, 0, 0},
+        {FALSE, FALSE, FALSE, -1}
+    };
 
     load_config(GTK_WINDOW(window), vte, &info.config, &term, &geometry);
 
@@ -1055,19 +1058,19 @@ int main(int argc, char **argv) {
     GdkRGBA transparent = {0, 0, 0, 0};
 
     gtk_widget_override_background_color(hint_overlay, GTK_STATE_FLAG_NORMAL, &transparent);
-    gtk_widget_override_background_color(panel.da, GTK_STATE_FLAG_NORMAL, &transparent);
+    gtk_widget_override_background_color(info.panel.da, GTK_STATE_FLAG_NORMAL, &transparent);
 
-    gtk_widget_set_halign(panel.da, GTK_ALIGN_FILL);
-    gtk_widget_set_valign(panel.da, GTK_ALIGN_FILL);
-    gtk_overlay_add_overlay(GTK_OVERLAY(hint_overlay), panel.da);
+    gtk_widget_set_halign(info.panel.da, GTK_ALIGN_FILL);
+    gtk_widget_set_valign(info.panel.da, GTK_ALIGN_FILL);
+    gtk_overlay_add_overlay(GTK_OVERLAY(hint_overlay), info.panel.da);
 
-    gtk_alignment_set_padding(GTK_ALIGNMENT(panel.panel), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(panel_overlay), panel.panel);
+    gtk_alignment_set_padding(GTK_ALIGNMENT(info.panel.panel), 5, 5, 5, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(panel_overlay), info.panel.panel);
 
-    gtk_widget_set_halign(panel.entry, GTK_ALIGN_START);
-    gtk_widget_set_valign(panel.entry, GTK_ALIGN_END);
+    gtk_widget_set_halign(info.panel.entry, GTK_ALIGN_START);
+    gtk_widget_set_valign(info.panel.entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(panel.panel), panel.entry);
+    gtk_container_add(GTK_CONTAINER(info.panel.panel), info.panel.entry);
     gtk_container_add(GTK_CONTAINER(panel_overlay), hint_overlay);
     gtk_container_add(GTK_CONTAINER(hint_overlay), vte_widget);
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
@@ -1075,11 +1078,11 @@ int main(int argc, char **argv) {
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info.panel);
+    g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info.panel);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
-    g_signal_connect_swapped(panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
+    g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
@@ -1088,7 +1091,7 @@ int main(int argc, char **argv) {
 
     if (geometry) {
         gtk_widget_show_all(panel_overlay);
-        gtk_widget_show_all(panel.panel);
+        gtk_widget_show_all(info.panel.panel);
         if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
             g_printerr("Invalid geometry string: %s\n", geometry);
         }
@@ -1097,8 +1100,8 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
-    gtk_widget_hide(panel.panel);
-    gtk_widget_hide(panel.da);
+    gtk_widget_hide(info.panel.panel);
+    gtk_widget_hide(info.panel.da);
 
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
