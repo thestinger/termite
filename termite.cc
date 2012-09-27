@@ -450,6 +450,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_Escape:
                 exit_command_mode(info->panel.vte, &info->select);
                 gtk_widget_hide(info->panel.da);
+                gtk_widget_hide(info->panel.panel);
                 info->panel.url_list.clear();
                 break;
             case GDK_KEY_Left:
