@@ -436,6 +436,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             return TRUE;
         }
         switch (event->keyval) {
+            case GDK_KEY_Escape:
+                gtk_widget_hide(info->panel.entry);
+                exit_command_mode(vte, &info->select);
+                break;
             case GDK_KEY_Left:
             case GDK_KEY_h:
                 move(vte, &info->select, -1, 0);
@@ -481,9 +485,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_V:
                 toggle_visual(vte, &info->select, vi_mode::visual_line);
-                break;
-            case GDK_KEY_Escape:
-                exit_command_mode(vte, &info->select);
                 break;
             case GDK_KEY_y:
                 vte_terminal_copy_clipboard(vte);
