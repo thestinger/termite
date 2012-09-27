@@ -72,7 +72,7 @@ static void launch_browser(char *url);
 
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
-static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info);
+static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc);
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url);
 static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
@@ -575,7 +575,7 @@ static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
     gdk_event_put(&new_event);
 }
 
-gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_info *info) {
+gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info) {
     gboolean ret = FALSE;
 
     if (event->keyval == GDK_KEY_Escape) {
@@ -583,24 +583,25 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     } else if (event->keyval == GDK_KEY_Return) {
         const char *text = gtk_entry_get_text(entry);
 
-        switch (info->mode) {
+        switch (info->panel.mode) {
             case overlay_mode::search:
-                search(info->vte, text, false);
+                search(info->panel.vte, text, false);
                 break;
             case overlay_mode::rsearch:
-                search(info->vte, text, true);
+                search(info->panel.vte, text, true);
                 break;
             case overlay_mode::completion:
-                vte_terminal_feed_child(info->vte, text, -1);
+                vte_terminal_feed_child(info->panel.vte, text, -1);
                 break;
             case overlay_mode::urlselect:
-                launch_url(text, info);
+                launch_url(text, &info->panel);
+                exit_command_mode(info->panel.vte, &info->select);
                 break;
             case overlay_mode::hidden:
                 break;
         }
         ret = TRUE;
-    } else if (info->mode == overlay_mode::completion) {
+    } else if (info->panel.mode == overlay_mode::completion) {
         if (event->keyval == GDK_KEY_Tab) {
             synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
             return TRUE;
@@ -614,13 +615,13 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, search_panel_in
     }
 
     if (ret) {
-        if (info->mode == overlay_mode::urlselect) {
-            gtk_widget_hide(info->da);
-            info->url_list.clear();
+        if (info->panel.mode == overlay_mode::urlselect) {
+            gtk_widget_hide(info->panel.da);
+            info->panel.url_list.clear();
         }
-        info->mode = overlay_mode::hidden;
-        gtk_widget_hide(info->panel);
-        gtk_widget_grab_focus(GTK_WIDGET(info->vte));
+        info->panel.mode = overlay_mode::hidden;
+        gtk_widget_hide(info->panel.panel);
+        gtk_widget_grab_focus(GTK_WIDGET(info->panel.vte));
     }
     return ret;
 }
@@ -1091,7 +1092,7 @@ int main(int argc, char **argv) {
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
-    g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info.panel);
+    g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
