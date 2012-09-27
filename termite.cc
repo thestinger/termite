@@ -135,12 +135,23 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
 static void launch_url(const char *text, search_panel_info *info) {
     char *end;
     errno = 0;
-    unsigned long id = strtoul(text, &end, 10);
 
-    if (!errno && end != text && *end == '\0' && id && id <= info->url_list.size()) {
-        launch_browser(info->url_list[id - 1].url.get());
-    } else {
-        g_printerr("url hint invalid\n");
+    while (true) {
+        unsigned long id = strtoul(text, &end, 10);
+
+        if (!errno && end != text) {
+            if (id <= info->url_list.size())
+                launch_browser(info->url_list[id - 1].url.get());
+
+            switch (*end) {
+            case ',':
+                text = end + 1;
+                continue;
+            case '\0':
+                return;
+            }
+        }
+        g_printerr("url hint invalid: %s\n", text);
     }
 }
 
