@@ -448,8 +448,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         }
         switch (event->keyval) {
             case GDK_KEY_Escape:
-                gtk_widget_hide(info->panel.entry);
-                exit_command_mode(vte, &info->select);
+                exit_command_mode(info->panel.vte, &info->select);
+                gtk_widget_hide(info->panel.da);
+                info->panel.url_list.clear();
                 break;
             case GDK_KEY_Left:
             case GDK_KEY_h:
@@ -595,7 +596,6 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 break;
             case overlay_mode::urlselect:
                 launch_url(text, &info->panel);
-                exit_command_mode(info->panel.vte, &info->select);
                 break;
             case overlay_mode::hidden:
                 break;
@@ -616,6 +616,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
 
     if (ret) {
         if (info->panel.mode == overlay_mode::urlselect) {
+            exit_command_mode(info->panel.vte, &info->select);
             gtk_widget_hide(info->panel.da);
             info->panel.url_list.clear();
         }
