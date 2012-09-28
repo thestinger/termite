@@ -814,10 +814,10 @@ auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
 auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
                                  _1, _2, _3, _4));
 
-static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color) {
+static bool get_config_color(GKeyFile *config, const char *section, const char *key, GdkColor *color) {
     char *cfgstr;
     bool success = false;
-    if (get_config_string(config, "colors", key, &cfgstr)) {
+    if (get_config_string(config, section, key, &cfgstr)) {
         if (gdk_color_parse(cfgstr, color)) {
             success = true;
         } else {
@@ -910,11 +910,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
-        if (get_config_string(config, "options", "hint_font", &cfgstr)) {
+        if (get_config_string(config, "hints", "font", &cfgstr)) {
             hints.font = pango_font_description_from_string(cfgstr);
             g_free(cfgstr);
         }
-
 
         if (get_config_string(config, "options", "word_chars", &cfgstr)) {
             vte_terminal_set_word_chars(vte, cfgstr);
@@ -981,7 +980,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         for (unsigned i = 0; i < palette_size; i++) {
             snprintf(color_key, sizeof color_key, "color%u", i);
-            if (!get_config_color(config, color_key, &palette[i])) {
+            if (!get_config_color(config, "colors", color_key, &palette[i])) {
                 if (i < 16) {
                     palette[i].blue = (i & 4) ? 0xc000 : 0;
                     palette[i].green = (i & 2) ? 0xc000 : 0;
@@ -1007,27 +1006,27 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
         vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
-        if (get_config_color(config, "foreground", &color)) {
+        if (get_config_color(config, "colors", "foreground", &color)) {
             vte_terminal_set_color_foreground(vte, &color);
         }
-        if (get_config_color(config, "foreground_bold", &color)) {
+        if (get_config_color(config, "colors", "foreground_bold", &color)) {
             vte_terminal_set_color_bold(vte, &color);
         }
-        if (get_config_color(config, "foreground_dim", &color)) {
+        if (get_config_color(config, "colors", "foreground_dim", &color)) {
             vte_terminal_set_color_dim(vte, &color);
         }
-        if (get_config_color(config, "background", &color)) {
+        if (get_config_color(config, "colors", "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
             vte_terminal_set_background_tint_color(vte, &color);
         }
-        if (get_config_color(config, "cursor", &color)) {
+        if (get_config_color(config, "colors", "cursor", &color)) {
             vte_terminal_set_color_cursor(vte, &color);
         }
-        if (get_config_color(config, "highlight", &color)) {
+        if (get_config_color(config, "colors", "highlight", &color)) {
             vte_terminal_set_color_highlight(vte, &color);
         }
 
-        if (get_config_color(config, "hint_foreground", &color)) {
+        if (get_config_color(config, "hints", "foreground", &color)) {
             hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
                                                 color.green / 65535.0,
                                                 color.blue  / 65535.0);
@@ -1035,7 +1034,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             hints.fg = cairo_pattern_create_rgb(1, 1, 1);
         }
 
-        if (get_config_color(config, "hint_background", &color)) {
+        if (get_config_color(config, "hints", "background", &color)) {
             hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
                                                 color.green / 65535.0,
                                                 color.blue  / 65535.0);
