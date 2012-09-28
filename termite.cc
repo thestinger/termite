@@ -136,22 +136,19 @@ static void launch_url(const char *text, search_panel_info *info) {
     char *end;
     errno = 0;
 
-    while (true) {
-        unsigned long id = strtoul(text, &end, 10);
-
-        if (!errno && end != text) {
-            if (id <= info->url_list.size())
-                launch_browser(info->url_list[id - 1].url.get());
-
-            switch (*end) {
-            case ',':
-                text = end + 1;
-                continue;
-            case '\0':
-                return;
-            }
+    std::unique_ptr<char, decltype(&free)> copy(strdup(text), free);
+    for (char *s_ptr = copy.get(), *saveptr; ; s_ptr = nullptr) {
+        const char *token = strtok_r(s_ptr, ",", &saveptr);
+        if (!token) {
+            break;
         }
-        g_printerr("url hint invalid: %s\n", text);
+
+        unsigned long id = strtoul(token, &end, 10);
+        if (!errno && end != text && id && id <= info->url_list.size()) {
+            launch_browser(info->url_list[id - 1].url.get());
+        } else {
+            g_printerr("url hint invalid: %s\n", text);
+        }
     }
 }
 
