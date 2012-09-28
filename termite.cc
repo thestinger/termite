@@ -1028,17 +1028,17 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
 
         if (get_config_color(config, "hint_foreground", &color)) {
-            hints.fg = cairo_pattern_create_rgb(color.red   / 255.0f,
-                                                color.green / 255.0f,
-                                                color.blue  / 255.0f);
+            hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
         } else {
             hints.fg = cairo_pattern_create_rgb(1, 1, 1);
         }
 
         if (get_config_color(config, "hint_background", &color)) {
-            hints.bg = cairo_pattern_create_rgb(color.red   / 255.0f,
-                                                color.green / 255.0f,
-                                                color.blue  / 255.0f);
+            hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
         } else {
             hints.bg = cairo_pattern_create_rgb(0, 0, 0);
         }
