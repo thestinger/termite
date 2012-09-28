@@ -580,30 +580,6 @@ static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
 gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info) {
     gboolean ret = FALSE;
 
-    if (event->keyval == GDK_KEY_Escape) {
-        ret = TRUE;
-    } else if (event->keyval == GDK_KEY_Return) {
-        const char *text = gtk_entry_get_text(entry);
-
-        switch (info->panel.mode) {
-            case overlay_mode::search:
-                search(info->panel.vte, text, false);
-                break;
-            case overlay_mode::rsearch:
-                search(info->panel.vte, text, true);
-                break;
-            case overlay_mode::completion:
-                vte_terminal_feed_child(info->panel.vte, text, -1);
-                break;
-            case overlay_mode::urlselect:
-                launch_url(text, &info->panel);
-                break;
-            case overlay_mode::hidden:
-                break;
-        }
-        ret = TRUE;
-    }
-
     switch (event->keyval) {
         case GDK_KEY_Tab:
             synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
@@ -614,6 +590,31 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
         case GDK_KEY_Down:
             // this stops the down key from leaving the GtkEntry...
             event->hardware_keycode = 0;
+            break;
+        case GDK_KEY_Escape:
+            ret = TRUE;
+            break;
+        case GDK_KEY_Return: {
+            const char *text = gtk_entry_get_text(entry);
+
+            switch (info->panel.mode) {
+                case overlay_mode::search:
+                    search(info->panel.vte, text, false);
+                    break;
+                case overlay_mode::rsearch:
+                    search(info->panel.vte, text, true);
+                    break;
+                case overlay_mode::completion:
+                    vte_terminal_feed_child(info->panel.vte, text, -1);
+                    break;
+                case overlay_mode::urlselect:
+                    launch_url(text, &info->panel);
+                    break;
+                case overlay_mode::hidden:
+                    break;
+            }
+            ret = TRUE;
+         }
     }
 
     if (ret) {
