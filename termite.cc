@@ -134,7 +134,6 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
 
 static void launch_url(const char *text, search_panel_info *info) {
     char *end;
-    errno = 0;
 
     std::unique_ptr<char, decltype(&free)> copy(strdup(text), free);
     for (char *s_ptr = copy.get(), *saveptr; ; s_ptr = nullptr) {
@@ -143,6 +142,7 @@ static void launch_url(const char *text, search_panel_info *info) {
             break;
         }
 
+        errno = 0;
         unsigned long id = strtoul(token, &end, 10);
         if (!errno && end != text && id && id <= info->url_list.size()) {
             launch_browser(info->url_list[id - 1].url.get());
