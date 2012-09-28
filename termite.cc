@@ -67,7 +67,13 @@ struct keybind_info {
     config_info config;
 };
 
+struct hint_info {
+    PangoFontDescription *font;
+    cairo_pattern_t *fg, *bg;
+};
+
 static char *browser_cmd[3] = {NULL};
+static hint_info hints = {NULL};
 
 static void launch_browser(char *url);
 
@@ -152,35 +158,44 @@ static void launch_url(const char *text, search_panel_info *info) {
     }
 }
 
-static void draw_marker(cairo_t *cr, const char *font, long x, long y, int padding, unsigned id) {
+static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, int padding, unsigned id) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
-
-    cairo_select_font_face(cr, font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 9);
+    int width, height;
 
     snprintf(buffer, sizeof(buffer), "%u", id);
+
     cairo_text_extents(cr, buffer, &ext);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, desc);
+    pango_layout_set_text(layout, buffer, -1);
+    pango_layout_get_size (layout, &width, &height);
 
-    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_set_source(cr, hints.fg);
     cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
-                    ext.width + padding * 2, ext.height + padding * 2);
+                    static_cast<double>(width / PANGO_SCALE + padding * 2),
+                    static_cast<double>(height / PANGO_SCALE + padding * 2));
     cairo_stroke_preserve(cr);
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_source(cr, hints.bg);
     cairo_fill(cr);
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_move_to(cr, static_cast<double>(x + padding) - ext.x_bearing,
-                  static_cast<double>(y + padding) - ext.y_bearing);
 
-    cairo_show_text(cr, buffer);
+    cairo_new_path(cr);
+    cairo_set_line_width(cr, 0.5);
+    cairo_set_source(cr, hints.fg);
+    cairo_move_to(cr, static_cast<double>(x + padding), static_cast<double>(y + padding));
+
+    pango_cairo_update_layout(cr, layout);
+    pango_cairo_layout_path(cr, layout);
+    cairo_fill(cr);
+
+    g_object_unref(layout);
 }
 
 static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
     if (!info->url_list.empty()) {
-        const PangoFontDescription *desc = vte_terminal_get_font(info->vte);
-        const char *font = pango_font_description_get_family(desc);
         const long cw = vte_terminal_get_char_width(info->vte);
         const long ch = vte_terminal_get_char_height(info->vte);
+        const PangoFontDescription *desc = hints.font ? hints.font : vte_terminal_get_font(info->vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
@@ -190,7 +205,7 @@ static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
             const url_data &data = info->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-            draw_marker(cr, font, x, y, 3, i + 1);
+            draw_marker(cr, desc, x, y, 2, i + 1);
         }
     }
 
@@ -895,6 +910,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
+        if (get_config_string(config, "options", "hint_font", &cfgstr)) {
+            hints.font = pango_font_description_from_string(cfgstr);
+            g_free(cfgstr);
+        }
+
+
         if (get_config_string(config, "options", "word_chars", &cfgstr)) {
             vte_terminal_set_word_chars(vte, cfgstr);
             g_free(cfgstr);
@@ -1004,6 +1025,22 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
         if (get_config_color(config, "highlight", &color)) {
             vte_terminal_set_color_highlight(vte, &color);
+        }
+
+        if (get_config_color(config, "hint_foreground", &color)) {
+            hints.fg = cairo_pattern_create_rgb(color.red   / 255.0f,
+                                                color.green / 255.0f,
+                                                color.blue  / 255.0f);
+        } else {
+            hints.fg = cairo_pattern_create_rgb(1, 1, 1);
+        }
+
+        if (get_config_color(config, "hint_background", &color)) {
+            hints.bg = cairo_pattern_create_rgb(color.red   / 255.0f,
+                                                color.green / 255.0f,
+                                                color.blue  / 255.0f);
+        } else {
+            hints.bg = cairo_pattern_create_rgb(0, 0, 0);
         }
     }
     g_free(path);
