@@ -70,6 +70,7 @@ struct keybind_info {
 struct hint_info {
     PangoFontDescription *font;
     cairo_pattern_t *fg, *bg;
+    double border;
 };
 
 static char *browser_cmd[3] = {NULL};
@@ -180,7 +181,7 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     cairo_fill(cr);
 
     cairo_new_path(cr);
-    cairo_set_line_width(cr, 0.5);
+    cairo_set_line_width(cr, hints.border);
     cairo_set_source(cr, hints.fg);
     cairo_move_to(cr, static_cast<double>(x + padding), static_cast<double>(y + padding));
 
@@ -910,11 +911,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             g_free(cfgstr);
         }
 
-        if (get_config_string(config, "hints", "font", &cfgstr)) {
-            hints.font = pango_font_description_from_string(cfgstr);
-            g_free(cfgstr);
-        }
-
         if (get_config_string(config, "options", "word_chars", &cfgstr)) {
             vte_terminal_set_word_chars(vte, cfgstr);
             g_free(cfgstr);
@@ -1026,6 +1022,11 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             vte_terminal_set_color_highlight(vte, &color);
         }
 
+        if (get_config_string(config, "hints", "font", &cfgstr)) {
+            hints.font = pango_font_description_from_string(cfgstr);
+            g_free(cfgstr);
+        }
+
         if (get_config_color(config, "hints", "foreground", &color)) {
             hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
                                                 color.green / 65535.0,
@@ -1041,6 +1042,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         } else {
             hints.bg = cairo_pattern_create_rgb(0, 0, 0);
         }
+
+        hints.border = 0.5;
+        get_config_double(config, "hints", "border", &hints.border);
     }
     g_free(path);
     g_key_file_free(config);
