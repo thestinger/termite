@@ -604,15 +604,16 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
         ret = TRUE;
     }
 
-    if (event->keyval == GDK_KEY_Tab) {
-        synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
-        return TRUE;
-    } else if (event->keyval == GDK_KEY_ISO_Left_Tab) {
-        synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Up);
-        return TRUE;
-    } else if (event->keyval == GDK_KEY_Down) {
-        // this stops the down key from leaving the GtkEntry...
-        event->hardware_keycode = 0;
+    switch (event->keyval) {
+        case GDK_KEY_Tab:
+            synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
+            return TRUE;
+        case GDK_KEY_ISO_Left_Tab:
+            synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Up);
+            return TRUE;
+        case GDK_KEY_Down:
+            // this stops the down key from leaving the GtkEntry...
+            event->hardware_keycode = 0;
     }
 
     if (ret) {
