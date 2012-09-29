@@ -12,6 +12,9 @@ keyboard selection.
 KEYBINDINGS
 ===========
 
+INSERT MODE
+-----------
+
 +-----------------------+--------------------------------------+
 | ``ctrl-shift-escape`` | reload configuration file            |
 +-----------------------+--------------------------------------+
@@ -32,7 +35,7 @@ COMMAND MODE
 +------------------------+-----------------------------------------------------------+
 | ``escape``             | deactivate command mode                                   |
 +------------------------+-----------------------------------------------------------+
-| ``x``                  | activate url hint mode                                    |
+| ``x``                  | activate url hints mode                                   |
 +------------------------+-----------------------------------------------------------+
 | ``v``                  | visual mode                                               |
 +------------------------+-----------------------------------------------------------+
@@ -79,3 +82,6 @@ and copied to the PRIMARY clipboard buffer.
 With the scrollback search/completion widget open, up/down (or tab/shift-tab)
 cycle through completions, escape closes the widget and enter accepts the
 input.
+
+After hints mode is activated, as single number or a comma separated list of
+hint numbers can be entered, which will be opened in the browser.
