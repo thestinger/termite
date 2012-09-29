@@ -79,9 +79,8 @@ COMMAND MODE
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
-With the scrollback search/completion widget open, up/down (or tab/shift-tab)
-cycle through completions, escape closes the widget and enter accepts the
-input.
+With the text input widget focused, up/down (or tab/shift-tab) cycle through
+completions, escape closes the widget and enter accepts the input.
 
 After hints mode is activated, as single number or a comma separated list of
 hint numbers can be entered, which will be opened in the browser.
