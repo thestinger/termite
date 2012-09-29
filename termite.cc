@@ -69,8 +69,8 @@ struct keybind_info {
 
 struct hint_info {
     PangoFontDescription *font;
-    cairo_pattern_t *fg, *bg;
-    double border;
+    cairo_pattern_t *fg, *bg, *border;
+    double border_width, roundness;
 };
 
 static char *browser_cmd[3] = {NULL};
@@ -159,6 +159,16 @@ static void launch_url(const char *text, search_panel_info *info) {
     }
 }
 
+static void draw_rectangle(cairo_t *cr, double x, double y, double height, double width) {
+    double radius = hints.roundness;
+    double a = x, b = x + height, c = y, d = y + width;
+    cairo_arc(cr, a + radius, c + radius, radius, 2*(M_PI/2), 3*(M_PI/2));
+    cairo_arc(cr, b - radius, c + radius, radius, 3*(M_PI/2), 4*(M_PI/2));
+    cairo_arc(cr, b - radius, d - radius, radius, 0*(M_PI/2), 1*(M_PI/2));
+    cairo_arc(cr, a + radius, d - radius, radius, 1*(M_PI/2), 2*(M_PI/2));
+    cairo_close_path(cr);
+}
+
 static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, int padding, unsigned id) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
@@ -172,19 +182,19 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     pango_layout_set_text(layout, buffer, -1);
     pango_layout_get_size (layout, &width, &height);
 
-    cairo_set_source(cr, hints.fg);
-    cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
-                    static_cast<double>(width / PANGO_SCALE + padding * 2),
-                    static_cast<double>(height / PANGO_SCALE + padding * 2));
+    draw_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
+                   static_cast<double>(width / PANGO_SCALE + padding * 2),
+                   static_cast<double>(height / PANGO_SCALE + padding * 2));
+    cairo_set_source(cr, hints.border);
+    cairo_set_line_width(cr, hints.border_width);
     cairo_stroke_preserve(cr);
     cairo_set_source(cr, hints.bg);
     cairo_fill(cr);
 
     cairo_new_path(cr);
-    cairo_set_line_width(cr, hints.border);
-    cairo_set_source(cr, hints.fg);
     cairo_move_to(cr, static_cast<double>(x + padding), static_cast<double>(y + padding));
 
+    cairo_set_source(cr, hints.fg);
     pango_cairo_update_layout(cr, layout);
     pango_cairo_layout_path(cr, layout);
     cairo_fill(cr);
@@ -1043,8 +1053,21 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             hints.bg = cairo_pattern_create_rgb(0, 0, 0);
         }
 
-        hints.border = 0.5;
-        get_config_double(config, "hints", "border", &hints.border);
+        if (get_config_color(config, "hints", "border", &color)) {
+            hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
+        } else {
+            hints.border = hints.fg;
+        }
+
+        if (!get_config_double(config, "hints", "border_width", &hints.border_width)) {
+            hints.border_width = 1.0;
+        }
+
+        if (!get_config_double(config, "hints", "roundness", &hints.roundness)) {
+            hints.roundness = 1.5;
+        }
     }
     g_free(path);
     g_key_file_free(config);
