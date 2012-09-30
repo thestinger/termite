@@ -70,7 +70,7 @@ struct keybind_info {
 struct hint_info {
     PangoFontDescription *font;
     cairo_pattern_t *fg, *bg, *border;
-    double border_width, roundness;
+    double padding, border_width, roundness;
 };
 
 static char *browser_cmd[3] = {NULL};
@@ -169,7 +169,7 @@ static void draw_rectangle(cairo_t *cr, double x, double y, double height, doubl
     cairo_close_path(cr);
 }
 
-static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, int padding, unsigned id) {
+static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, unsigned id) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
     int width, height;
@@ -183,8 +183,8 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     pango_layout_get_size (layout, &width, &height);
 
     draw_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
-                   static_cast<double>(width / PANGO_SCALE + padding * 2),
-                   static_cast<double>(height / PANGO_SCALE + padding * 2));
+                   static_cast<double>(width / PANGO_SCALE) + hints.padding * 2,
+                   static_cast<double>(height / PANGO_SCALE) + hints.padding * 2);
     cairo_set_source(cr, hints.border);
     cairo_set_line_width(cr, hints.border_width);
     cairo_stroke_preserve(cr);
@@ -192,7 +192,8 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     cairo_fill(cr);
 
     cairo_new_path(cr);
-    cairo_move_to(cr, static_cast<double>(x + padding), static_cast<double>(y + padding));
+    cairo_move_to(cr, static_cast<double>(x) + hints.padding,
+                  static_cast<double>(y) + hints.padding);
 
     cairo_set_source(cr, hints.fg);
     pango_cairo_update_layout(cr, layout);
@@ -216,7 +217,7 @@ static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
             const url_data &data = info->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-            draw_marker(cr, desc, x, y, 2, i + 1);
+            draw_marker(cr, desc, x, y, i + 1);
         }
     }
 
@@ -1059,6 +1060,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                                                 color.blue  / 65535.0);
         } else {
             hints.border = hints.fg;
+        }
+
+        if (!get_config_double(config, "hints", "padding", &hints.padding)) {
+            hints.padding = 2.0;
         }
 
         if (!get_config_double(config, "hints", "border_width", &hints.border_width)) {
