@@ -1012,6 +1012,7 @@ static void exit_with_status(VteTerminal *vte) {
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *term = "xterm-termite";
+    const char *directory;
     gboolean version = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
@@ -1019,6 +1020,7 @@ int main(int argc, char **argv) {
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
+        {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
         {}
@@ -1034,6 +1036,13 @@ int main(int argc, char **argv) {
     if (version) {
         g_print("termite %s\n", TERMITE_VERSION);
         return EXIT_SUCCESS;
+    }
+
+    if (directory) {
+        if (chdir(directory) == -1) {
+            perror("chdir");
+            return EXIT_FAILURE;
+        }
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
