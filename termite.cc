@@ -437,10 +437,28 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (info->select.mode != vi_mode::insert) {
         if (modifiers == GDK_CONTROL_MASK) {
-            if (gdk_keyval_to_lower(event->keyval) == GDK_KEY_v) {
-                toggle_visual(vte, &info->select, vi_mode::visual_block);
+            switch (gdk_keyval_to_lower(event->keyval)) {
+                case GDK_KEY_v:
+                    toggle_visual(vte, &info->select, vi_mode::visual_block);
+                    break;
+                case GDK_KEY_Left:
+                    move_backward_blank_word(vte, &info->select);
+                    break;
+                case GDK_KEY_Right:
+                    move_forward_blank_word(vte, &info->select);
+                    break;
             }
             return TRUE;
+        }
+        if (modifiers == GDK_SHIFT_MASK) {
+            switch (event->keyval) {
+                case GDK_KEY_Left:
+                    move_backward_word(vte, &info->select);
+                    return TRUE;
+                case GDK_KEY_Right:
+                    move_forward_word(vte, &info->select);
+                    return TRUE;
+            }
         }
         switch (event->keyval) {
             case GDK_KEY_Escape:
