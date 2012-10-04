@@ -28,7 +28,7 @@ endif
 LDFLAGS := -s -Wl,--as-needed ${LDFLAGS}
 LDLIBS := ${shell pkg-config --libs ${GTK} ${VTE}}
 
-termite: termite.cc url_regex.hh
+termite: termite.cc memory.hh url_regex.hh
 	${CXX} ${CXXFLAGS} ${LDFLAGS} $< ${LDLIBS} -o $@
 
 install: termite
