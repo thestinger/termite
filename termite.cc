@@ -12,6 +12,7 @@
 #include <vte/vte.h>
 #include <vte/vteaccess.h>
 
+#include "memory.hh"
 #include "url_regex.hh"
 
 using namespace std::placeholders;
@@ -133,7 +134,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
 }
 
 static void launch_url(const char *text, search_panel_info *info) {
-    std::unique_ptr<char, decltype(&free)> copy(strdup(text), free);
+    auto copy = make_unique(strdup(text), free);
     for (char *s_ptr = copy.get(), *saveptr; ; s_ptr = nullptr) {
         const char *token = strtok_r(s_ptr, ",", &saveptr);
         if (!token) {
