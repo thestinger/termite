@@ -147,7 +147,7 @@ static void launch_url(const char *text, search_panel_info *info) {
         if (!errno && end != text && id && id <= info->url_list.size()) {
             launch_browser(info->url_list[id - 1].url.get());
         } else {
-            g_printerr("url hint invalid: %s\n", text);
+            g_printerr("url hint invalid: %s\n", token);
         }
     }
 }
