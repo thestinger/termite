@@ -1,0 +1,3 @@
+[submodule "util"]
+	path = util
+	url = git://github.com/thestinger/util.git

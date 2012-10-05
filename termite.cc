@@ -12,8 +12,8 @@
 #include <vte/vte.h>
 #include <vte/vteaccess.h>
 
-#include "memory.hh"
 #include "url_regex.hh"
+#include "util/memory.hh"
 
 using namespace std::placeholders;
 
