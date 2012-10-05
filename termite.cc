@@ -778,21 +778,26 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
 }
 
 /* {{{ CONFIG LOADING */
-#define MAKE_GET_CONFIG_FUNCTION(NAME, TYPE) \
-static bool get_config_ ## NAME (GKeyFile *config, const char *group, const char *key, TYPE *value) { \
-    GError *error = NULL; \
-    *value = g_key_file_get_ ## NAME (config, group, key, &error); \
-    if (error) { \
-        g_error_free(error); \
-        return false; \
-    } \
-    return true; \
+template<typename T>
+static bool get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
+                       GKeyFile *config, const char *group, const char *key, T *value) {
+    GError *error = nullptr;
+    *value = get(config, group, key, &error);
+    if (error) {
+        g_error_free(error);
+        return false;
+    }
+    return true;
 }
 
-MAKE_GET_CONFIG_FUNCTION(boolean, gboolean)
-MAKE_GET_CONFIG_FUNCTION(integer, int)
-MAKE_GET_CONFIG_FUNCTION(string, char *)
-MAKE_GET_CONFIG_FUNCTION(double, double)
+auto get_config_boolean(std::bind(get_config<gboolean>, g_key_file_get_boolean,
+                                  _1, _2, _3, _4));
+auto get_config_integer(std::bind(get_config<int>, g_key_file_get_integer,
+                                  _1, _2, _3, _4));
+auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
+                                 _1, _2, _3, _4));
+auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
+                                 _1, _2, _3, _4));
 
 static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color) {
     char *cfgstr;
