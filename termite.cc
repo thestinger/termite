@@ -67,7 +67,7 @@ struct keybind_info {
     config_info config;
 };
 
-static char *browser_cmd[3] = {NULL};
+static char *browser = nullptr;
 
 static void launch_browser(char *url);
 
@@ -89,7 +89,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 static long first_row(VteTerminal *vte);
 
 void launch_browser(char *url) {
-    browser_cmd[1] = url;
+    char *browser_cmd[3] = {browser, url, nullptr};
     g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
 
@@ -307,7 +307,7 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 }
 
 static void open_selection(VteTerminal *vte) {
-    if (browser_cmd[0]) {
+    if (browser) {
         AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
         char *selection = atk_text_get_selection(text, 0, NULL, NULL);
         if (selection && selection[0]) {
@@ -882,12 +882,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             info->tag = -1;
         }
 
-        g_free(browser_cmd[0]);
+        g_free(browser);
         if (get_config_string(config, "options", "browser", &cfgstr)) {
-            browser_cmd[0] = cfgstr;
+            browser = cfgstr;
         } else {
-            browser_cmd[0] = g_strdup(g_getenv("BROWSER"));
-            if (!browser_cmd[0]) info->clickable_url = false;
+            browser = g_strdup(g_getenv("BROWSER"));
+            if (!browser) info->clickable_url = false;
         }
 
         if (get_config_string(config, "options", "font", &cfgstr)) {
