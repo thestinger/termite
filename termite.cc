@@ -14,6 +14,7 @@
 
 #include "url_regex.hh"
 #include "util/clamp.hh"
+#include "util/maybe.hh"
 #include "util/memory.hh"
 
 using namespace std::placeholders;
@@ -779,36 +780,35 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
 
 /* {{{ CONFIG LOADING */
 template<typename T>
-static bool get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
-                       GKeyFile *config, const char *group, const char *key, T *value) {
+static maybe<T> get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
+                       GKeyFile *config, const char *group, const char *key) {
     GError *error = nullptr;
-    *value = get(config, group, key, &error);
+    maybe<T> value = get(config, group, key, &error);
     if (error) {
         g_error_free(error);
-        return false;
+        return {};
     }
-    return true;
+    return value;
 }
 
 auto get_config_boolean(std::bind(get_config<gboolean>, g_key_file_get_boolean,
-                                  _1, _2, _3, _4));
+                                  _1, _2, _3));
 auto get_config_integer(std::bind(get_config<int>, g_key_file_get_integer,
-                                  _1, _2, _3, _4));
+                                  _1, _2, _3));
 auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
-                                 _1, _2, _3, _4));
+                                 _1, _2, _3));
 auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
-                                 _1, _2, _3, _4));
+                                 _1, _2, _3));
 
 static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color) {
-    char *cfgstr;
     bool success = false;
-    if (get_config_string(config, "colors", key, &cfgstr)) {
-        if (gdk_color_parse(cfgstr, color)) {
+    if (auto s = get_config_string(config, "colors", key)) {
+        if (gdk_color_parse(*s, color)) {
             success = true;
         } else {
-            g_printerr("invalid color string: %s\n", cfgstr);
+            g_printerr("invalid color string: %s\n", *s);
         }
-        g_free(cfgstr);
+        g_free(*s);
     }
     return success;
 }
@@ -824,49 +824,48 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
          g_key_file_load_from_dirs(config, filename,
                                    const_cast<const char **>(g_get_system_config_dirs()),
                                    NULL, G_KEY_FILE_NONE, NULL))) {
-        gboolean cfgbool;
-        double cfgdouble;
-        int cfgint;
-        char *cfgstr;
-
-        if (geometry && get_config_string(config, "options", "geometry", &cfgstr)) {
-            *geometry = cfgstr;
+        if (geometry) {
+            if (auto s = get_config_string(config, "options", "geometry")) {
+                *geometry = *s;
+            }
         }
-        if (term && get_config_string(config, "options", "term", &cfgstr)) {
-            *term = cfgstr;
+        if (term) {
+            if (auto s = get_config_string(config, "options", "term")) {
+                *term = *s;
+            }
         }
-        if (get_config_boolean(config, "options", "resize_grip", &cfgbool)) {
-            gtk_window_set_has_resize_grip(window, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "resize_grip")) {
+            gtk_window_set_has_resize_grip(window, *b);
         }
-        if (get_config_boolean(config, "options", "scroll_on_output", &cfgbool)) {
-            vte_terminal_set_scroll_on_output(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "scroll_on_output")) {
+            vte_terminal_set_scroll_on_output(vte, *b);
         }
-        if (get_config_boolean(config, "options", "scroll_on_keystroke", &cfgbool)) {
-            vte_terminal_set_scroll_on_keystroke(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "scroll_on_keystroke")) {
+            vte_terminal_set_scroll_on_keystroke(vte, *b);
         }
-        if (get_config_boolean(config, "options", "audible_bell", &cfgbool)) {
-            vte_terminal_set_audible_bell(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "audible_bell")) {
+            vte_terminal_set_audible_bell(vte, *b);
         }
-        if (get_config_boolean(config, "options", "visible_bell", &cfgbool)) {
-            vte_terminal_set_visible_bell(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "visible_bell")) {
+            vte_terminal_set_visible_bell(vte, *b);
         }
-        if (get_config_boolean(config, "options", "mouse_autohide", &cfgbool)) {
-            vte_terminal_set_mouse_autohide(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "mouse_autohide")) {
+            vte_terminal_set_mouse_autohide(vte, *b);
         }
-        if (get_config_boolean(config, "options", "allow_bold", &cfgbool)) {
-            vte_terminal_set_allow_bold(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "allow_bold")) {
+            vte_terminal_set_allow_bold(vte, *b);
         }
-        if (get_config_boolean(config, "options", "dynamic_title", &cfgbool)) {
-            info->dynamic_title = cfgbool;
+        if (auto b = get_config_boolean(config, "options", "dynamic_title")) {
+            info->dynamic_title = *b;
         }
-        if (get_config_boolean(config, "options", "urgent_on_bell", &cfgbool)) {
-            info->urgent_on_bell = cfgbool;
+        if (auto b = get_config_boolean(config, "options", "urgent_on_bell")) {
+            info->urgent_on_bell = *b;
         }
-        if (get_config_boolean(config, "options", "search_wrap", &cfgbool)) {
-            vte_terminal_search_set_wrap_around(vte, cfgbool);
+        if (auto b = get_config_boolean(config, "options", "search_wrap")) {
+            vte_terminal_search_set_wrap_around(vte, *b);
         }
-        if (get_config_boolean(config, "options", "clickable_url", &cfgbool)) {
-            info->clickable_url = cfgbool;
+        if (auto b = get_config_boolean(config, "options", "clickable_url")) {
+            info->clickable_url = *b;
         }
         if (info->clickable_url) {
             info->tag =
@@ -883,64 +882,64 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
 
         g_free(info->browser);
-        if (get_config_string(config, "options", "browser", &cfgstr)) {
-            info->browser = cfgstr;
+        if (auto s = get_config_string(config, "options", "browser")) {
+            info->browser = *s;
         } else {
             info->browser = g_strdup(g_getenv("BROWSER"));
             if (!info->browser) info->clickable_url = false;
         }
 
-        if (get_config_string(config, "options", "font", &cfgstr)) {
-            vte_terminal_set_font_from_string(vte, cfgstr);
-            g_free(cfgstr);
+        if (auto s = get_config_string(config, "options", "font")) {
+            vte_terminal_set_font_from_string(vte, *s);
+            g_free(*s);
         }
 
-        if (get_config_string(config, "options", "word_chars", &cfgstr)) {
-            vte_terminal_set_word_chars(vte, cfgstr);
-            g_free(cfgstr);
+        if (auto s = get_config_string(config, "options", "word_chars")) {
+            vte_terminal_set_word_chars(vte, *s);
+            g_free(*s);
         }
 
-        if (get_config_integer(config, "options", "scrollback_lines", &cfgint)) {
-            vte_terminal_set_scrollback_lines(vte, cfgint);
+        if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
+            vte_terminal_set_scrollback_lines(vte, *i);
         }
 
-        if (get_config_string(config, "options", "cursor_blink", &cfgstr)) {
-            if (!g_ascii_strcasecmp(cfgstr, "system")) {
+        if (auto s = get_config_string(config, "options", "cursor_blink")) {
+            if (!g_ascii_strcasecmp(*s, "system")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
-            } else if (!g_ascii_strcasecmp(cfgstr, "on")) {
+            } else if (!g_ascii_strcasecmp(*s, "on")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
-            } else if (!g_ascii_strcasecmp(cfgstr, "off")) {
+            } else if (!g_ascii_strcasecmp(*s, "off")) {
                 vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
             }
-            g_free(cfgstr);
+            g_free(*s);
         }
 
-        if (get_config_string(config, "options", "cursor_shape", &cfgstr)) {
-            if (!g_ascii_strcasecmp(cfgstr, "block")) {
+        if (auto s = get_config_string(config, "options", "cursor_shape")) {
+            if (!g_ascii_strcasecmp(*s, "block")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
-            } else if (!g_ascii_strcasecmp(cfgstr, "ibeam")) {
+            } else if (!g_ascii_strcasecmp(*s, "ibeam")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
-            } else if (!g_ascii_strcasecmp(cfgstr, "underline")) {
+            } else if (!g_ascii_strcasecmp(*s, "underline")) {
                 vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
             }
-            g_free(cfgstr);
+            g_free(*s);
         }
 
-        if (get_config_string(config, "options", "icon_name", &cfgstr)) {
-            gtk_window_set_icon_name(window, cfgstr);
-            g_free(cfgstr);
+        if (auto s = get_config_string(config, "options", "icon_name")) {
+            gtk_window_set_icon_name(window, *s);
+            g_free(*s);
         }
 
-        if (get_config_double(config, "options", "transparency", &cfgdouble)) {
-            vte_terminal_set_background_saturation(vte, cfgdouble);
-            get_config_boolean(config, "options", "pseudo_transparency", &cfgbool);
-            vte_terminal_set_background_transparent(vte, cfgbool);
+        if (auto opacity = get_config_double(config, "options", "transparency")) {
+            vte_terminal_set_background_saturation(vte, *opacity);
+            gboolean pseudo = get_config_boolean(config, "options", "pseudo_transparency").get_value_or(FALSE);
+            vte_terminal_set_background_transparent(vte, pseudo);
 
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
             GdkVisual *visual;
 
-            if (cfgdouble > 0.0 && !cfgbool && (visual = gdk_screen_get_rgba_visual(screen))) {
-                vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - cfgdouble)));
+            if (*opacity > 0.0 && !pseudo && (visual = gdk_screen_get_rgba_visual(screen))) {
+                vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - *opacity)));
             } else {
                 visual = gdk_screen_get_system_visual(screen);
                 vte_terminal_set_opacity(vte, G_MAXUINT16);
