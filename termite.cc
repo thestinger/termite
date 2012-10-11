@@ -13,6 +13,7 @@
 #include <vte/vteaccess.h>
 
 #include "url_regex.hh"
+#include "util/clamp.hh"
 #include "util/memory.hh"
 
 using namespace std::placeholders;
@@ -292,8 +293,8 @@ static void move(VteTerminal *vte, select_info *select, long col, long row) {
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
     vte_terminal_set_cursor_position(vte,
-                                     CLAMP(cursor_col + col, 0, end_col),
-                                     CLAMP(cursor_row + row, first_row(vte), last_row(vte)));
+                                     clamp(cursor_col + col, 0l, end_col),
+                                     clamp(cursor_row + row, first_row(vte), last_row(vte)));
 
     update_scroll(vte);
     update_selection(vte, select);

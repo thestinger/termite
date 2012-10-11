@@ -10,7 +10,7 @@ CXXFLAGS := -std=c++11 -O3 \
 	    -Wshadow \
 	    -Wformat=2 \
 	    -Wmissing-declarations \
-	    -Wstrict-overflow=4 \
+	    -Wstrict-overflow=5 \
 	    -Wcast-align \
 	    -Wcast-qual \
 	    -Wconversion \
