@@ -74,7 +74,7 @@ static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc);
-static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, config_info *info);
+static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info);
 static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
@@ -661,7 +661,7 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
     return TRUE;
 }
 
-gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, config_info *info) {
+gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info) {
     if (info->clickable_url) {
         char *match = check_match(vte, (int)event->x, (int)event->y);
         if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
