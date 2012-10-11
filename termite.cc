@@ -57,6 +57,7 @@ struct search_panel_info {
 };
 
 struct config_info {
+    char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
 };
@@ -67,15 +68,13 @@ struct keybind_info {
     config_info config;
 };
 
-static char *browser = nullptr;
-
-static void launch_browser(char *url);
+static void launch_browser(char *browser, char *url);
 
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc);
-static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url);
+static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, config_info *info);
 static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
@@ -88,7 +87,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         const char **term, char **geometry);
 static long first_row(VteTerminal *vte);
 
-void launch_browser(char *url) {
+void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
     g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
@@ -133,7 +132,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     g_array_free(attributes, TRUE);
 }
 
-static void launch_url(const char *text, search_panel_info *info) {
+static void launch_url(char *browser, const char *text, search_panel_info *info) {
     auto copy = make_unique(strdup(text), free);
     for (char *s_ptr = copy.get(), *saveptr; ; s_ptr = nullptr) {
         const char *token = strtok_r(s_ptr, ",", &saveptr);
@@ -145,7 +144,7 @@ static void launch_url(const char *text, search_panel_info *info) {
         errno = 0;
         unsigned long id = strtoul(token, &end, 10);
         if (!errno && id && id <= info->url_list.size()) {
-            launch_browser(info->url_list[id - 1].url.get());
+            launch_browser(browser, info->url_list[id - 1].url.get());
         } else {
             g_printerr("url hint invalid: %s\n", token);
         }
@@ -306,12 +305,12 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
     update_selection(vte, select);
 }
 
-static void open_selection(VteTerminal *vte) {
+static void open_selection(char *browser, VteTerminal *vte) {
     if (browser) {
         AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
         char *selection = atk_text_get_selection(text, 0, NULL, NULL);
         if (selection && selection[0]) {
-            launch_browser(selection);
+            launch_browser(browser, selection);
         }
         g_free(selection);
     } else {
@@ -538,10 +537,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 search(vte, url_regex, true);
                 break;
             case GDK_KEY_o:
-                open_selection(vte);
+                open_selection(info->config.browser, vte);
                 break;
             case GDK_KEY_Return:
-                open_selection(vte);
+                open_selection(info->config.browser, vte);
                 exit_command_mode(vte, &info->select);
                 break;
             case GDK_KEY_x:
@@ -623,7 +622,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                     vte_terminal_feed_child(info->panel.vte, text, -1);
                     break;
                 case overlay_mode::urlselect:
-                    launch_url(text, &info->panel);
+                    launch_url(info->config.browser, text, &info->panel);
                     break;
                 case overlay_mode::hidden:
                     break;
@@ -662,11 +661,11 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
     return TRUE;
 }
 
-gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, gboolean *clickable_url) {
-    if (*clickable_url) {
+gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, config_info *info) {
+    if (info->clickable_url) {
         char *match = check_match(vte, (int)event->x, (int)event->y);
         if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
-            launch_browser(match);
+            launch_browser(info->browser, match);
             g_free(match);
             return TRUE;
         }
@@ -882,12 +881,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             info->tag = -1;
         }
 
-        g_free(browser);
+        g_free(info->browser);
         if (get_config_string(config, "options", "browser", &cfgstr)) {
-            browser = cfgstr;
+            info->browser = cfgstr;
         } else {
-            browser = g_strdup(g_getenv("BROWSER"));
-            if (!browser) info->clickable_url = false;
+            info->browser = g_strdup(g_getenv("BROWSER"));
+            if (!info->browser) info->clickable_url = false;
         }
 
         if (get_config_string(config, "options", "font", &cfgstr)) {
@@ -1094,7 +1093,7 @@ int main(int argc, char **argv) {
          gtk_drawing_area_new(),
          overlay_mode::hidden},
         {vi_mode::insert, 0, 0, 0, 0},
-        {FALSE, FALSE, FALSE, -1}
+        {nullptr, FALSE, FALSE, FALSE, -1}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, &term, &geometry);
@@ -1127,7 +1126,7 @@ int main(int argc, char **argv) {
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
-    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config.clickable_url);
+    g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
     g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
