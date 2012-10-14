@@ -70,6 +70,14 @@ struct keybind_info {
     config_info config;
 };
 
+struct hint_info {
+    PangoFontDescription *font;
+    cairo_pattern_t *fg, *bg, *border;
+    double padding, border_width, roundness;
+};
+
+static hint_info hints = {NULL};
+
 static void launch_browser(char *browser, char *url);
 
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
@@ -153,35 +161,55 @@ static void launch_url(char *browser, const char *text, search_panel_info *info)
     }
 }
 
-static void draw_marker(cairo_t *cr, const char *font, long x, long y, int padding, unsigned id) {
+static void draw_rectangle(cairo_t *cr, double x, double y, double height, double width) {
+    double radius = hints.roundness;
+    double a = x, b = x + height, c = y, d = y + width;
+    cairo_arc(cr, a + radius, c + radius, radius, 2*(M_PI/2), 3*(M_PI/2));
+    cairo_arc(cr, b - radius, c + radius, radius, 3*(M_PI/2), 4*(M_PI/2));
+    cairo_arc(cr, b - radius, d - radius, radius, 0*(M_PI/2), 1*(M_PI/2));
+    cairo_arc(cr, a + radius, d - radius, radius, 1*(M_PI/2), 2*(M_PI/2));
+    cairo_close_path(cr);
+}
+
+static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, unsigned id) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
-
-    cairo_select_font_face(cr, font, CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, 9);
+    int width, height;
 
     snprintf(buffer, sizeof(buffer), "%u", id);
+
     cairo_text_extents(cr, buffer, &ext);
+    PangoLayout *layout = pango_cairo_create_layout(cr);
+    pango_layout_set_font_description(layout, desc);
+    pango_layout_set_text(layout, buffer, -1);
+    pango_layout_get_size (layout, &width, &height);
 
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
-                    ext.width + padding * 2, ext.height + padding * 2);
+    draw_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
+                   static_cast<double>(width / PANGO_SCALE) + hints.padding * 2,
+                   static_cast<double>(height / PANGO_SCALE) + hints.padding * 2);
+    cairo_set_source(cr, hints.border);
+    cairo_set_line_width(cr, hints.border_width);
     cairo_stroke_preserve(cr);
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    cairo_set_source(cr, hints.bg);
     cairo_fill(cr);
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_move_to(cr, static_cast<double>(x + padding) - ext.x_bearing,
-                  static_cast<double>(y + padding) - ext.y_bearing);
 
-    cairo_show_text(cr, buffer);
+    cairo_new_path(cr);
+    cairo_move_to(cr, static_cast<double>(x) + hints.padding,
+                  static_cast<double>(y) + hints.padding);
+
+    cairo_set_source(cr, hints.fg);
+    pango_cairo_update_layout(cr, layout);
+    pango_cairo_layout_path(cr, layout);
+    cairo_fill(cr);
+
+    g_object_unref(layout);
 }
 
 static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
     if (!info->url_list.empty()) {
-        const PangoFontDescription *desc = vte_terminal_get_font(info->vte);
-        const char *font = pango_font_description_get_family(desc);
         const long cw = vte_terminal_get_char_width(info->vte);
         const long ch = vte_terminal_get_char_height(info->vte);
+        const PangoFontDescription *desc = hints.font ? hints.font : vte_terminal_get_font(info->vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
@@ -191,7 +219,7 @@ static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
             const url_data &data = info->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-            draw_marker(cr, font, x, y, 3, i + 1);
+            draw_marker(cr, desc, x, y, i + 1);
         }
     }
 
@@ -800,9 +828,9 @@ auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
 auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
                                  _1, _2, _3));
 
-static bool get_config_color(GKeyFile *config, const char *key, GdkColor *color) {
+static bool get_config_color(GKeyFile *config, const char *section, const char *key, GdkColor *color) {
     bool success = false;
-    if (auto s = get_config_string(config, "colors", key)) {
+    if (auto s = get_config_string(config, section, key)) {
         if (gdk_color_parse(*s, color)) {
             success = true;
         } else {
@@ -959,7 +987,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         for (unsigned i = 0; i < palette_size; i++) {
             snprintf(color_key, sizeof color_key, "color%u", i);
-            if (!get_config_color(config, color_key, &palette[i])) {
+            if (!get_config_color(config, "colors", color_key, &palette[i])) {
                 if (i < 16) {
                     palette[i].blue = (i & 4) ? 0xc000 : 0;
                     palette[i].green = (i & 2) ? 0xc000 : 0;
@@ -985,25 +1013,58 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
         vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
-        if (get_config_color(config, "foreground", &color)) {
+        if (get_config_color(config, "colors", "foreground", &color)) {
             vte_terminal_set_color_foreground(vte, &color);
         }
-        if (get_config_color(config, "foreground_bold", &color)) {
+        if (get_config_color(config, "colors", "foreground_bold", &color)) {
             vte_terminal_set_color_bold(vte, &color);
         }
-        if (get_config_color(config, "foreground_dim", &color)) {
+        if (get_config_color(config, "colors", "foreground_dim", &color)) {
             vte_terminal_set_color_dim(vte, &color);
         }
-        if (get_config_color(config, "background", &color)) {
+        if (get_config_color(config, "colors", "background", &color)) {
             vte_terminal_set_color_background(vte, &color);
             vte_terminal_set_background_tint_color(vte, &color);
         }
-        if (get_config_color(config, "cursor", &color)) {
+        if (get_config_color(config, "colors", "cursor", &color)) {
             vte_terminal_set_color_cursor(vte, &color);
         }
-        if (get_config_color(config, "highlight", &color)) {
+        if (get_config_color(config, "colors", "highlight", &color)) {
             vte_terminal_set_color_highlight(vte, &color);
         }
+
+        if (auto s = get_config_string(config, "hints", "font")) {
+            hints.font = pango_font_description_from_string(*s);
+            g_free(*s);
+        }
+
+        if (get_config_color(config, "hints", "foreground", &color)) {
+            hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
+        } else {
+            hints.fg = cairo_pattern_create_rgb(1, 1, 1);
+        }
+
+        if (get_config_color(config, "hints", "background", &color)) {
+            hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
+        } else {
+            hints.bg = cairo_pattern_create_rgb(0, 0, 0);
+        }
+
+        if (get_config_color(config, "hints", "border", &color)) {
+            hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
+        } else {
+            hints.border = hints.fg;
+        }
+
+        hints.padding = get_config_double(config, "hints", "padding", 5).get_value_or(2.0);
+        hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
+        hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
     }
     g_free(path);
     g_key_file_free(config);
