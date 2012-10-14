@@ -808,7 +808,7 @@ char *check_match(VteTerminal *vte, int event_x, int event_y) {
 
 /* {{{ CONFIG LOADING */
 template<typename T>
-static maybe<T> get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
+maybe<T> get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
                            GKeyFile *config, const char *group, const char *key) {
     GError *error = nullptr;
     maybe<T> value = get(config, group, key, &error);
