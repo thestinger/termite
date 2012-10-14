@@ -819,8 +819,6 @@ maybe<T> get_config(T (*get)(GKeyFile *, const char *, const char *, GError **),
     return value;
 }
 
-auto get_config_boolean(std::bind(get_config<gboolean>, g_key_file_get_boolean,
-                                  _1, _2, _3));
 auto get_config_integer(std::bind(get_config<int>, g_key_file_get_integer,
                                   _1, _2, _3));
 auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
@@ -864,7 +862,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
 
         auto cfg_bool = [config](const char *key, gboolean value) {
-            return get_config_boolean(config, "options", key).get_value_or(value);
+            return get_config<gboolean>(g_key_file_get_boolean,
+                                        config, "options", key).get_value_or(value);
         };
 
         gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
