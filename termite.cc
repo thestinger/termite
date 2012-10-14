@@ -863,18 +863,18 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
 
-        auto get_bool_or = [config](const char *key, gboolean value) {
+        auto cfg_bool = [config](const char *key, gboolean value) {
             return get_config_boolean(config, "options", key).get_value_or(value);
         };
 
-        gtk_window_set_has_resize_grip(window, get_bool_or("resize_grip", FALSE));
-        vte_terminal_set_scroll_on_output(vte, get_bool_or("scroll_on_output", FALSE));
-        vte_terminal_set_scroll_on_keystroke(vte, get_bool_or("scroll_on_keystroke", TRUE));
-        vte_terminal_set_audible_bell(vte, get_bool_or("audible_bell", FALSE));
-        vte_terminal_set_visible_bell(vte, get_bool_or("audible_bell", FALSE));
-        vte_terminal_set_mouse_autohide(vte, get_bool_or("mouse_autohide", FALSE));
-        vte_terminal_set_allow_bold(vte, get_bool_or("allow_bold", TRUE));
-        vte_terminal_search_set_wrap_around(vte, get_bool_or("search_wrap", TRUE));
+        gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
+        vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
+        vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
+        vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
+        vte_terminal_set_visible_bell(vte, cfg_bool("audible_bell", FALSE));
+        vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
+        vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
+        vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
 
         if (auto b = get_config_boolean(config, "options", "dynamic_title")) {
             info->dynamic_title = *b;
