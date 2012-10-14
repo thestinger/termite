@@ -875,16 +875,10 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
         vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
         vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
+        info->dynamic_title = cfg_bool("dynamic_title", TRUE);
+        info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
+        info->clickable_url = cfg_bool("clickable_url", TRUE);
 
-        if (auto b = get_config_boolean(config, "options", "dynamic_title")) {
-            info->dynamic_title = *b;
-        }
-        if (auto b = get_config_boolean(config, "options", "urgent_on_bell")) {
-            info->urgent_on_bell = *b;
-        }
-        if (auto b = get_config_boolean(config, "options", "clickable_url")) {
-            info->clickable_url = *b;
-        }
         if (info->clickable_url) {
             info->tag =
                 vte_terminal_match_add_gregex(vte,
