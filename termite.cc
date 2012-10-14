@@ -944,7 +944,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         if (auto opacity = get_config_double(config, "options", "transparency")) {
             vte_terminal_set_background_saturation(vte, *opacity);
-            gboolean pseudo = get_config_boolean(config, "options", "pseudo_transparency").get_value_or(FALSE);
+            gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
             vte_terminal_set_background_transparent(vte, pseudo);
 
             GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
