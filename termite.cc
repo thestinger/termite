@@ -1056,8 +1056,8 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         if (get_config_color(config, "hints", "border", &color)) {
             hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                                color.green / 65535.0,
-                                                color.blue  / 65535.0);
+                                                    color.green / 65535.0,
+                                                    color.blue  / 65535.0);
         } else {
             hints.border = hints.fg;
         }
