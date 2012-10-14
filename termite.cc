@@ -862,35 +862,25 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                 *term = *s;
             }
         }
-        if (auto b = get_config_boolean(config, "options", "resize_grip")) {
-            gtk_window_set_has_resize_grip(window, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "scroll_on_output")) {
-            vte_terminal_set_scroll_on_output(vte, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "scroll_on_keystroke")) {
-            vte_terminal_set_scroll_on_keystroke(vte, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "audible_bell")) {
-            vte_terminal_set_audible_bell(vte, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "visible_bell")) {
-            vte_terminal_set_visible_bell(vte, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "mouse_autohide")) {
-            vte_terminal_set_mouse_autohide(vte, *b);
-        }
-        if (auto b = get_config_boolean(config, "options", "allow_bold")) {
-            vte_terminal_set_allow_bold(vte, *b);
-        }
+
+        auto get_bool_or = [config](const char *key, gboolean value) {
+            return get_config_boolean(config, "options", key).get_value_or(value);
+        };
+
+        gtk_window_set_has_resize_grip(window, get_bool_or("resize_grip", FALSE));
+        vte_terminal_set_scroll_on_output(vte, get_bool_or("scroll_on_output", FALSE));
+        vte_terminal_set_scroll_on_keystroke(vte, get_bool_or("scroll_on_keystroke", TRUE));
+        vte_terminal_set_audible_bell(vte, get_bool_or("audible_bell", FALSE));
+        vte_terminal_set_visible_bell(vte, get_bool_or("audible_bell", FALSE));
+        vte_terminal_set_mouse_autohide(vte, get_bool_or("mouse_autohide", FALSE));
+        vte_terminal_set_allow_bold(vte, get_bool_or("allow_bold", TRUE));
+        vte_terminal_search_set_wrap_around(vte, get_bool_or("search_wrap", TRUE));
+
         if (auto b = get_config_boolean(config, "options", "dynamic_title")) {
             info->dynamic_title = *b;
         }
         if (auto b = get_config_boolean(config, "options", "urgent_on_bell")) {
             info->urgent_on_bell = *b;
-        }
-        if (auto b = get_config_boolean(config, "options", "search_wrap")) {
-            vte_terminal_search_set_wrap_around(vte, *b);
         }
         if (auto b = get_config_boolean(config, "options", "clickable_url")) {
             info->clickable_url = *b;
