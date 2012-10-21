@@ -102,6 +102,18 @@ void launch_browser(char *browser, char *url) {
     g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
 }
 
+static void launch_in_directory(VteTerminal *vte) {
+    const char *uri = vte_terminal_get_current_directory_uri(vte);
+    if (!uri) {
+        g_printerr("no directory uri set");
+        return;
+    }
+    auto dir = make_unique(g_filename_from_uri(uri, nullptr, nullptr), g_free);
+    char term[] = "termite"; // maybe this should be argv[0]
+    char *cmd[] = {term, nullptr};
+    g_spawn_async(dir.get(), cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+}
+
 static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
     GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
@@ -583,6 +595,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_t:
+                launch_in_directory(vte);
+                return TRUE;
             case GDK_KEY_space:
                 enter_command_mode(vte, &info->select);
                 return TRUE;

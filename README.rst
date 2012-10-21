@@ -6,8 +6,8 @@ unset) and then falls back to ``$XDG_CONFIG_DIRS``.
 DEPENDENCIES
 ============
 
-A vte version >= 0.30. A patch is required to expose the functions needed for
-keyboard selection.
+A vte version >= ``0.34``. A patch is required to expose the functions needed
+for keyboard selection.
 
 KEYBINDINGS
 ===========
@@ -15,19 +15,35 @@ KEYBINDINGS
 INSERT MODE
 -----------
 
-+-----------------------+--------------------------------------+
-| ``ctrl-shift-escape`` | reload configuration file            |
-+-----------------------+--------------------------------------+
-| ``ctrl-shift-c``      | copy to CLIPBOARD                    |
-+-----------------------+--------------------------------------+
-| ``ctrl-shift-v``      | paste from CLIPBOARD                 |
-+-----------------------+--------------------------------------+
-| ``ctrl-shift-u``      | unicode input (standard GTK binding) |
-+-----------------------+--------------------------------------+
-| ``ctrl-tab``          | start scrollback completion          |
-+-----------------------+--------------------------------------+
-| ``ctrl-shift-space``  | start command mode                   |
-+-----------------------+--------------------------------------+
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-escape`` | reload configuration file                   |
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-c``      | copy to CLIPBOARD                           |
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-v``      | paste from CLIPBOARD                        |
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-u``      | unicode input (standard GTK binding)        |
++-----------------------+---------------------------------------------+
+| ``ctrl-tab``          | start scrollback completion                 |
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-space``  | start command mode                          |
++-----------------------+---------------------------------------------+
+| ``ctrl-shift-t``      | open terminal in the current directory [1]_ |
++-----------------------+---------------------------------------------+
+
+.. [1] The directory can be set by a process running in the terminal. For
+       example, with zsh:
+
+       .. code:: sh
+
+            if [[ $TERM == xterm-termite ]]; then
+              . /etc/profile.d/vte.sh
+
+              chpwd() {
+                __vte_ps1
+              }
+            fi
+
 
 COMMAND MODE
 ------------
