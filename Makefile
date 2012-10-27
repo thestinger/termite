@@ -32,7 +32,7 @@ LDLIBS := ${shell pkg-config --libs ${GTK} ${VTE}}
 termite: termite.cc util/memory.hh url_regex.hh
 	${CXX} ${CXXFLAGS} ${LDFLAGS} $< ${LDLIBS} -o $@
 
-install: termite
+install: termite termite.desktop termite.terminfo
 	mkdir -p ${DESTDIR}${TERMINFO}
 	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
 	install -Dm644 termite.desktop ${DESTDIR}${PREFIX}/share/applications/termite.desktop
