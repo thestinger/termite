@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=termite
+GenericName=Terminal
+Exec=termite
+Icon=terminal
+Type=Application
+Categories=Application;GTK;System;TerminalEmulator;

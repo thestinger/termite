@@ -35,6 +35,7 @@ termite: termite.cc util/memory.hh url_regex.hh
 install: termite
 	mkdir -p ${DESTDIR}${TERMINFO}
 	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
+	install -Dm644 termite.desktop ${DESTDIR}${PREFIX}/share/applications/termite.desktop
 	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
 
 uninstall:
