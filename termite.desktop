@@ -1,7 +1,8 @@
 [Desktop Entry]
-Name=termite
-GenericName=Terminal
+Name=Termite
+Comment=Use the command line
 Exec=termite
-Icon=terminal
+Icon=utilities-terminal
 Type=Application
-Categories=Application;GTK;System;TerminalEmulator;
+Categories=Application;GTK;Utility;TerminalEmulator;
+StartupNotify=true
