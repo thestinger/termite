@@ -39,6 +39,8 @@ INSERT MODE
             if [[ $TERM == xterm-termite ]]; then
               . /etc/profile.d/vte.sh
 
+              __vte_ps1
+
               chpwd() {
                 __vte_ps1
               }
