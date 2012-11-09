@@ -429,12 +429,10 @@ void move_first(VteTerminal *vte, select_info *select, F is_match) {
         return;
     }
 
-    for (long i = 0; i < length; i++) {
-        if (is_match(codepoints[i])) {
-            vte_terminal_set_cursor_position(vte, i, cursor_row);
-            update_selection(vte, select);
-            break;
-        }
+    auto iter = std::find_if(codepoints, codepoints + length, is_match);
+    if (iter != codepoints + length) {
+        vte_terminal_set_cursor_position(vte, iter - codepoints, cursor_row);
+        update_selection(vte, select);
     }
 
     g_free(codepoints);
