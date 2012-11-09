@@ -408,6 +408,81 @@ static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
 }
 
 template<typename F>
+void move_first(VteTerminal *vte, select_info *select, F is_match) {
+    long cursor_col, cursor_row;
+    vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
+                                                cursor_row, end_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    long length;
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    for (long i = 0; i < length; i++) {
+        if (is_match(codepoints[i])) {
+            vte_terminal_set_cursor_position(vte, i, cursor_row);
+            update_selection(vte, select);
+            break;
+        }
+    }
+
+    g_free(codepoints);
+    g_free(content);
+}
+
+static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
+    long cursor_row;
+    vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
+    vte_terminal_set_cursor_position(vte, column, cursor_row);
+    update_selection(vte, select);
+}
+
+static void move_to_eol(VteTerminal *vte, select_info *select) {
+    long cursor_row;
+    vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
+
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
+                                                cursor_row, end_col,
+                                                NULL, NULL, NULL);
+
+    if (!content) {
+        return;
+    }
+
+    long length;
+    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+
+    if (!codepoints) {
+        return;
+    }
+
+    long column = 0;
+    for (; column < length; column++) {
+        if (codepoints[column] == '\n') {
+            column = std::max(column - 1, 0l);
+            break;
+        }
+    }
+    set_cursor_column(vte, select, column);
+
+    g_free(codepoints);
+    g_free(content);
+}
+
+template<typename F>
 static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
@@ -459,13 +534,6 @@ static void move_forward_word(VteTerminal *vte, select_info *select) {
 
 static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
     move_forward(vte, select, std::not1(std::ref(g_unichar_isspace)));
-}
-
-static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
-    long cursor_row;
-    vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
-    vte_terminal_set_cursor_position(vte, column, cursor_row);
-    update_selection(vte, select);
 }
 
 /* {{{ CALLBACKS */
@@ -537,11 +605,15 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_W:
                 move_forward_blank_word(vte, &info->select);
                 break;
-            case GDK_KEY_asciicircum:
+            case GDK_KEY_0:
                 set_cursor_column(vte, &info->select, 0);
                 break;
+            case GDK_KEY_asciicircum:
+                set_cursor_column(vte, &info->select, 0);
+                move_first(vte, &info->select, std::not1(std::ref(g_unichar_isspace)));
+                break;
             case GDK_KEY_dollar:
-                set_cursor_column(vte, &info->select, vte_terminal_get_column_count(vte) - 1);
+                move_to_eol(vte, &info->select);
                 break;
             case GDK_KEY_g:
                 move_to_row_start(vte, &info->select, first_row(vte));
