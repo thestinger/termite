@@ -467,14 +467,8 @@ static void move_to_eol(VteTerminal *vte, select_info *select) {
         return;
     }
 
-    long column = 0;
-    for (; column < length; column++) {
-        if (codepoints[column] == '\n') {
-            column = std::max(column - 1, 0l);
-            break;
-        }
-    }
-    set_cursor_column(vte, select, column);
+    auto iter = std::find(codepoints, codepoints + length, '\n');
+    set_cursor_column(vte, select, std::max(iter - codepoints - 1, 0l));
 
     g_free(codepoints);
     g_free(content);
