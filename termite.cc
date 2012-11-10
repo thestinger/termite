@@ -360,21 +360,25 @@ static void open_selection(char *browser, VteTerminal *vte) {
     }
 }
 
+static std::unique_ptr<char, decltype(&g_free)>
+get_text_range(VteTerminal *vte, long start_row, long start_col, long end_row, long end_col) {
+    return {vte_terminal_get_text_range(vte, start_row, start_col, end_row, end_col,
+                                        nullptr, nullptr, nullptr), g_free};
+}
+
 template<typename F>
 static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
-                                                cursor_row, cursor_col,
-                                                NULL, NULL, NULL);
+    auto content = get_text_range(vte, cursor_row, 0, cursor_row, cursor_col);
 
     if (!content) {
         return;
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
 
     if (!codepoints) {
         return;
@@ -396,7 +400,6 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
     update_selection(vte, select);
 
     g_free(codepoints);
-    g_free(content);
 }
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
@@ -414,16 +417,14 @@ void move_first(VteTerminal *vte, select_info *select, F is_match) {
 
     const long end_col = vte_terminal_get_column_count(vte) - 1;
 
-    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
-                                                cursor_row, end_col,
-                                                NULL, NULL, NULL);
+    auto content = get_text_range(vte, cursor_row, cursor_col, cursor_row, end_col);
 
     if (!content) {
         return;
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
 
     if (!codepoints) {
         return;
@@ -436,7 +437,6 @@ void move_first(VteTerminal *vte, select_info *select, F is_match) {
     }
 
     g_free(codepoints);
-    g_free(content);
 }
 
 static void set_cursor_column(VteTerminal *vte, const select_info *select, long column) {
@@ -452,16 +452,14 @@ static void move_to_eol(VteTerminal *vte, select_info *select) {
 
     const long end_col = vte_terminal_get_column_count(vte) - 1;
 
-    char *content = vte_terminal_get_text_range(vte, cursor_row, 0,
-                                                cursor_row, end_col,
-                                                NULL, NULL, NULL);
+    auto content = get_text_range(vte, cursor_row, 0, cursor_row, end_col);
 
     if (!content) {
         return;
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
 
     if (!codepoints) {
         return;
@@ -471,7 +469,6 @@ static void move_to_eol(VteTerminal *vte, select_info *select) {
     set_cursor_column(vte, select, std::max(iter - codepoints - 1, 0l));
 
     g_free(codepoints);
-    g_free(content);
 }
 
 template<typename F>
@@ -481,16 +478,14 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
 
     const long end_col = vte_terminal_get_column_count(vte) - 1;
 
-    char *content = vte_terminal_get_text_range(vte, cursor_row, cursor_col,
-                                                cursor_row, end_col,
-                                                NULL, NULL, NULL);
+    auto content = get_text_range(vte, cursor_row, cursor_col, cursor_row, end_col);
 
     if (!content) {
         return;
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content, -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
 
     if (!codepoints) {
         return;
@@ -517,7 +512,6 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
     update_selection(vte, select);
 
     g_free(codepoints);
-    g_free(content);
 }
 
 static void move_forward_word(VteTerminal *vte, select_info *select) {
@@ -799,8 +793,7 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
 
     long end_row, end_col;
     vte_terminal_get_cursor_position(vte, &end_col, &end_row);
-    char *content = vte_terminal_get_text_range(vte, 0, 0, end_row, end_col,
-                                                NULL, NULL, NULL);
+    auto content = get_text_range(vte, 0, 0, end_row, end_col);
 
     if (!content) {
         g_printerr("no content returned for completion\n");
@@ -810,7 +803,7 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
     auto less = [](const char *a, const char *b) { return strcmp(a, b) < 0; };
     std::set<const char *, decltype(less)> tokens(less);
 
-    for (char *s_ptr = content, *saveptr; ; s_ptr = nullptr) {
+    for (char *s_ptr = content.get(), *saveptr; ; s_ptr = nullptr) {
         const char *token = strtok_r(s_ptr, " \n\t", &saveptr);
         if (!token) {
             break;
@@ -824,7 +817,6 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
         gtk_list_store_set(store, &iter, 0, token, -1);
     }
 
-    g_free(content);
     return GTK_TREE_MODEL(store);
 }
 
