@@ -61,6 +61,7 @@ struct search_panel_info {
 
 struct config_info {
     char *browser;
+    char *theme;
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
 };
@@ -1022,11 +1023,36 @@ static void load_theme(VteTerminal *vte, GKeyFile *config) {
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
 }
 
+static void find_theme(VteTerminal *vte, GKeyFile *defaults, const char *const theme_name) {
+    GKeyFile *config = g_key_file_new();
+
+    char* paths[] = {
+        g_build_filename(g_get_user_config_dir(), "termite/themes", theme_name, nullptr),
+        g_build_filename("/usr/share/termite/themes", theme_name, nullptr)
+    };
+
+    auto load_cfg = [&config](char *path) -> bool {
+        printf("loading %s\n", path);
+        return g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL);
+    };
+
+    if (std::find_if(paths, std::end(paths), load_cfg) != std::end(paths)) {
+        load_theme(vte, config);
+    } else {
+        g_printerr("theme %s not found\n", theme_name);
+        g_printerr("falling back to legacy config\n");
+        load_theme(vte, defaults);
+    }
+
+    for (auto path : paths) { g_free(path); }
+    g_key_file_free(config);
+}
+
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
 
     const char * const filename = "termite.cfg";
-    char *path = g_build_filename(g_get_user_config_dir(), filename, nullptr);
+    char *path = g_build_filename(g_get_user_config_dir(), "termite/config", nullptr);
     GKeyFile *config = g_key_file_new();
 
     if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
@@ -1076,6 +1102,12 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         } else {
             info->browser = g_strdup(g_getenv("BROWSER"));
             if (!info->browser) info->clickable_url = false;
+        }
+
+        if (info->theme == nullptr) {
+            if (auto s = get_config_string(config, "options", "theme")) {
+                info->theme = *s;
+            }
         }
 
         if (auto s = get_config_string(config, "options", "font")) {
@@ -1141,7 +1173,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
 
-        load_theme(vte, config);
+        find_theme(vte, config, info->theme ? info->theme : "light");
     }
     g_free(path);
     g_key_file_free(config);
@@ -1157,12 +1189,14 @@ int main(int argc, char **argv) {
     GError *error = NULL;
     const char * const term = "xterm-termite";
     const char *directory = nullptr;
+    char *theme = nullptr;
     gboolean version = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
     char *role = NULL, *geometry = NULL, *execute = NULL;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
+        {"theme", 't', 0, G_OPTION_ARG_STRING, &theme, "The theme to use", "THEME"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
@@ -1234,7 +1268,7 @@ int main(int argc, char **argv) {
          overlay_mode::hidden,
          std::vector<url_data>()},
         {vi_mode::insert, 0, 0, 0, 0},
-        {nullptr, FALSE, FALSE, FALSE, -1}
+        {nullptr, theme, FALSE, FALSE, FALSE, -1}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, &geometry);
