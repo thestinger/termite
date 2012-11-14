@@ -910,6 +910,23 @@ static bool get_config_color(GKeyFile *config, const char *section, const char *
     return success;
 }
 
+maybe<cairo_pattern_t *> get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
+    if (auto s = get_config_string(config, group, key)) {
+        GdkColor color;
+        bool success = gdk_color_parse(*s, &color);
+        g_free(*s);
+
+        if (success) {
+            return cairo_pattern_create_rgb(color.red   / 65535.0,
+                                            color.green / 65535.0,
+                                            color.blue  / 65535.0);
+        } else {
+            g_printerr("invalid color string: %s\n", *s);
+        }
+    }
+    return {};
+}
+
 static void load_theme(VteTerminal *vte, GKeyFile *config) {
     const long palette_size = 255;
     GdkColor color, palette[palette_size];
@@ -969,30 +986,9 @@ static void load_theme(VteTerminal *vte, GKeyFile *config) {
         g_free(*s);
     }
 
-    if (get_config_color(config, "hints", "foreground", &color)) {
-        hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                            color.green / 65535.0,
-                                            color.blue  / 65535.0);
-    } else {
-        hints.fg = cairo_pattern_create_rgb(1, 1, 1);
-    }
-
-    if (get_config_color(config, "hints", "background", &color)) {
-        hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                            color.green / 65535.0,
-                                            color.blue  / 65535.0);
-    } else {
-        hints.bg = cairo_pattern_create_rgb(0, 0, 0);
-    }
-
-    if (get_config_color(config, "hints", "border", &color)) {
-        hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                                color.green / 65535.0,
-                                                color.blue  / 65535.0);
-    } else {
-        hints.border = hints.fg;
-    }
-
+    hints.fg = get_config_cairo_color(config, "hints", "foreground").get_value_or(cairo_pattern_create_rgb(1, 1, 1));
+    hints.bg = get_config_cairo_color(config, "hints", "background").get_value_or(cairo_pattern_create_rgb(0, 0, 0));
+    hints.border = get_config_cairo_color(config, "hints", "border").get_value_or(hints.fg);
     hints.padding = get_config_double(config, "hints", "padding", 5).get_value_or(2.0);
     hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
