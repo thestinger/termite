@@ -911,20 +911,20 @@ static bool get_config_color(GKeyFile *config, const char *section, const char *
 }
 
 maybe<cairo_pattern_t *> get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
+    maybe<cairo_pattern_t *> ret = {};
+
     if (auto s = get_config_string(config, group, key)) {
         GdkColor color;
-        bool success = gdk_color_parse(*s, &color);
-        g_free(*s);
-
-        if (success) {
-            return cairo_pattern_create_rgb(color.red   / 65535.0,
-                                            color.green / 65535.0,
-                                            color.blue  / 65535.0);
+        if (gdk_color_parse(*s, &color)) {
+            ret = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                           color.green / 65535.0,
+                                           color.blue  / 65535.0);
         } else {
             g_printerr("invalid color string: %s\n", *s);
         }
+        g_free(*s);
     }
-    return {};
+    return ret;
 }
 
 static void load_theme(VteTerminal *vte, GKeyFile *config) {
