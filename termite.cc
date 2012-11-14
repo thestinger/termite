@@ -910,6 +910,94 @@ static bool get_config_color(GKeyFile *config, const char *section, const char *
     return success;
 }
 
+static void load_theme(VteTerminal *vte, GKeyFile *config) {
+    const long palette_size = 255;
+    GdkColor color, palette[palette_size];
+
+    char color_key[] = "color000";
+
+    for (unsigned i = 0; i < palette_size; i++) {
+        snprintf(color_key, sizeof color_key, "color%u", i);
+        if (!get_config_color(config, "colors", color_key, &palette[i])) {
+            if (i < 16) {
+                palette[i].blue = (i & 4) ? 0xc000 : 0;
+                palette[i].green = (i & 2) ? 0xc000 : 0;
+                palette[i].red = (i & 1) ? 0xc000 : 0;
+                if (i > 7) {
+                    palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
+                    palette[i].green = (guint16)(palette[i].green + 0x3fff);
+                    palette[i].red = (guint16)(palette[i].red + 0x3fff);
+                }
+            } else if (i < 232) {
+                const unsigned j = i - 16;
+                const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
+                const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
+                const unsigned green = (g == 0) ? 0 : g * 40 + 55;
+                const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
+                palette[i].red   = (guint16)(red | red << 8);
+                palette[i].green = (guint16)(green | green << 8);
+                palette[i].blue  = (guint16)(blue | blue << 8);
+            } else if (i < 256) {
+                const unsigned shade = 8 + (i - 232) * 10;
+                palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
+            }
+        }
+    }
+    vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
+    if (get_config_color(config, "colors", "foreground", &color)) {
+        vte_terminal_set_color_foreground(vte, &color);
+    }
+    if (get_config_color(config, "colors", "foreground_bold", &color)) {
+        vte_terminal_set_color_bold(vte, &color);
+    }
+    if (get_config_color(config, "colors", "foreground_dim", &color)) {
+        vte_terminal_set_color_dim(vte, &color);
+    }
+    if (get_config_color(config, "colors", "background", &color)) {
+        vte_terminal_set_color_background(vte, &color);
+        vte_terminal_set_background_tint_color(vte, &color);
+    }
+    if (get_config_color(config, "colors", "cursor", &color)) {
+        vte_terminal_set_color_cursor(vte, &color);
+    }
+    if (get_config_color(config, "colors", "highlight", &color)) {
+        vte_terminal_set_color_highlight(vte, &color);
+    }
+
+    if (auto s = get_config_string(config, "hints", "font")) {
+        hints.font = pango_font_description_from_string(*s);
+        g_free(*s);
+    }
+
+    if (get_config_color(config, "hints", "foreground", &color)) {
+        hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                            color.green / 65535.0,
+                                            color.blue  / 65535.0);
+    } else {
+        hints.fg = cairo_pattern_create_rgb(1, 1, 1);
+    }
+
+    if (get_config_color(config, "hints", "background", &color)) {
+        hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                            color.green / 65535.0,
+                                            color.blue  / 65535.0);
+    } else {
+        hints.bg = cairo_pattern_create_rgb(0, 0, 0);
+    }
+
+    if (get_config_color(config, "hints", "border", &color)) {
+        hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
+                                                color.green / 65535.0,
+                                                color.blue  / 65535.0);
+    } else {
+        hints.border = hints.fg;
+    }
+
+    hints.padding = get_config_double(config, "hints", "padding", 5).get_value_or(2.0);
+    hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
+    hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
+}
+
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
 
@@ -1029,91 +1117,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
 
-        const long palette_size = 255;
-        GdkColor color, palette[palette_size];
-
-        char color_key[] = "color000";
-
-        for (unsigned i = 0; i < palette_size; i++) {
-            snprintf(color_key, sizeof color_key, "color%u", i);
-            if (!get_config_color(config, "colors", color_key, &palette[i])) {
-                if (i < 16) {
-                    palette[i].blue = (i & 4) ? 0xc000 : 0;
-                    palette[i].green = (i & 2) ? 0xc000 : 0;
-                    palette[i].red = (i & 1) ? 0xc000 : 0;
-                    if (i > 7) {
-                        palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
-                        palette[i].green = (guint16)(palette[i].green + 0x3fff);
-                        palette[i].red = (guint16)(palette[i].red + 0x3fff);
-                    }
-                } else if (i < 232) {
-                    const unsigned j = i - 16;
-                    const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
-                    const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
-                    const unsigned green = (g == 0) ? 0 : g * 40 + 55;
-                    const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
-                    palette[i].red   = (guint16)(red | red << 8);
-                    palette[i].green = (guint16)(green | green << 8);
-                    palette[i].blue  = (guint16)(blue | blue << 8);
-                } else if (i < 256) {
-                    const unsigned shade = 8 + (i - 232) * 10;
-                    palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
-                }
-            }
-        }
-        vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
-        if (get_config_color(config, "colors", "foreground", &color)) {
-            vte_terminal_set_color_foreground(vte, &color);
-        }
-        if (get_config_color(config, "colors", "foreground_bold", &color)) {
-            vte_terminal_set_color_bold(vte, &color);
-        }
-        if (get_config_color(config, "colors", "foreground_dim", &color)) {
-            vte_terminal_set_color_dim(vte, &color);
-        }
-        if (get_config_color(config, "colors", "background", &color)) {
-            vte_terminal_set_color_background(vte, &color);
-            vte_terminal_set_background_tint_color(vte, &color);
-        }
-        if (get_config_color(config, "colors", "cursor", &color)) {
-            vte_terminal_set_color_cursor(vte, &color);
-        }
-        if (get_config_color(config, "colors", "highlight", &color)) {
-            vte_terminal_set_color_highlight(vte, &color);
-        }
-
-        if (auto s = get_config_string(config, "hints", "font")) {
-            hints.font = pango_font_description_from_string(*s);
-            g_free(*s);
-        }
-
-        if (get_config_color(config, "hints", "foreground", &color)) {
-            hints.fg = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                                color.green / 65535.0,
-                                                color.blue  / 65535.0);
-        } else {
-            hints.fg = cairo_pattern_create_rgb(1, 1, 1);
-        }
-
-        if (get_config_color(config, "hints", "background", &color)) {
-            hints.bg = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                                color.green / 65535.0,
-                                                color.blue  / 65535.0);
-        } else {
-            hints.bg = cairo_pattern_create_rgb(0, 0, 0);
-        }
-
-        if (get_config_color(config, "hints", "border", &color)) {
-            hints.border = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                                    color.green / 65535.0,
-                                                    color.blue  / 65535.0);
-        } else {
-            hints.border = hints.fg;
-        }
-
-        hints.padding = get_config_double(config, "hints", "padding", 5).get_value_or(2.0);
-        hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
-        hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
+        load_theme(vte, config);
     }
     g_free(path);
     g_key_file_free(config);
