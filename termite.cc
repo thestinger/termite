@@ -76,7 +76,7 @@ struct hint_info {
     double padding, border_width, roundness;
 };
 
-static hint_info hints = {NULL};
+static hint_info hints = {nullptr, nullptr, nullptr, nullptr, 0, 0, 0};
 
 static void launch_browser(char *browser, char *url);
 
@@ -1198,10 +1198,12 @@ int main(int argc, char **argv) {
     }
 
     keybind_info info = {
-        {vte, gtk_entry_new(),
+        {vte,
+         gtk_entry_new(),
          gtk_alignment_new(0, 0, 1, 1),
          gtk_drawing_area_new(),
-         overlay_mode::hidden},
+         overlay_mode::hidden,
+         std::vector<url_data>()},
         {vi_mode::insert, 0, 0, 0, 0},
         {nullptr, FALSE, FALSE, FALSE, -1}
     };
