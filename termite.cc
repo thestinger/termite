@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
@@ -897,82 +898,80 @@ auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
 auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
                                  _1, _2, _3));
 
-static bool get_config_color(GKeyFile *config, const char *section, const char *key, GdkColor *color) {
-    bool success = false;
+static maybe<GdkColor> get_config_color(GKeyFile *config, const char *section, const char *key) {
     if (auto s = get_config_string(config, section, key)) {
-        if (gdk_color_parse(*s, color)) {
-            success = true;
-        } else {
-            g_printerr("invalid color string: %s\n", *s);
+        GdkColor color;
+        if (gdk_color_parse(*s, &color)) {
+            g_free(*s);
+            return color;
         }
+        g_printerr("invalid color string: %s\n", *s);
         g_free(*s);
     }
-    return success;
+    return {};
 }
 
 static maybe<cairo_pattern_t *>
 get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
-    GdkColor color;
-    if (get_config_color(config, group, key, &color)) {
-        return cairo_pattern_create_rgb(color.red   / 65535.0,
-                                        color.green / 65535.0,
-                                        color.blue  / 65535.0);
+    if (auto color = get_config_color(config, group, key)) {
+        return cairo_pattern_create_rgb(color->red   / 65535.0,
+                                        color->green / 65535.0,
+                                        color->blue  / 65535.0);
     }
     return {};
 }
 
 static void load_theme(VteTerminal *vte, GKeyFile *config) {
-    const long palette_size = 255;
-    GdkColor color, palette[palette_size];
-
+    std::array<GdkColor, 255> palette;
     char color_key[] = "color000";
 
-    for (unsigned i = 0; i < palette_size; i++) {
+    for (unsigned i = 0; i < palette.size(); i++) {
         snprintf(color_key, sizeof color_key, "color%u", i);
-        if (!get_config_color(config, "colors", color_key, &palette[i])) {
-            if (i < 16) {
-                palette[i].blue = (i & 4) ? 0xc000 : 0;
-                palette[i].green = (i & 2) ? 0xc000 : 0;
-                palette[i].red = (i & 1) ? 0xc000 : 0;
-                if (i > 7) {
-                    palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
-                    palette[i].green = (guint16)(palette[i].green + 0x3fff);
-                    palette[i].red = (guint16)(palette[i].red + 0x3fff);
-                }
-            } else if (i < 232) {
-                const unsigned j = i - 16;
-                const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
-                const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
-                const unsigned green = (g == 0) ? 0 : g * 40 + 55;
-                const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
-                palette[i].red   = (guint16)(red | red << 8);
-                palette[i].green = (guint16)(green | green << 8);
-                palette[i].blue  = (guint16)(blue | blue << 8);
-            } else if (i < 256) {
-                const unsigned shade = 8 + (i - 232) * 10;
-                palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
+        if (auto color = get_config_color(config, "colors", color_key)) {
+            palette[i] = *color;
+        } else if (i < 16) {
+            palette[i].blue = (i & 4) ? 0xc000 : 0;
+            palette[i].green = (i & 2) ? 0xc000 : 0;
+            palette[i].red = (i & 1) ? 0xc000 : 0;
+            if (i > 7) {
+                palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
+                palette[i].green = (guint16)(palette[i].green + 0x3fff);
+                palette[i].red = (guint16)(palette[i].red + 0x3fff);
             }
+        } else if (i < 232) {
+            const unsigned j = i - 16;
+            const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
+            const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
+            const unsigned green = (g == 0) ? 0 : g * 40 + 55;
+            const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
+            palette[i].red   = (guint16)(red | red << 8);
+            palette[i].green = (guint16)(green | green << 8);
+            palette[i].blue  = (guint16)(blue | blue << 8);
+        } else if (i < 256) {
+            const unsigned shade = 8 + (i - 232) * 10;
+            palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
         }
     }
-    vte_terminal_set_colors(vte, nullptr, nullptr, palette, palette_size);
-    if (get_config_color(config, "colors", "foreground", &color)) {
-        vte_terminal_set_color_foreground(vte, &color);
+
+    vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
+    if (auto color = get_config_color(config, "colors", "foreground")) {
+        vte_terminal_set_color_foreground(vte, &*color);
     }
-    if (get_config_color(config, "colors", "foreground_bold", &color)) {
-        vte_terminal_set_color_bold(vte, &color);
+    if (auto color = get_config_color(config, "colors", "foreground_bold")) {
+        vte_terminal_set_color_bold(vte, &*color);
     }
-    if (get_config_color(config, "colors", "foreground_dim", &color)) {
-        vte_terminal_set_color_dim(vte, &color);
+    if (auto color = get_config_color(config, "colors", "foreground_dim")) {
+        vte_terminal_set_color_dim(vte, &*color);
     }
-    if (get_config_color(config, "colors", "background", &color)) {
-        vte_terminal_set_color_background(vte, &color);
-        vte_terminal_set_background_tint_color(vte, &color);
+    if (auto color = get_config_color(config, "colors", "background")) {
+        vte_terminal_set_color_background(vte, &*color);
+        vte_terminal_set_background_tint_color(vte, &*color);
     }
-    if (get_config_color(config, "colors", "cursor", &color)) {
-        vte_terminal_set_color_cursor(vte, &color);
+    if (auto color = get_config_color(config, "colors", "cursor")) {
+        vte_terminal_set_color_cursor(vte, &*color);
     }
-    if (get_config_color(config, "colors", "highlight", &color)) {
-        vte_terminal_set_color_highlight(vte, &color);
+    if (auto color = get_config_color(config, "colors", "highlight")) {
+        vte_terminal_set_color_highlight(vte, &*color);
     }
 
     if (auto s = get_config_string(config, "hints", "font")) {
