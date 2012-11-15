@@ -912,7 +912,7 @@ static bool get_config_color(GKeyFile *config, const char *section, const char *
 
 static maybe<cairo_pattern_t *>
 get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
-    maybe<cairo_pattern_t *> ret = {};
+    maybe<cairo_pattern_t *> ret;
 
     if (auto s = get_config_string(config, group, key)) {
         GdkColor color;
