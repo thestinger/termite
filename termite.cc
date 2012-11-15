@@ -912,20 +912,13 @@ static bool get_config_color(GKeyFile *config, const char *section, const char *
 
 static maybe<cairo_pattern_t *>
 get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
-    maybe<cairo_pattern_t *> ret;
-
-    if (auto s = get_config_string(config, group, key)) {
-        GdkColor color;
-        if (gdk_color_parse(*s, &color)) {
-            ret = cairo_pattern_create_rgb(color.red   / 65535.0,
-                                           color.green / 65535.0,
-                                           color.blue  / 65535.0);
-        } else {
-            g_printerr("invalid color string: %s\n", *s);
-        }
-        g_free(*s);
+    GdkColor color;
+    if (get_config_color(config, group, key, &color)) {
+        return cairo_pattern_create_rgb(color.red   / 65535.0,
+                                        color.green / 65535.0,
+                                        color.blue  / 65535.0);
     }
-    return ret;
+    return {};
 }
 
 static void load_theme(VteTerminal *vte, GKeyFile *config) {
