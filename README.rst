@@ -30,6 +30,14 @@ INSERT MODE
 +----------------------+---------------------------------------------+
 | ``ctrl-shift-t``     | open terminal in the current directory [1]_ |
 +----------------------+---------------------------------------------+
+| ``ctrl-shift-up``    | scroll up a line                            |
++----------------------+---------------------------------------------+
+| ``ctrl-shift-down``  | scroll down a line                          |
++----------------------+---------------------------------------------+
+| ``shift-pageup``     | scroll up a page                            |
++----------------------+---------------------------------------------+
+| ``shift-pagedown``   | scroll down a page                          |
++----------------------+---------------------------------------------+
 
 .. [1] The directory can be set by a process running in the terminal. For
        example, with zsh:
