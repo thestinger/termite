@@ -666,7 +666,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
                 return TRUE;
-            case GDK_KEY_Escape:
+            case GDK_KEY_r:
                 load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
                             vte, &info->config, nullptr);
                 return TRUE;
