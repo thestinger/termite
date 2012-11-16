@@ -665,6 +665,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
+                exit_command_mode(vte, &info->select);
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
                 return TRUE;
@@ -742,7 +743,6 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
 
     if (ret) {
         if (info->panel.mode == overlay_mode::urlselect) {
-            exit_command_mode(info->panel.vte, &info->select);
             gtk_widget_hide(info->panel.da);
             info->panel.url_list.clear();
         }
