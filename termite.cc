@@ -544,6 +544,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 case GDK_KEY_Right:
                     move_forward_blank_word(vte, &info->select);
                     break;
+                case GDK_KEY_u:
+                    move(vte, &info->select, 0, -(vte_terminal_get_row_count(vte) / 2));
+                    break;
+                case GDK_KEY_d:
+                    move(vte, &info->select, 0, vte_terminal_get_row_count(vte) / 2);
+                    break;
             }
             return TRUE;
         }
