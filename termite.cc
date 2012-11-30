@@ -531,19 +531,20 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
 }
 
 static void update_font_size(VteTerminal *vte, int update) {
-    const PangoFontDescription *vte_desc = vte_terminal_get_font(vte);
-    PangoFontDescription *font_desc = pango_font_description_copy(vte_desc);
+    const PangoFontDescription *desc = vte_terminal_get_font(vte);
+    int size = pango_font_description_get_size(desc);
 
-    bool abs = pango_font_description_get_size_is_absolute(font_desc);
-    int size = pango_font_description_get_size(font_desc);
-
-    if (!abs)
+    if (!pango_font_description_get_size_is_absolute(desc))
         update *= PANGO_SCALE;
-    size += update;
 
-    pango_font_description_set_size(font_desc, size);
-    vte_terminal_set_font(vte, font_desc);
-    pango_font_description_free(font_desc);
+    size += update;
+    if (size > 0) {
+        PangoFontDescription *new_desc = pango_font_description_copy(desc);
+
+        pango_font_description_set_size(new_desc, size);
+        vte_terminal_set_font(vte, new_desc);
+        pango_font_description_free(new_desc);
+    }
 }
 
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
