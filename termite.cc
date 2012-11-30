@@ -530,6 +530,22 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
                          title ? title : "termite");
 }
 
+static void update_font_size(VteTerminal *vte, int update) {
+    const PangoFontDescription *vte_desc = vte_terminal_get_font(vte);
+    PangoFontDescription *font_desc = pango_font_description_copy(vte_desc);
+
+    bool abs = pango_font_description_get_size_is_absolute(font_desc);
+    int size = pango_font_description_get_size(font_desc);
+
+    if (!abs)
+        update *= PANGO_SCALE;
+    size += update;
+
+    pango_font_description_set_size(font_desc, size);
+    vte_terminal_set_font(vte, font_desc);
+    pango_font_description_free(font_desc);
+}
+
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     if (info->select.mode != vi_mode::insert) {
@@ -654,6 +670,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
+                break;
+            case GDK_KEY_plus:
+                update_font_size(vte, 1);
+                break;
+            case GDK_KEY_minus:
+                update_font_size(vte, -1);
                 break;
         }
         return TRUE;
