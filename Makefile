@@ -26,6 +26,10 @@ ifeq (${CXX}, g++)
 	CXXFLAGS += -Wno-missing-field-initializers
 endif
 
+ifeq (${CXX}, clang++)
+	CXXFLAGS += -Wimplicit-fallthrough
+endif
+
 LDFLAGS := -s -Wl,--as-needed ${LDFLAGS}
 LDLIBS := ${shell pkg-config --libs ${GTK} ${VTE}}
 

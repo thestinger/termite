@@ -695,6 +695,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
                 exit_command_mode(vte, &info->select);
+                return TRUE;
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
                 return TRUE;
