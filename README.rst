@@ -121,6 +121,23 @@ COMMAND MODE
 | ``-``                    | decrease font size                                        |
 +--------------------------+-----------------------------------------------------------+
 
+URL SELECT MODE
+---------------
+
++----------------------+-------------------------------------------------------+
+| ``ctrl-shift-z``     | enter url select mode                                 |  
++----------------------+-------------------------------------------------------+
+| ``ctrl-shift-y``     | copy currently select url to CLIPBOARD                |
++----------------------+-------------------------------------------------------+
+| ``ctrl-shift-o``     | open the currently select url                         |
++----------------------+-------------------------------------------------------+
+| ``Return``           | open the currently selected url and exit command mode |
++----------------------+-------------------------------------------------------+
+| ``j``                | forward url search                                    |
++----------------------+-------------------------------------------------------+
+| ``k``                | reverse url search                                    |
++----------------------+-------------------------------------------------------+
+
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
 
