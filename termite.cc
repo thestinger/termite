@@ -1147,8 +1147,13 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 }/*}}}*/
 
 static void exit_with_status(VteTerminal *vte) {
+    int status = vte_terminal_get_child_exit_status(vte);
     gtk_main_quit();
-    exit(vte_terminal_get_child_exit_status(vte));
+    if (WIFEXITED(status)) {
+        exit(WEXITSTATUS(status));
+    } else {
+        exit(EXIT_FAILURE); // child did not exit normally
+    }
 }
 
 int main(int argc, char **argv) {
