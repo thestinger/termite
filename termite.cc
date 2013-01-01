@@ -1157,7 +1157,7 @@ int main(int argc, char **argv) {
     GError *error = NULL;
     const char * const term = "xterm-termite";
     const char *directory = nullptr;
-    gboolean version = FALSE;
+    gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
     char *role = NULL, *geometry = NULL, *execute = NULL;
@@ -1167,6 +1167,7 @@ int main(int argc, char **argv) {
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
+        {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", NULL},
         {}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -1262,8 +1263,10 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(hint_overlay), vte_widget);
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
 
+    if (!hold) {
+        g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
+    }
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-    g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
