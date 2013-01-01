@@ -1328,7 +1328,7 @@ int main(int argc, char **argv) {
     g_strfreev(env);
 
     gtk_main();
-    return EXIT_FAILURE; // child process did not exit
+    return EXIT_FAILURE; // child process did not cause termination
 }
 
 // vim: et:sts=4:sw=4:cino=(0
