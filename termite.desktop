@@ -4,5 +4,5 @@ Comment=Use the command line
 Exec=termite
 Icon=utilities-terminal
 Type=Application
-Categories=Application;GTK;System;TerminalEmulator;
+Categories=GTK;System;TerminalEmulator;
 StartupNotify=true
