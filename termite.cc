@@ -195,7 +195,7 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     PangoLayout *layout = pango_cairo_create_layout(cr);
     pango_layout_set_font_description(layout, desc);
     pango_layout_set_text(layout, buffer, -1);
-    pango_layout_get_size (layout, &width, &height);
+    pango_layout_get_size(layout, &width, &height);
 
     draw_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
                    static_cast<double>(width / PANGO_SCALE) + hints.padding * 2,
@@ -1183,11 +1183,9 @@ int main(int argc, char **argv) {
         return EXIT_SUCCESS;
     }
 
-    if (directory) {
-        if (chdir(directory) == -1) {
-            perror("chdir");
-            return EXIT_FAILURE;
-        }
+    if (directory && chdir(directory) == -1) {
+        perror("chdir");
+        return EXIT_FAILURE;
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1227,7 +1225,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    keybind_info info = {
+    keybind_info info {
         {vte,
          gtk_entry_new(),
          gtk_alignment_new(0, 0, 1, 1),
@@ -1243,7 +1241,7 @@ int main(int argc, char **argv) {
     vte_terminal_set_pty_object(vte, pty);
     vte_pty_set_term(pty, term);
 
-    GdkRGBA transparent = {0, 0, 0, 0};
+    GdkRGBA transparent {0, 0, 0, 0};
 
     gtk_widget_override_background_color(hint_overlay, GTK_STATE_FLAG_NORMAL, &transparent);
     gtk_widget_override_background_color(info.panel.da, GTK_STATE_FLAG_NORMAL, &transparent);
@@ -1311,7 +1309,7 @@ int main(int argc, char **argv) {
                       &ppid, &error)) {
         vte_terminal_watch_child(vte, ppid);
     } else {
-        g_printerr("The new terminal's command failed to run: %s\n", error->message);
+        g_printerr("The command failed to run: %s\n", error->message);
         return EXIT_FAILURE;
     }
 
@@ -1321,8 +1319,7 @@ int main(int argc, char **argv) {
 
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     get_vte_padding(vte, &padding_w, &padding_h);
-    vte_terminal_set_size(vte,
-                          (width - padding_w) / char_width,
+    vte_terminal_set_size(vte, (width - padding_w) / char_width,
                           (height - padding_h) / char_height);
 
     g_strfreev(env);
