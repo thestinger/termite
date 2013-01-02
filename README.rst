@@ -1,4 +1,5 @@
-A simple VTE-based terminal.
+A keyboard-centric VTE-based terminal, aimed at use within a window manager
+with tiling and/or tabbing support.
 
 Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (``~/.config`` if
 unset) and then falls back to ``$XDG_CONFIG_DIRS`` (``/etc/xdg`` if unset).
