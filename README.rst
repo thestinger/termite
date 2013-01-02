@@ -1,7 +1,7 @@
 A simple VTE-based terminal.
 
-Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (or ``~/.config`` if
-unset) and then falls back to ``$XDG_CONFIG_DIRS``.
+Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (``~/.config`` if
+unset) and then falls back to ``$XDG_CONFIG_DIRS`` (``/etc/xdg`` if unset).
 
 Termite's exit status is 1 on a failure, including a termination of the child
 process from an uncaught signal. Otherwise the exit status is that of the child
