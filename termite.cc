@@ -525,7 +525,7 @@ static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
 
 /* {{{ CALLBACKS */
 void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
-    const char * const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
+    const char *const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
     gtk_window_set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
                          title ? title : "termite");
 }
@@ -749,7 +749,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
             ret = TRUE;
             break;
         case GDK_KEY_Return: {
-            const char *text = gtk_entry_get_text(entry);
+            const char *const text = gtk_entry_get_text(entry);
 
             switch (info->panel.mode) {
                 case overlay_mode::search:
@@ -1025,7 +1025,7 @@ static void load_theme(VteTerminal *vte, GKeyFile *config) {
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
 
-    const char * const filename = "termite.cfg";
+    const char *const filename = "termite.cfg";
     char *path = g_build_filename(g_get_user_config_dir(), filename, nullptr);
     GKeyFile *config = g_key_file_new();
 
@@ -1155,7 +1155,7 @@ static void exit_with_status(VteTerminal *vte) {
 
 int main(int argc, char **argv) {
     GError *error = NULL;
-    const char * const term = "xterm-termite";
+    const char *const term = "xterm-termite";
     const char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
