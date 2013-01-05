@@ -59,7 +59,14 @@ struct search_panel_info {
     std::vector<url_data> url_list;
 };
 
+struct hint_info {
+    PangoFontDescription *font;
+    cairo_pattern_t *fg, *bg, *border;
+    double padding, border_width, roundness;
+};
+
 struct config_info {
+    hint_info hints;
     char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
@@ -71,13 +78,10 @@ struct keybind_info {
     config_info config;
 };
 
-struct hint_info {
-    PangoFontDescription *font;
-    cairo_pattern_t *fg, *bg, *border;
-    double padding, border_width, roundness;
+struct draw_cb_info {
+    search_panel_info *panel;
+    hint_info *hints;
 };
-
-static hint_info hints = {nullptr, nullptr, nullptr, nullptr, 0, 0, 0};
 
 static void launch_browser(char *browser, char *url);
 
@@ -174,8 +178,8 @@ static void launch_url(char *browser, const char *text, search_panel_info *info)
     }
 }
 
-static void draw_rectangle(cairo_t *cr, double x, double y, double height, double width) {
-    double radius = hints.roundness;
+static void draw_rectangle(cairo_t *cr, double x, double y, double height,
+                           double width, double radius) {
     double a = x, b = x + height, c = y, d = y + width;
     cairo_arc(cr, a + radius, c + radius, radius, 2*(M_PI/2), 3*(M_PI/2));
     cairo_arc(cr, b - radius, c + radius, radius, 3*(M_PI/2), 4*(M_PI/2));
@@ -184,7 +188,8 @@ static void draw_rectangle(cairo_t *cr, double x, double y, double height, doubl
     cairo_close_path(cr);
 }
 
-static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, long y, unsigned id) {
+static void draw_marker(cairo_t *cr, const PangoFontDescription *desc,
+                        const hint_info *hints, long x, long y, unsigned id) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
     int width, height;
@@ -198,19 +203,20 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     pango_layout_get_size(layout, &width, &height);
 
     draw_rectangle(cr, static_cast<double>(x), static_cast<double>(y),
-                   static_cast<double>(width / PANGO_SCALE) + hints.padding * 2,
-                   static_cast<double>(height / PANGO_SCALE) + hints.padding * 2);
-    cairo_set_source(cr, hints.border);
-    cairo_set_line_width(cr, hints.border_width);
+                   static_cast<double>(width / PANGO_SCALE) + hints->padding * 2,
+                   static_cast<double>(height / PANGO_SCALE) + hints->padding * 2,
+                   hints->roundness);
+    cairo_set_source(cr, hints->border);
+    cairo_set_line_width(cr, hints->border_width);
     cairo_stroke_preserve(cr);
-    cairo_set_source(cr, hints.bg);
+    cairo_set_source(cr, hints->bg);
     cairo_fill(cr);
 
     cairo_new_path(cr);
-    cairo_move_to(cr, static_cast<double>(x) + hints.padding,
-                  static_cast<double>(y) + hints.padding);
+    cairo_move_to(cr, static_cast<double>(x) + hints->padding,
+                  static_cast<double>(y) + hints->padding);
 
-    cairo_set_source(cr, hints.fg);
+    cairo_set_source(cr, hints->fg);
     pango_cairo_update_layout(cr, layout);
     pango_cairo_layout_path(cr, layout);
     cairo_fill(cr);
@@ -218,21 +224,22 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc, long x, l
     g_object_unref(layout);
 }
 
-static gboolean draw_cb(const search_panel_info *info, cairo_t *cr) {
-    if (!info->url_list.empty()) {
-        const long cw = vte_terminal_get_char_width(info->vte);
-        const long ch = vte_terminal_get_char_height(info->vte);
-        const PangoFontDescription *desc = hints.font ? hints.font : vte_terminal_get_font(info->vte);
+static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
+    if (!info->panel->url_list.empty()) {
+        const long cw = vte_terminal_get_char_width(info->panel->vte);
+        const long ch = vte_terminal_get_char_height(info->panel->vte);
+        const PangoFontDescription *desc = info->hints->font ?
+            info->hints->font : vte_terminal_get_font(info->panel->vte);
 
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
-        for (unsigned i = 0; i < info->url_list.size(); i++) {
-            const url_data &data = info->url_list[i];
+        for (unsigned i = 0; i < info->panel->url_list.size(); i++) {
+            const url_data &data = info->panel->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-            draw_marker(cr, desc, x, y, i + 1);
+            draw_marker(cr, desc, info->hints, x, y, i + 1);
         }
     }
 
@@ -956,7 +963,7 @@ get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
     return {};
 }
 
-static void load_theme(VteTerminal *vte, GKeyFile *config) {
+static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
     std::array<GdkColor, 255> palette;
     char color_key[] = "color000";
 
@@ -1141,7 +1148,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
             }
         }
 
-        load_theme(vte, config);
+        load_theme(vte, config, info->hints);
     }
     g_free(path);
     g_key_file_free(config);
@@ -1233,7 +1240,8 @@ int main(int argc, char **argv) {
          overlay_mode::hidden,
          std::vector<url_data>()},
         {vi_mode::insert, 0, 0, 0, 0},
-        {nullptr, FALSE, FALSE, FALSE, -1}
+        {{nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
+         nullptr, FALSE, FALSE, FALSE, -1}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, &geometry);
@@ -1270,7 +1278,9 @@ int main(int argc, char **argv) {
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
-    g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &info.panel);
+    draw_cb_info draw_cb_info{&info.panel, &info.config.hints};
+    g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &draw_cb_info);
+
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
