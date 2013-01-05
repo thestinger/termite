@@ -1163,7 +1163,7 @@ static void exit_with_status(VteTerminal *vte) {
 int main(int argc, char **argv) {
     GError *error = NULL;
     const char *const term = "xterm-termite";
-    const char *directory = nullptr;
+    char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
@@ -1190,9 +1190,12 @@ int main(int argc, char **argv) {
         return EXIT_SUCCESS;
     }
 
-    if (directory && chdir(directory) == -1) {
-        perror("chdir");
-        return EXIT_FAILURE;
+    if (directory) {
+        if (chdir(directory) == -1) {
+            perror("chdir");
+            return EXIT_FAILURE;
+        }
+        g_free(directory);
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
