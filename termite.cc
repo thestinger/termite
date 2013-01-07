@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <string>
 
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
@@ -1031,15 +1032,21 @@ static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
 
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
-
-    const char *const filename = "termite.cfg";
-    char *path = g_build_filename(g_get_user_config_dir(), filename, nullptr);
+    const std::string path = "/termite/config";
     GKeyFile *config = g_key_file_new();
 
-    if ((g_key_file_load_from_file(config, path, G_KEY_FILE_NONE, NULL) ||
-         g_key_file_load_from_dirs(config, filename,
-                                   const_cast<const char **>(g_get_system_config_dirs()),
-                                   NULL, G_KEY_FILE_NONE, NULL))) {
+    gboolean loaded;
+    loaded = g_key_file_load_from_file(config,
+                                       (g_get_user_config_dir() + path).c_str(),
+                                       G_KEY_FILE_NONE, nullptr);
+
+    for (const char *const *dir = g_get_system_config_dirs();
+         !loaded && *dir; dir++) {
+        loaded = g_key_file_load_from_file(config, (*dir + path).c_str(),
+                                           G_KEY_FILE_NONE, nullptr);
+    }
+
+    if (loaded) {
         if (geometry) {
             if (auto s = get_config_string(config, "options", "geometry")) {
                 *geometry = *s;
@@ -1150,7 +1157,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
         load_theme(vte, config, info->hints);
     }
-    g_free(path);
     g_key_file_free(config);
 }/*}}}*/
 

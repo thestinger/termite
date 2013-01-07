@@ -1,8 +1,9 @@
 A keyboard-centric VTE-based terminal, aimed at use within a window manager
 with tiling and/or tabbing support.
 
-Termite looks for ``termite.cfg`` in ``$XDG_CONFIG_HOME`` (``~/.config`` if
-unset) and then falls back to ``$XDG_CONFIG_DIRS`` (``/etc/xdg`` if unset).
+Termite looks for the configuration file in the following order:
+``$XDG_CONFIG_HOME/termite/config``, ``~/.config/termite/config``,
+``$XDG_CONFIG_DIRS/termite/config``, ``/etc/xdg/termite.cfg``.
 
 Termite's exit status is 1 on a failure, including a termination of the child
 process from an uncaught signal. Otherwise the exit status is that of the child
