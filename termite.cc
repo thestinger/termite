@@ -71,6 +71,7 @@ struct config_info {
     char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
+    char *config_file;
 };
 
 struct keybind_info {
@@ -101,6 +102,8 @@ static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry);
+static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
+                        char **geometry, GKeyFile *config);
 static long first_row(VteTerminal *vte);
 
 void launch_browser(char *browser, char *url) {
@@ -1032,132 +1035,146 @@ static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
 
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
-    const std::string path = "/termite/config";
+    const std::string default_path = "/termite/config";
     GKeyFile *config = g_key_file_new();
 
-    gboolean loaded;
-    loaded = g_key_file_load_from_file(config,
-                                       (g_get_user_config_dir() + path).c_str(),
-                                       G_KEY_FILE_NONE, nullptr);
+    gboolean loaded = FALSE;
+
+    if (info->config_file) {
+        loaded = g_key_file_load_from_file(config,
+                                           info->config_file,
+                                           G_KEY_FILE_NONE, nullptr);
+    }
+
+    if (!loaded) {
+        loaded = g_key_file_load_from_file(config,
+                                           (g_get_user_config_dir() + default_path).c_str(),
+                                           G_KEY_FILE_NONE, nullptr);
+    }
 
     for (const char *const *dir = g_get_system_config_dirs();
          !loaded && *dir; dir++) {
-        loaded = g_key_file_load_from_file(config, (*dir + path).c_str(),
+        loaded = g_key_file_load_from_file(config, (*dir + default_path).c_str(),
                                            G_KEY_FILE_NONE, nullptr);
     }
 
     if (loaded) {
-        if (geometry) {
-            if (auto s = get_config_string(config, "options", "geometry")) {
-                *geometry = *s;
-            }
-        }
-
-        auto cfg_bool = [config](const char *key, gboolean value) {
-            return get_config<gboolean>(g_key_file_get_boolean,
-                                        config, "options", key).get_value_or(value);
-        };
-
-        gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
-        vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
-        vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
-        vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
-        vte_terminal_set_visible_bell(vte, cfg_bool("audible_bell", FALSE));
-        vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
-        vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
-        vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
-        info->dynamic_title = cfg_bool("dynamic_title", TRUE);
-        info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
-        info->clickable_url = cfg_bool("clickable_url", TRUE);
-
-        if (info->clickable_url) {
-            info->tag =
-                vte_terminal_match_add_gregex(vte,
-                                              g_regex_new(url_regex,
-                                                          G_REGEX_CASELESS,
-                                                          G_REGEX_MATCH_NOTEMPTY,
-                                                          NULL),
-                                              (GRegexMatchFlags)0);
-            vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
-        } else if (info->tag != -1) {
-            vte_terminal_match_remove(vte, info->tag);
-            info->tag = -1;
-        }
-
-        g_free(info->browser);
-        if (auto s = get_config_string(config, "options", "browser")) {
-            info->browser = *s;
-        } else {
-            info->browser = g_strdup(g_getenv("BROWSER"));
-            if (!info->browser) info->clickable_url = false;
-        }
-
-        if (auto s = get_config_string(config, "options", "font")) {
-            vte_terminal_set_font_from_string(vte, *s);
-            g_free(*s);
-        }
-
-        if (auto s = get_config_string(config, "options", "word_chars")) {
-            vte_terminal_set_word_chars(vte, *s);
-            g_free(*s);
-        }
-
-        if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
-            vte_terminal_set_scrollback_lines(vte, *i);
-        }
-
-        if (auto s = get_config_string(config, "options", "cursor_blink")) {
-            if (!g_ascii_strcasecmp(*s, "system")) {
-                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
-            } else if (!g_ascii_strcasecmp(*s, "on")) {
-                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
-            } else if (!g_ascii_strcasecmp(*s, "off")) {
-                vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
-            }
-            g_free(*s);
-        }
-
-        if (auto s = get_config_string(config, "options", "cursor_shape")) {
-            if (!g_ascii_strcasecmp(*s, "block")) {
-                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
-            } else if (!g_ascii_strcasecmp(*s, "ibeam")) {
-                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
-            } else if (!g_ascii_strcasecmp(*s, "underline")) {
-                vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
-            }
-            g_free(*s);
-        }
-
-        if (auto s = get_config_string(config, "options", "icon_name")) {
-            gtk_window_set_icon_name(window, *s);
-            g_free(*s);
-        }
-
-        if (auto opacity = get_config_double(config, "options", "transparency")) {
-            vte_terminal_set_background_saturation(vte, *opacity);
-            gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
-            vte_terminal_set_background_transparent(vte, pseudo);
-
-            GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-            GdkVisual *visual;
-
-            if (*opacity > 0.0 && !pseudo && (visual = gdk_screen_get_rgba_visual(screen))) {
-                vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - *opacity)));
-            } else {
-                visual = gdk_screen_get_system_visual(screen);
-                vte_terminal_set_opacity(vte, G_MAXUINT16);
-            }
-            if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
-                gtk_widget_set_visual(GTK_WIDGET(window), visual);
-
-                // TODO: need to make dynamic changes to the visual work
-                // the obvious way is simply to hide the window and then restore shown widgets
-            }
-        }
-
-        load_theme(vte, config, info->hints);
+        set_config(window, vte, info, geometry, config);
     }
     g_key_file_free(config);
+}
+
+static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
+                        char **geometry, GKeyFile *config) {
+    if (geometry) {
+        if (auto s = get_config_string(config, "options", "geometry")) {
+            *geometry = *s;
+        }
+    }
+
+    auto cfg_bool = [config](const char *key, gboolean value) {
+        return get_config<gboolean>(g_key_file_get_boolean,
+                                    config, "options", key).get_value_or(value);
+    };
+
+    gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
+    vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
+    vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
+    vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
+    vte_terminal_set_visible_bell(vte, cfg_bool("audible_bell", FALSE));
+    vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
+    vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
+    vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
+    info->dynamic_title = cfg_bool("dynamic_title", TRUE);
+    info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
+    info->clickable_url = cfg_bool("clickable_url", TRUE);
+
+    if (info->clickable_url) {
+        info->tag =
+            vte_terminal_match_add_gregex(vte,
+                                          g_regex_new(url_regex,
+                                                      G_REGEX_CASELESS,
+                                                      G_REGEX_MATCH_NOTEMPTY,
+                                                      NULL),
+                                          (GRegexMatchFlags)0);
+        vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
+    } else if (info->tag != -1) {
+        vte_terminal_match_remove(vte, info->tag);
+        info->tag = -1;
+    }
+
+    g_free(info->browser);
+    if (auto s = get_config_string(config, "options", "browser")) {
+        info->browser = *s;
+    } else {
+        info->browser = g_strdup(g_getenv("BROWSER"));
+        if (!info->browser) info->clickable_url = false;
+    }
+
+    if (auto s = get_config_string(config, "options", "font")) {
+        vte_terminal_set_font_from_string(vte, *s);
+        g_free(*s);
+    }
+
+    if (auto s = get_config_string(config, "options", "word_chars")) {
+        vte_terminal_set_word_chars(vte, *s);
+        g_free(*s);
+    }
+
+    if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
+        vte_terminal_set_scrollback_lines(vte, *i);
+    }
+
+    if (auto s = get_config_string(config, "options", "cursor_blink")) {
+        if (!g_ascii_strcasecmp(*s, "system")) {
+            vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
+        } else if (!g_ascii_strcasecmp(*s, "on")) {
+            vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_ON);
+        } else if (!g_ascii_strcasecmp(*s, "off")) {
+            vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
+        }
+        g_free(*s);
+    }
+
+    if (auto s = get_config_string(config, "options", "cursor_shape")) {
+        if (!g_ascii_strcasecmp(*s, "block")) {
+            vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_BLOCK);
+        } else if (!g_ascii_strcasecmp(*s, "ibeam")) {
+            vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_IBEAM);
+        } else if (!g_ascii_strcasecmp(*s, "underline")) {
+            vte_terminal_set_cursor_shape(vte, VTE_CURSOR_SHAPE_UNDERLINE);
+        }
+        g_free(*s);
+    }
+
+    if (auto s = get_config_string(config, "options", "icon_name")) {
+        gtk_window_set_icon_name(window, *s);
+        g_free(*s);
+    }
+
+    if (auto opacity = get_config_double(config, "options", "transparency")) {
+        vte_terminal_set_background_saturation(vte, *opacity);
+        gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
+        vte_terminal_set_background_transparent(vte, pseudo);
+
+        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+        GdkVisual *visual;
+
+        if (*opacity > 0.0 && !pseudo && (visual = gdk_screen_get_rgba_visual(screen))) {
+            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - *opacity)));
+        } else {
+            visual = gdk_screen_get_system_visual(screen);
+            vte_terminal_set_opacity(vte, G_MAXUINT16);
+        }
+        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+            gtk_widget_set_visual(GTK_WIDGET(window), visual);
+
+            // TODO: need to make dynamic changes to the visual work
+            // the obvious way is simply to hide the window and then restore shown widgets
+        }
+    }
+
+    load_theme(vte, config, info->hints);
 }/*}}}*/
 
 static void exit_with_status(VteTerminal *vte) {
@@ -1173,7 +1190,7 @@ int main(int argc, char **argv) {
     gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(NULL);
-    char *role = NULL, *geometry = NULL, *execute = NULL;
+    char *role = NULL, *geometry = NULL, *execute = NULL, *config_file = NULL;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
@@ -1181,6 +1198,7 @@ int main(int argc, char **argv) {
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", NULL},
+        {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {}
     };
     g_option_context_add_main_entries(context, entries, NULL);
@@ -1250,7 +1268,7 @@ int main(int argc, char **argv) {
          std::vector<url_data>()},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, -1}
+         nullptr, FALSE, FALSE, FALSE, -1, config_file}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, &geometry);
