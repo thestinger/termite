@@ -746,6 +746,43 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     gboolean ret = FALSE;
 
     switch (event->keyval) {
+        case GDK_KEY_0:
+        case GDK_KEY_1:
+        case GDK_KEY_2:
+        case GDK_KEY_3:
+        case GDK_KEY_4:
+        case GDK_KEY_5:
+        case GDK_KEY_6:
+        case GDK_KEY_7:
+        case GDK_KEY_8:
+        case GDK_KEY_9:
+            if(info->panel.mode == overlay_mode::urlselect)
+            {
+                const char *const text = gtk_entry_get_text(entry);
+                char* fulltext = g_strndup(text, strlen(text)+1);
+                fulltext[strlen(text)] = (char)event->keyval;
+                gboolean exalpha = FALSE;
+                for(int i = 0; text[i] != '\0'; i++) {
+                    if(!g_ascii_isdigit(text[i])) { 
+                        exalpha = TRUE;
+                        break;
+                    }
+                }
+                if(exalpha)
+                    break;
+                char* str_ptr = (char*)malloc(sizeof(text));
+                sprintf(str_ptr, "%d", (int)info->panel.url_list.size());
+                int url_num = (int)strlen(str_ptr);
+                delete str_ptr;
+                int inp_num = (int)strlen(fulltext);
+                if(url_num == inp_num)
+                {
+                    launch_url(info->config.browser, fulltext, &info->panel);
+                    ret = TRUE;
+                }
+            }
+            break;
+
         case GDK_KEY_Tab:
             synthesize_keypress(GTK_WIDGET(entry), GDK_KEY_Down);
             return TRUE;
