@@ -164,21 +164,13 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
 }
 
 static void launch_url(char *browser, const char *text, search_panel_info *info) {
-    auto copy = make_unique(strdup(text), free);
-    for (char *s_ptr = copy.get(), *saveptr; ; s_ptr = nullptr) {
-        const char *token = strtok_r(s_ptr, ",", &saveptr);
-        if (!token) {
-            break;
-        }
-
-        char *end;
-        errno = 0;
-        unsigned long id = strtoul(token, &end, 10);
-        if (!errno && id && id <= info->url_list.size()) {
-            launch_browser(browser, info->url_list[id - 1].url.get());
-        } else {
-            g_printerr("url hint invalid: %s\n", token);
-        }
+    char *end;
+    errno = 0;
+    unsigned long id = strtoul(text, &end, 10);
+    if (!errno && id && id <= info->url_list.size() && !*end) {
+        launch_browser(browser, info->url_list[id - 1].url.get());
+    } else {
+        g_printerr("url hint invalid: %s\n", text);
     }
 }
 
