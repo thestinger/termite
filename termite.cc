@@ -760,15 +760,6 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 const char *const text = gtk_entry_get_text(entry);
                 char *fulltext = g_strndup(text, strlen(text) + 1);
                 fulltext[strlen(text)] = (char)event->keyval;
-                gboolean exalpha = FALSE;
-                for (unsigned i = 0; text[i] != '\0'; i++) {
-                    if (!g_ascii_isdigit(text[i])) {
-                        exalpha = TRUE;
-                        break;
-                    }
-                }
-                if (exalpha)
-                    break;
                 char *str_ptr = (char*)malloc(sizeof(text));
                 sprintf(str_ptr, "%d", (int)info->panel.url_list.size());
                 int url_num = (int)strlen(str_ptr);
