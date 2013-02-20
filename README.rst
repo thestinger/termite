@@ -129,5 +129,5 @@ and copied to the PRIMARY clipboard buffer.
 With the text input widget focused, up/down (or tab/shift-tab) cycle through
 completions, escape closes the widget and enter accepts the input.
 
-After hints mode is activated, as single number or a comma separated list of
-hint numbers can be entered, which will be opened in the browser.
+In hints mode, the input will be accepted as soon as termite considers it a
+unique match.

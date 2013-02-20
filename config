@@ -32,9 +32,6 @@ cursor_shape = block
 # (default if unset: all graphic non-punctuation/space characters)
 #word_chars = -A-Za-z0-9,./?%&#:_=+@~
 
-# if true, follow hints as soon as the typed text uniquely identifies it
-quick_url = false
-
 [colors]
 foreground = #dcdccc
 foreground_bold = #ffffff
