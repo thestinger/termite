@@ -760,15 +760,13 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 const char *const text = gtk_entry_get_text(entry);
                 char *fulltext = g_strndup(text, strlen(text) + 1);
                 fulltext[strlen(text)] = (char)event->keyval;
-                char *str_ptr = (char*)malloc(sizeof(text));
-                sprintf(str_ptr, "%d", (int)info->panel.url_list.size());
-                int url_num = (int)strlen(str_ptr);
-                free(str_ptr);
-                int inp_num = (int)strlen(fulltext);
-                if (url_num == inp_num) {
+                size_t base10_digits = static_cast<size_t>(
+                    log10(static_cast<double>(info->panel.url_list.size())) + 1);
+                if (strlen(fulltext) == base10_digits) {
                     launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
                 }
+                free(fulltext);
             }
             break;
         case GDK_KEY_Tab:
