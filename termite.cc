@@ -1096,7 +1096,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
     vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
     vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
-    vte_terminal_set_visible_bell(vte, cfg_bool("audible_bell", FALSE));
+    vte_terminal_set_visible_bell(vte, cfg_bool("visual_bell", FALSE));
     vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
     vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
     vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
