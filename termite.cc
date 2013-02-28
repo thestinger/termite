@@ -752,12 +752,20 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 const char *const text = gtk_entry_get_text(entry);
                 char *fulltext = g_strndup(text, strlen(text) + 1);
                 fulltext[strlen(text)] = (char)event->keyval;
-                size_t base10_digits = static_cast<size_t>(
+                size_t urld = static_cast<size_t>(info->panel.url_list.size());
+                size_t textd = strtoul(fulltext, NULL, 10);
+                size_t url_dig = static_cast<size_t>(
                     log10(static_cast<double>(info->panel.url_list.size())) + 1);
-                if (strlen(fulltext) == base10_digits) {
+                size_t text_dig = static_cast<size_t>(
+                    log10(static_cast<double>(textd)) + 1);
+
+                if(url_dig == text_dig ||
+                   textd > static_cast<size_t>(static_cast<double>(urld)/10)) {
+
                     launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
                 }
+
                 free(fulltext);
             }
             break;
