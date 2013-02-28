@@ -89,11 +89,15 @@ static gboolean unambiguous_url(char* text, char* max_url)
 {
     if(strlen(text) == strlen(max_url))
         return true;
+
     max_url = g_strndup(max_url, strlen(max_url)-1);
+
     if(strtoul(text, NULL, 10) > strtoul(max_url, NULL, 10)) {
         free(max_url);
         return true;
     }
+
+    free(max_url);
     return false;
 }
 
@@ -766,10 +770,10 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 fulltext[strlen(text)] = (char)event->keyval;
                 size_t base10_digits = static_cast<size_t>(
                     log10(static_cast<double>(info->panel.url_list.size())) + 1);
-                char* max_url = static_cast<char*>(
-                    malloc(sizeof(char) * base10_digits));
+                char max_url[base10_digits];
                 sprintf(max_url, "%ld", static_cast<size_t>(
                     static_cast<double>(info->panel.url_list.size())) +1);
+
                 if(unambiguous_url(fulltext, max_url)) {
                     launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
