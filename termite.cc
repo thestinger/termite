@@ -85,6 +85,18 @@ struct draw_cb_info {
     hint_info *hints;
 };
 
+static gboolean unambiguous_url(char* text, char* max_url)
+{
+    if(strlen(text) == strlen(max_url))
+        return true;
+    max_url = g_strndup(max_url, strlen(max_url)-1);
+    if(strtoul(text, NULL, 10) > strtoul(max_url, NULL, 10)) {
+        free(max_url);
+        return true;
+    }
+    return false;
+}
+
 static void launch_browser(char *browser, char *url);
 
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
@@ -754,11 +766,17 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 fulltext[strlen(text)] = (char)event->keyval;
                 size_t base10_digits = static_cast<size_t>(
                     log10(static_cast<double>(info->panel.url_list.size())) + 1);
-                if (strlen(fulltext) == base10_digits) {
+                char* max_url = static_cast<char*>(
+                    malloc(sizeof(char) * base10_digits));
+                sprintf(max_url, "%ld", static_cast<size_t>(
+                    static_cast<double>(info->panel.url_list.size())) +1);
+                if(unambiguous_url(fulltext, max_url)) {
                     launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
                 }
+
                 free(fulltext);
+                free(max_url);
             }
             break;
         case GDK_KEY_Tab:
