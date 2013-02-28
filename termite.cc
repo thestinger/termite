@@ -76,11 +76,12 @@ struct search_panel_info {
     GtkWidget *da;
     overlay_mode mode;
     std::vector<url_data> url_list;
+    char *entry_text;
 };
 
 struct hint_info {
     PangoFontDescription *font;
-    cairo_pattern_t *fg, *bg, *border;
+    cairo_pattern_t *fg, *bg, *af, *ab, *border;
     double padding, border_width, roundness;
 };
 
@@ -203,7 +204,8 @@ static void draw_rectangle(cairo_t *cr, double x, double y, double height,
 }
 
 static void draw_marker(cairo_t *cr, const PangoFontDescription *desc,
-                        const hint_info *hints, long x, long y, unsigned id) {
+                        const hint_info *hints, long x, long y, unsigned id,
+                        gboolean active) {
     char buffer[std::numeric_limits<unsigned>::digits10 + 1];
     cairo_text_extents_t ext;
     int width, height;
@@ -223,14 +225,14 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc,
     cairo_set_source(cr, hints->border);
     cairo_set_line_width(cr, hints->border_width);
     cairo_stroke_preserve(cr);
-    cairo_set_source(cr, hints->bg);
+    cairo_set_source(cr, active? hints->ab : hints->bg);
     cairo_fill(cr);
 
     cairo_new_path(cr);
     cairo_move_to(cr, static_cast<double>(x) + hints->padding,
                   static_cast<double>(y) + hints->padding);
 
-    cairo_set_source(cr, hints->fg);
+    cairo_set_source(cr, active ? hints->af : hints->fg);
     pango_cairo_update_layout(cr, layout);
     pango_cairo_layout_path(cr, layout);
     cairo_fill(cr);
@@ -240,6 +242,8 @@ static void draw_marker(cairo_t *cr, const PangoFontDescription *desc,
 
 static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
     if (!info->panel->url_list.empty()) {
+        char marker_text[10];
+        size_t len;
         const long cw = vte_terminal_get_char_width(info->panel->vte);
         const long ch = vte_terminal_get_char_height(info->panel->vte);
         const PangoFontDescription *desc = info->hints->font ?
@@ -248,12 +252,17 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
         cairo_set_line_width(cr, 1);
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
+        len = info->panel->entry_text == NULL ?
+            0 : strlen(info->panel->entry_text);
 
         for (unsigned i = 0; i < info->panel->url_list.size(); i++) {
             const url_data &data = info->panel->url_list[i];
             const long x = data.col * cw;
             const long y = data.row * ch;
-            draw_marker(cr, desc, info->hints, x, y, i + 1);
+            sprintf(marker_text, "%u", (i + 1));
+            gboolean active =
+                (len && strncmp(marker_text, info->panel->entry_text, len) == 0);
+            draw_marker(cr, desc, info->hints, x, y, i + 1, active);
         }
     }
 
@@ -690,6 +699,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_x:
                 find_urls(vte, &info->panel);
+                info->panel.entry_text = NULL;
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
                 break;
@@ -713,6 +723,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_x:
                 enter_command_mode(vte, &info->select);
                 find_urls(vte, &info->panel);
+                info->panel.entry_text = NULL;
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, false);
                 exit_command_mode(vte, &info->select);
@@ -756,6 +767,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     gboolean ret = FALSE;
 
     switch (event->keyval) {
+        case GDK_KEY_BackSpace:
         case GDK_KEY_0:
         case GDK_KEY_1:
         case GDK_KEY_2:
@@ -777,11 +789,15 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 size_t text_dig = static_cast<size_t>(
                     log10(static_cast<double>(textd)) + 1);
 
-                if(url_dig == text_dig ||
+                if (url_dig == text_dig ||
                    textd > static_cast<size_t>(static_cast<double>(urld)/10)) {
 
                     launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
+                } else {
+                    info->panel.entry_text = g_strdup(fulltext);
+                    gtk_widget_hide(info->panel.da); // not sure if this is needed yet
+                    gtk_widget_show(info->panel.da);
                 }
 
                 free(fulltext);
@@ -1068,6 +1084,8 @@ static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
 
     hints.fg = get_config_cairo_color(config, "hints", "foreground").get_value_or(cairo_pattern_create_rgb(1, 1, 1));
     hints.bg = get_config_cairo_color(config, "hints", "background").get_value_or(cairo_pattern_create_rgb(0, 0, 0));
+    hints.af = get_config_cairo_color(config, "hints", "active_foreground").get_value_or(cairo_pattern_create_rgb(0.9, 0.5, 0.5));
+    hints.ab = get_config_cairo_color(config, "hints", "active_background").get_value_or(cairo_pattern_create_rgb(0, 0, 0));
     hints.border = get_config_cairo_color(config, "hints", "border").get_value_or(hints.fg);
     hints.padding = get_config_double(config, "hints", "padding", 5).get_value_or(2.0);
     hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
