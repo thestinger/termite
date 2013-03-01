@@ -762,7 +762,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 if(url_dig == text_dig ||
                    textd > static_cast<size_t>(static_cast<double>(urld)/10)) {
 
-                    launch_url(info->config.browser, fulltext, info->panel);
+                    launch_url(info->config.browser, fulltext, &info->panel);
                     ret = TRUE;
                 }
 
