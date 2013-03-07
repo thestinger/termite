@@ -61,6 +61,16 @@ INSERT MODE
                 __vte_ps1
               }
             fi
+       ::
+
+       For example, with bash:
+
+       .. code:: sh
+
+            if [[ $TERM == xterm-termite ]]; then
+              . /etc/profile.d/vte.sh
+              PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'__vte_ps1'
+            fi
 
 COMMAND MODE
 ------------
