@@ -1208,7 +1208,7 @@ static void exit_with_status(VteTerminal *vte) {
 
 int main(int argc, char **argv) {
     GError *error = NULL;
-    const char *const term = "xterm-termite";
+    const char *const term = "xterm";
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
