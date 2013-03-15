@@ -1294,7 +1294,7 @@ int main(int argc, char **argv) {
          nullptr, FALSE, FALSE, FALSE, -1, config_file}
     };
 
-    load_config(GTK_WINDOW(window), vte, &info.config, &geometry);
+    load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
 
     vte_terminal_set_pty_object(vte, pty);
     vte_pty_set_term(pty, term);
