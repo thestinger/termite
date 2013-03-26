@@ -40,6 +40,7 @@ install: termite termite.desktop termite.terminfo
 	mkdir -p ${DESTDIR}${TERMINFO}
 	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
 	install -Dm644 termite.desktop ${DESTDIR}${PREFIX}/share/applications/termite.desktop
+	install -Dm644 termite.1 ${DESTDIR}${PREFIX}/share/man/man1/termite.1
 	tic termite.terminfo -o ${DESTDIR}${TERMINFO}
 
 uninstall:

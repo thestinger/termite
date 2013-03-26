@@ -1,0 +1,170 @@
+.TH termite 1 "2013-03-26" "termite" "User Commands"
+.SH NAME
+termite \- A keyboard-centric VTE-based terminal aimed for use with
+a tiling and/or tabbing enabled window manager.
+.SH SYNOPSIS
+\fBtermite\fP [options]
+.SH DESCRIPTION
+\fBtermite\fP is a GTK-based terminal emulator inteded for use within
+window managers with tiling and/or tabbing support. It provides a fast
+terminal experience and pleasant array of keyboard-centric features.
+.SH OPTIONS
+.PP
+.IP "\fB\-h\fR, \fB\-\-help\fR"
+Display help message.
+.IP "\fB\-v\fR, \fB\-\-version\fR"
+Display version information.
+.IP "\fB\-r\fR, \fB\-\-role\fR\fB=\fR\fIROLE\fR
+The role to set the termite window to report itself with.
+.IP "\fB\-d\fR, \fB\-\-directory\fR\fB=\fR\fIDIRECTORY\fR
+Tell termite to change to \fIDIRECTORY\fP when launching.
+.IP "\fB\-e\fR, \fB\-\-exec\fR\fB=\fR\fICOMMAND\fR
+Tell termite start \fICOMMAND\fP instead of the shell.
+.IP "\fB\-c\fR, \fB\-\-config\fR\fB=\fR\fICONFIG\fR
+Specify a path to an alternative config file to use.
+.IP "\fB\-\-geometry\fR\fB=\fR\fIGEOMETRY\fR
+Override the window geometry in pixels.
+.IP "\fB\-\-display\fR\fB=\fR\fIDISPLAY\fR
+Launch on \fIDISPLAY\fP X display.
+.IP "\fB\-\-hold\fR"
+Keep termite open after the child process exits.
+.SH KEYBINDINGS
+.SS Insert Mode
+\fBInsert Mode\fP is the default mode common to most terminal emulators.
+This is where you enter commands and interact with the programs running
+within \fBtermite\fP.
+.PP
+.IP "\fBctrl-shift-x\fP"
+activate url hints mode
+.IP "\fBctrl-shift-r\fP"
+reload configuration file
+.IP "\fBctrl-shift-c\fP"
+copy to \fICLIPBOARD\fP
+.IP "\fBctrl-shift-v \fP"
+paste to \fICLIPBOARD\fP
+.IP "\fBctrl-shift-u\fP"
+unicode input (standard GTK binding)
+.IP "\fBctrl-tab\fP"
+start scrollback completion
+.IP "\fBctrl-shift-space\fP"
+start command mode
+.IP "\fBctrl-shift-t\fP"
+open a new terminal in the current directory
+.IP "\fBctrl-shift-up\fP"
+scroll up a line
+.IP "\fBctrl-shift-down\fP"
+scroll down a line
+.IP "\fBshift-pageup\fP"
+scroll up a page
+.IP "\fBshift-pagedown\fP"
+scroll down a page
+.SS Command Mode
+In \fBCommand Mode\fP you interact with the interface of \fBtermite\fP
+and the visual representation of the programs running within it. You can
+search, mark and copy contents from the display for use in other
+programs.
+.PP
+.IP "\fBescape\fP"
+deactivate command mode
+.IP "\fBx\fP"
+activate url hints mode
+.IP "\fBv\fP"
+visual mode
+.IP "\fBV\fP"
+visual line mode
+.IP "\fBctrl-v\fP"
+visual block mode
+.IP "\fBhjkl\fP or \fBarrow keys\fP"
+move cursor left/down/up/right
+.IP "\fBw\fP or \fBshift-right\fP"
+forward word
+.IP "\fBb\fP or \fBshift-left\fP"
+backward word
+.IP "\fBW\fP or \fBctrl-right\fP"
+forward \fIWORD\fP (non-whitespace)
+.IP "\fBB\fP or \fBctrl-left\fP"
+backward \fIWORD\fP (non-whitespace)
+.IP "\fB0\fP"
+move cursor to the first column in the row\fP"
+.IP "\fB^\fP"
+beginning-of-line (first non-blank character)
+.IP "\fB$\fP"
+end-of-line
+.IP "\fBg\fP"
+jump to start of first row
+.IP "\fBG\fP"
+jump to start of last row
+.IP "\fBctrl-u\fP"
+move cursor half a screen up
+.IP "\fBctrl-d\fP"
+move cursor half a screen down
+.IP "\fBy\fP"
+copy to \fICLIPBOARD\fP
+.IP "\fB/\fP"
+forward search
+.IP "\fB?\fP"
+reverse search
+.IP "\fBu\fP"
+forward url search
+.IP "\fBU\fP"
+reverse url search
+.IP "\fBo\fP"
+open the current selection as a url
+.IP "\fBReturn\fP"
+open the current selection as a url and exit command mode
+.IP "\fBn\fP"
+next search match
+.IP "\fBN\fP"
+previous search match
+.IP "\fB+\fP"
+increase font size
+.IP "\fB-\fP"
+decrease font size
+.SS Hints Mode
+The
+\fBHints Mode\fP is meant for accessing urls outputted to the terminal.
+When active, links can be launched with a few keypresses.
+.SH FILES
+\fBtermite\fP looks for the configuration file in the following order:
+\fI"$XDG_CONFIG_HOME/termite/config"\fP,
+\fI"~/.config/termite/config"\fP,
+\fI"$XDG_CONFIG_DIRS/termite/config"\fP and \fI"/etc/xdg/termite.cfg"
+.SH EXIT STATUS
+\fBtermite\fP returns \fI1\fR on failure, including a termination of the
+child process from an uncaught signal. Otherwise the status is that of
+the child process.
+.SH REMARKS
+During scrollback search, the current selection is changed to the search
+match and copied to the PRIMARY clipboard buffer.
+.P
+With the text input widget focused, up/down (or tab/shift-tab) cycle
+through completions, escape closes the widget and enter accepts the
+input.
+.P
+In hints mode, the input will be accepted as soon as termite considers
+it a unique match.
+.SS Current Directory
+The directory can be set by a process running in the terminal. For
+example, with \fRzsh\fP:
+.IP
+.nf
+if [[ $TERM == xterm -termite ]]; then
+  . /etc/profile.d/vte.sh
+
+  __vte_ps1
+
+  chpwd() {
+    __vte_ps1
+  }
+fi
+.fi
+.PP
+or for example, with \fRbash\fP:
+.IP
+.nf
+if [[ $TERM == xterm-termite ]]; then
+  . /etc/profile.d/vte.sh
+  PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'__vte_ps1'
+fi
+.fi
+.PP
