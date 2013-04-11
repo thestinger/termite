@@ -925,10 +925,25 @@ void search(VteTerminal *vte, const char *pattern, bool reverse) {
     regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, NULL);
     vte_terminal_search_set_gregex(vte, regex);
 
-    if (!reverse) {
-        vte_terminal_search_find_next(vte);
-    } else {
-        vte_terminal_search_find_previous(vte);
+
+    if (vte_terminal_search_get_wrap_around(vte)) {
+        if (!reverse) {
+            if(!vte_terminal_search_find_next(vte)) {
+                vte_terminal_select_none(vte);
+                vte_terminal_search_find_next(vte);
+            }
+        } else if (!vte_terminal_search_find_previous(vte)) {
+            vte_terminal_select_none(vte);
+            vte_terminal_search_find_previous(vte);
+        }
+    }
+    else {
+        if (!reverse) {
+            vte_terminal_search_find_next(vte);
+        }
+        else {
+            vte_terminal_search_find_previous(vte);
+        }
     }
     vte_terminal_copy_primary(vte);
 }
