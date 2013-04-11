@@ -127,7 +127,7 @@ static long first_row(VteTerminal *vte);
 
 void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
-    g_spawn_async(NULL, browser_cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+    g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
 }
 
 static void launch_in_directory(VteTerminal *vte) {
@@ -139,13 +139,13 @@ static void launch_in_directory(VteTerminal *vte) {
     auto dir = make_unique(g_filename_from_uri(uri, nullptr, nullptr), g_free);
     char term[] = "termite"; // maybe this should be argv[0]
     char *cmd[] = {term, nullptr};
-    g_spawn_async(dir.get(), cmd, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+    g_spawn_async(dir.get(), cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
 }
 
 static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
-    GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, NULL);
+    GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, nullptr);
     GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
-    char *content = vte_terminal_get_text(vte, NULL, NULL, attributes);
+    char *content = vte_terminal_get_text(vte, nullptr, nullptr, attributes);
 
     for (char *s_ptr = content, *saveptr; ; s_ptr = nullptr) {
         const char *token = strtok_r(s_ptr, "\n", &saveptr);
@@ -153,13 +153,13 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             break;
         }
 
-        GError *error = NULL;
+        GError *error = nullptr;
         GMatchInfo *info;
 
         g_regex_match_full(regex, token, -1, 0, (GRegexMatchFlags)0, &info, &error);
         while (g_match_info_matches(info)) {
             int pos;
-            g_match_info_fetch_pos(info, 0, &pos, NULL);
+            g_match_info_fetch_pos(info, 0, &pos, nullptr);
 
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
             const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
@@ -245,7 +245,7 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
         const long ch = vte_terminal_get_char_height(info->panel->vte);
         const PangoFontDescription *desc = info->hints->font ?
             info->hints->font : vte_terminal_get_font(info->panel->vte);
-        size_t len = info->panel->fulltext == NULL ?
+        size_t len = info->panel->fulltext == nullptr ?
             0 : strlen(info->panel->fulltext);
 
         cairo_set_line_width(cr, 1);
@@ -381,7 +381,7 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 static void open_selection(char *browser, VteTerminal *vte) {
     if (browser) {
         AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
-        char *selection = atk_text_get_selection(text, 0, NULL, NULL);
+        char *selection = atk_text_get_selection(text, 0, nullptr, nullptr);
         if (selection && selection[0]) {
             launch_browser(browser, selection);
         }
@@ -409,7 +409,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
 
     if (!codepoints) {
         return;
@@ -455,7 +455,7 @@ void move_first(VteTerminal *vte, select_info *select, F is_match) {
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
 
     if (!codepoints) {
         return;
@@ -490,7 +490,7 @@ static void move_to_eol(VteTerminal *vte, select_info *select) {
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
 
     if (!codepoints) {
         return;
@@ -516,7 +516,7 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
     }
 
     long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, NULL, &length, NULL);
+    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
 
     if (!codepoints) {
         return;
@@ -555,7 +555,7 @@ static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
 
 /* {{{ CALLBACKS */
 void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
-    const char *const title = *dynamic_title ? vte_terminal_get_window_title(vte) : NULL;
+    const char *const title = *dynamic_title ? vte_terminal_get_window_title(vte) : nullptr;
     gtk_window_set_title(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
                          title ? title : "termite");
 }
@@ -783,7 +783,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 info->panel.fulltext = g_strndup(text, len + 1);
                 info->panel.fulltext[len] = (char)event->keyval;
                 size_t urld = static_cast<size_t>(info->panel.url_list.size());
-                size_t textd = strtoul(info->panel.fulltext, NULL, 10);
+                size_t textd = strtoul(info->panel.fulltext, nullptr, 10);
                 size_t url_dig = static_cast<size_t>(
                     log10(static_cast<double>(info->panel.url_list.size())) + 1);
                 size_t text_dig = static_cast<size_t>(
@@ -855,7 +855,7 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
     const int height = gtk_widget_get_allocated_height(vte);
 
     GtkRequisition req;
-    gtk_widget_get_preferred_size(widget, NULL, &req);
+    gtk_widget_get_preferred_size(widget, nullptr, &req);
 
     alloc->x = width - req.width - 40;
     alloc->y = 0;
@@ -924,7 +924,7 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
 void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
-    regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, NULL);
+    regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, nullptr);
     vte_terminal_search_set_gregex(vte, regex);
 
     if (!reverse) {
@@ -957,8 +957,8 @@ void overlay_show(search_panel_info *info, overlay_mode mode, bool complete) {
 }
 
 void get_vte_padding(VteTerminal *vte, int *w, int *h) {
-    GtkBorder *border = NULL;
-    gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, NULL);
+    GtkBorder *border = nullptr;
+    gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, nullptr);
     if (!border) {
         g_warning("VTE's inner-border property unavailable");
         *w = *h = 0;
@@ -1151,7 +1151,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                                           g_regex_new(url_regex,
                                                       G_REGEX_CASELESS,
                                                       G_REGEX_MATCH_NOTEMPTY,
-                                                      NULL),
+                                                      nullptr),
                                           (GRegexMatchFlags)0);
         vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
     } else if (info->tag != -1) {
@@ -1240,24 +1240,24 @@ static void exit_with_status(VteTerminal *vte) {
 }
 
 int main(int argc, char **argv) {
-    GError *error = NULL;
+    GError *error = nullptr;
     const char *const term = "xterm-termite";
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
-    GOptionContext *context = g_option_context_new(NULL);
-    char *role = NULL, *geometry = NULL, *execute = NULL, *config_file = NULL;
+    GOptionContext *context = g_option_context_new(nullptr);
+    char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
-        {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", NULL},
-        {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", NULL},
+        {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
+        {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {}
     };
-    g_option_context_add_main_entries(context, entries, NULL);
+    g_option_context_add_main_entries(context, entries, nullptr);
     g_option_context_add_group(context, gtk_get_option_group(TRUE));
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
@@ -1292,7 +1292,7 @@ int main(int argc, char **argv) {
     }
 
     char **command_argv;
-    char *default_argv[2] = {NULL, NULL};
+    char *default_argv[2] = {nullptr, nullptr};
 
     if (execute) {
         int argcp;
@@ -1354,19 +1354,19 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
 
     if (!hold) {
-        g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), NULL);
+        g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), nullptr);
     }
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), nullptr);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
-    g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), NULL);
+    g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
     draw_cb_info draw_cb_info{&info.panel, &info.config.hints};
     g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &draw_cb_info);
 
-    g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), NULL);
-    g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), NULL);
+    g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
+    g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), nullptr);
     g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
                      &info.config.dynamic_title);
     window_title_cb(vte, &info.config.dynamic_title);
@@ -1397,7 +1397,7 @@ int main(int argc, char **argv) {
     env = g_environ_setenv(env, "TERM", term, TRUE);
 
     GPid ppid;
-    if (g_spawn_async(NULL, command_argv, env,
+    if (g_spawn_async(nullptr, command_argv, env,
                       (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
                       (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
                       &ppid, &error)) {
