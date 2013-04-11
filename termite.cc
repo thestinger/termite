@@ -778,8 +778,10 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
         case GDK_KEY_9:
             if (info->panel.mode == overlay_mode::urlselect) {
                 const char *const text = gtk_entry_get_text(entry);
-                info->panel.fulltext = g_strndup(text, strlen(text) + 1);
-                info->panel.fulltext[strlen(text)] = (char)event->keyval;
+                size_t len = strlen(text);
+                free(info->panel.fulltext);
+                info->panel.fulltext = g_strndup(text, len + 1);
+                info->panel.fulltext[len] = (char)event->keyval;
                 size_t urld = static_cast<size_t>(info->panel.url_list.size());
                 size_t textd = strtoul(info->panel.fulltext, NULL, 10);
                 size_t url_dig = static_cast<size_t>(
