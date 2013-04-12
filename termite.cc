@@ -1424,4 +1424,4 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE; // child process did not cause termination
 }
 
-// vim: et:sts=4:sw=4:cino=(0
+// vim: et:sts=4:sw=4:cino=(0:cc=100
