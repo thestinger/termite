@@ -17,9 +17,10 @@ for keyboard selection.
 
 BUILDING
 ========
+::
 
-``git clone --recursive $TERMITE_REPO_URL``
-``cd termite && make``
+    git clone --recursive https://github.com/thestinger/termite.git
+    cd termite && make
 
 KEYBINDINGS
 ===========
