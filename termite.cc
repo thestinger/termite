@@ -1023,7 +1023,7 @@ get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
     return {};
 }
 
-static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
+static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hint_info &hints) {
     std::array<GdkColor, 255> palette;
     char color_key[] = "color000";
 
@@ -1068,6 +1068,7 @@ static void load_theme(VteTerminal *vte, GKeyFile *config, hint_info &hints) {
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
         vte_terminal_set_background_tint_color(vte, &*color);
+        gtk_widget_modify_bg((GtkWidget *)window, GTK_STATE_NORMAL, &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
         vte_terminal_set_color_cursor(vte, &*color);
@@ -1232,7 +1233,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         }
     }
 
-    load_theme(vte, config, info->hints);
+    load_theme(window, vte, config, info->hints);
 }/*}}}*/
 
 static void exit_with_status(VteTerminal *vte) {
