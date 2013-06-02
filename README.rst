@@ -15,6 +15,12 @@ DEPENDENCIES
 A vte version >= ``0.34``. A patch is required to expose the functions needed
 for keyboard selection.
 
+BUILDING
+========
+
+``git clone --recursive $TERMITE_REPO_URL``
+``cd termite && make``
+
 KEYBINDINGS
 ===========
 
