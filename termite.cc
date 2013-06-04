@@ -1250,6 +1250,7 @@ int main(int argc, char **argv) {
 
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
+    char *title = nullptr;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
@@ -1258,6 +1259,7 @@ int main(int argc, char **argv) {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", nullptr},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1370,9 +1372,16 @@ int main(int argc, char **argv) {
 
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), nullptr);
-    g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
-                     &info.config.dynamic_title);
-    window_title_cb(vte, &info.config.dynamic_title);
+
+    if (title) {
+        info.config.dynamic_title = FALSE;
+        gtk_window_set_title(GTK_WINDOW(window), title);
+        g_free(title);
+    } else {
+        g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
+                         &info.config.dynamic_title);
+        window_title_cb(vte, &info.config.dynamic_title);
+    }
 
     if (geometry) {
         gtk_widget_show_all(panel_overlay);
