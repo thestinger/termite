@@ -1251,6 +1251,9 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr;
+    
+    char *transparency = nullptr;
+    
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
@@ -1260,6 +1263,7 @@ int main(int argc, char **argv) {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {"transparency",'x',0,G_OPTION_ARG_STRING, &transparency, "Transparency of window", nullptr},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1391,6 +1395,28 @@ int main(int argc, char **argv) {
         }
         g_free(geometry);
     }
+
+    if (transparency) {
+        g_printerr("transparency: %f",atof(transparency));
+        double opacity = atof(transparency);
+        vte_terminal_set_background_saturation(vte, opacity);
+        vte_terminal_set_background_transparent(vte, false);
+
+        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+        GdkVisual *visual;
+
+        if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
+            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
+        } else {
+            visual = gdk_screen_get_system_visual(screen);
+            vte_terminal_set_opacity(vte, G_MAXUINT16);
+        }
+        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+            gtk_widget_set_visual(GTK_WIDGET(window), visual);
+
+        }
+
+    } 
 
     gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
