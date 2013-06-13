@@ -1256,10 +1256,10 @@ int main(int argc, char **argv) {
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
+        {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
-        {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", nullptr},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
