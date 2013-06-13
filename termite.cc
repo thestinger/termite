@@ -105,7 +105,7 @@ struct draw_cb_info {
 };
 
 static void launch_browser(char *browser, char *url);
-
+static void set_opacity(double opacity, GtkWidget *window,VteTerminal *vte);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
@@ -129,6 +129,7 @@ void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
 }
+
 
 static void launch_in_directory(VteTerminal *vte) {
     const char *uri = vte_terminal_get_current_directory_uri(vte);
@@ -1091,6 +1092,29 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     hints.border_width = get_config_double(config, "hints", "border_width").get_value_or(1.0);
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
 }
+static void set_opacity(double opacity, GtkWidget *window, VteTerminal *vte ) {
+        vte_terminal_set_background_saturation(vte, opacity);
+        //gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
+        vte_terminal_set_background_transparent(vte, false);
+
+        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+        GdkVisual *visual;
+
+        if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
+            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
+        } else {
+            visual = gdk_screen_get_system_visual(screen);
+            vte_terminal_set_opacity(vte, G_MAXUINT16);
+        }
+        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+            gtk_widget_set_visual(GTK_WIDGET(window), visual);
+
+            // TODO: need to make dynamic changes to the visual work
+            // the obvious way is simply to hide the window and then restore shown widgets
+        }
+
+}
+
 
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry) {
@@ -1122,7 +1146,6 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
     g_key_file_free(config);
 }
-
 static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, GKeyFile *config) {
     if (geometry) {
@@ -1135,6 +1158,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         return get_config<gboolean>(g_key_file_get_boolean,
                                     config, "options", key).get_value_or(value);
     };
+
+
 
     gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
     vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
@@ -1212,30 +1237,11 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (auto opacity = get_config_double(config, "options", "transparency")) {
-        vte_terminal_set_background_saturation(vte, *opacity);
-        gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
-        vte_terminal_set_background_transparent(vte, pseudo);
-
-        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-        GdkVisual *visual;
-
-        if (*opacity > 0.0 && !pseudo && (visual = gdk_screen_get_rgba_visual(screen))) {
-            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - *opacity)));
-        } else {
-            visual = gdk_screen_get_system_visual(screen);
-            vte_terminal_set_opacity(vte, G_MAXUINT16);
-        }
-        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
-            gtk_widget_set_visual(GTK_WIDGET(window), visual);
-
-            // TODO: need to make dynamic changes to the visual work
-            // the obvious way is simply to hide the window and then restore shown widgets
-        }
+        set_opacity(*opacity,GTK_WIDGET(window),vte);
     }
 
     load_theme(window, vte, config, info->hints);
 }/*}}}*/
-
 static void exit_with_status(VteTerminal *vte) {
     int status = vte_terminal_get_child_exit_status(vte);
     gtk_main_quit();
@@ -1251,6 +1257,7 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr;
+    char *trans = nullptr;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
@@ -1260,6 +1267,7 @@ int main(int argc, char **argv) {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {"transparency", 'x', 0, G_OPTION_ARG_STRING, &trans, "Initial transparency", "TRANSPARENCY"},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1382,6 +1390,9 @@ int main(int argc, char **argv) {
                          &info.config.dynamic_title);
         window_title_cb(vte, &info.config.dynamic_title);
     }
+    if (trans) {
+        set_opacity(atof(trans), GTK_WIDGET(window), vte);
+    }
 
     if (geometry) {
         gtk_widget_show_all(panel_overlay);
@@ -1434,4 +1445,3 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE; // child process did not cause termination
 }
 
-// vim: et:sts=4:sw=4:cino=(0:cc=100
