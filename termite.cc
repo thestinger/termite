@@ -104,8 +104,10 @@ struct draw_cb_info {
     hint_info *hints;
 };
 
-static void launch_browser(char *browser, char *url);
+bool opacity_set = false;
 
+static void launch_browser(char *browser, char *url);
+static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
@@ -128,6 +130,27 @@ static long first_row(VteTerminal *vte);
 void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
+}
+
+static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity) {
+        vte_terminal_set_background_saturation(vte, opacity);
+        vte_terminal_set_background_transparent(vte, false);
+        
+        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+        GdkVisual *visual;
+        
+        if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
+            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
+        } else {
+            visual = gdk_screen_get_system_visual(screen);
+            vte_terminal_set_opacity(vte, G_MAXUINT16);
+        }
+        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+            gtk_widget_set_visual(GTK_WIDGET(window), visual);
+            
+            // TODO; need to make dynamic changes to the visual work
+            // the obvious way is simply to hide the window and the restore shown widgets
+        }
 }
 
 static void launch_in_directory(VteTerminal *vte) {
@@ -1212,25 +1235,9 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (auto opacity = get_config_double(config, "options", "transparency")) {
-        vte_terminal_set_background_saturation(vte, *opacity);
-        gboolean pseudo = cfg_bool("pseudo_transparency", FALSE);
-        vte_terminal_set_background_transparent(vte, pseudo);
-
-        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-        GdkVisual *visual;
-
-        if (*opacity > 0.0 && !pseudo && (visual = gdk_screen_get_rgba_visual(screen))) {
-            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - *opacity)));
-        } else {
-            visual = gdk_screen_get_system_visual(screen);
-            vte_terminal_set_opacity(vte, G_MAXUINT16);
-        }
-        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
-            gtk_widget_set_visual(GTK_WIDGET(window), visual);
-
-            // TODO: need to make dynamic changes to the visual work
-            // the obvious way is simply to hide the window and then restore shown widgets
-        }
+        if (opacity_set == false) {
+            set_opacity(GTK_WIDGET(window), vte, *opacity);
+        } 
     }
 
     load_theme(window, vte, config, info->hints);
@@ -1251,6 +1258,7 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr;
+    char *trans = nullptr;
     const GOptionEntry entries[] = {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
@@ -1260,6 +1268,7 @@ int main(int argc, char **argv) {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {"transparency", 'x', 0, G_OPTION_ARG_STRING, &trans, "Initial transparency", "TRANSPARENCY"},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1390,6 +1399,11 @@ int main(int argc, char **argv) {
             g_printerr("Invalid geometry string: %s\n", geometry);
         }
         g_free(geometry);
+    }
+
+    if (trans) {
+        opacity_set = true;
+        set_opacity(GTK_WIDGET(window), vte, atof(trans));
     }
 
     gtk_widget_grab_focus(vte_widget);
