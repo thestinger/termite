@@ -91,6 +91,7 @@ struct config_info {
     gboolean dynamic_title, urgent_on_bell, clickable_url;
     int tag;
     char *config_file;
+    bool opacity_set;
 };
 
 struct keybind_info {
@@ -103,8 +104,6 @@ struct draw_cb_info {
     search_panel_info *panel;
     hint_info *hints;
 };
-
-bool opacity_set = false;
 
 static void launch_browser(char *browser, char *url);
 static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity);
@@ -1235,7 +1234,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (auto opacity = get_config_double(config, "options", "transparency")) {
-        if (opacity_set == false) {
+        if (info->opacity_set == false) {
             set_opacity(GTK_WIDGET(window), vte, *opacity);
         } 
     }
@@ -1341,7 +1340,9 @@ int main(int argc, char **argv) {
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
          nullptr, FALSE, FALSE, FALSE, -1, config_file}
     };
-
+    
+    info.config.opacity_set = false;   
+ 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
 
     vte_terminal_set_pty_object(vte, pty);
@@ -1402,7 +1403,7 @@ int main(int argc, char **argv) {
     }
 
     if (trans) {
-        opacity_set = true;
+        info.config.opacity_set = true;
         set_opacity(GTK_WIDGET(window), vte, atof(trans));
     }
 
