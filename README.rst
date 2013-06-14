@@ -61,12 +61,7 @@ INSERT MODE
 
             if [[ $TERM == xterm-termite ]]; then
               . /etc/profile.d/vte.sh
-
-              __vte_ps1
-
-              chpwd() {
-                __vte_ps1
-              }
+              __vte_osc7
             fi
        ::
 
@@ -76,7 +71,7 @@ INSERT MODE
 
             if [[ $TERM == xterm-termite ]]; then
               . /etc/profile.d/vte.sh
-              PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'__vte_ps1'
+              __vte_prompt_command
             fi
 
 COMMAND MODE
