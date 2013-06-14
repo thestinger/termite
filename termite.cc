@@ -1407,6 +1407,7 @@ int main(int argc, char **argv) {
     char **env = g_get_environ();
     env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
     env = g_environ_setenv(env, "TERM", term, TRUE);
+    env = g_environ_setenv(env, "VTE_VERSION", "3405", TRUE);
 
     GPid ppid;
     if (g_spawn_async(nullptr, command_argv, env,
