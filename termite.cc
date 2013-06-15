@@ -1267,7 +1267,7 @@ int main(int argc, char **argv) {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
-        {"transparency", 'x', 0, G_OPTION_ARG_STRING, &trans, "Initial transparency", "TRANSPARENCY"},
+        {"transparency", 'x', 0, G_OPTION_ARG_DOUBLE, &trans, "Initial transparency", "TRANSPARENCY"},
         {}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
