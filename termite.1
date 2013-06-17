@@ -25,6 +25,8 @@ Set the termite window's title to \fITITLE\fP. This disables dynamic
 titles.
 .IP "\fB\-c\fR, \fB\-\-config\fR\fB=\fR\fICONFIG\fR"
 Specify a path to an alternative config file to use.
+.IP "\fB\-x\fR, \fB\-\-transparency\fR\fB=\fR\fITRANSPARENCY\fR"
+Sets the inital Transparency.
 .IP "\fB\-\-geometry\fR\fB=\fR\fIGEOMETRY\fR"
 Override the window geometry in pixels.
 .IP "\fB\-\-display\fR\fB=\fR\fIDISPLAY\fR"
@@ -151,9 +153,14 @@ The directory can be set by a process running in the terminal. For
 example, with \fRzsh\fP:
 .IP
 .nf
-if [[ $TERM == xterm-termite ]]; then
+if [[ $TERM == xterm -termite ]]; then
   . /etc/profile.d/vte.sh
-  __vte_osc7
+
+  __vte_ps1
+
+  chpwd() {
+    __vte_ps1
+  }
 fi
 .fi
 .PP
@@ -162,7 +169,7 @@ or for example, with \fRbash\fP:
 .nf
 if [[ $TERM == xterm-termite ]]; then
   . /etc/profile.d/vte.sh
-  __vte_prompt_command
+  PROMPT_COMMAND=${PROMPT_COMMAND:+$PROMPT_COMMAND; }'__vte_ps1'
 fi
 .fi
 .PP
