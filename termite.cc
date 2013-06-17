@@ -1399,7 +1399,7 @@ int main(int argc, char **argv) {
         g_free(geometry);
     }
 
-    if (trans) {
+    if (trans > 0.0) {
         info.config.opacity_set = true;
         set_opacity(GTK_WIDGET(window), vte, trans);
     }
