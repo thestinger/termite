@@ -131,24 +131,24 @@ void launch_browser(char *browser, char *url) {
 }
 
 static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity) {
-        vte_terminal_set_background_saturation(vte, opacity);
-        vte_terminal_set_background_transparent(vte, false);
+    vte_terminal_set_background_saturation(vte, opacity);
+    vte_terminal_set_background_transparent(vte, false);
 
-        GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-        GdkVisual *visual;
+    GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+    GdkVisual *visual;
 
-        if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
-            vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
-        } else {
-            visual = gdk_screen_get_system_visual(screen);
-            vte_terminal_set_opacity(vte, G_MAXUINT16);
-        }
-        if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
-            gtk_widget_set_visual(GTK_WIDGET(window), visual);
+    if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
+        vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
+    } else {
+        visual = gdk_screen_get_system_visual(screen);
+        vte_terminal_set_opacity(vte, G_MAXUINT16);
+    }
+    if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
+        gtk_widget_set_visual(GTK_WIDGET(window), visual);
 
-            // TODO; need to make dynamic changes to the visual work
-            // the obvious way is simply to hide the window and the restore shown widgets
-        }
+        // TODO; need to make dynamic changes to the visual work
+        // the obvious way is simply to hide the window and the restore shown widgets
+    }
 }
 
 static void launch_in_directory(VteTerminal *vte) {
