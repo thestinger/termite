@@ -603,6 +603,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     if (info->select.mode != vi_mode::insert) {
         if (modifiers == GDK_CONTROL_MASK) {
             switch (gdk_keyval_to_lower(event->keyval)) {
+                case GDK_KEY_bracketleft:
+                    exit_command_mode(info->panel.vte, &info->select);
+                    gtk_widget_hide(info->panel.da);
+                    gtk_widget_hide(info->panel.panel);
+                    info->panel.url_list.clear();
+                    break;
                 case GDK_KEY_v:
                     toggle_visual(vte, &info->select, vi_mode::visual_block);
                     break;
