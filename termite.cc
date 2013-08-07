@@ -598,7 +598,7 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
                          title ? title : "termite");
 }
 
-static void update_font_size(VteTerminal *vte, int update) {
+static void update_font_size(VteTerminal *vte, int update, GtkWindow *window) {
     const PangoFontDescription *desc = vte_terminal_get_font(vte);
     int size = pango_font_description_get_size(desc);
 
@@ -612,6 +612,11 @@ static void update_font_size(VteTerminal *vte, int update) {
         pango_font_description_set_size(new_desc, size);
         vte_terminal_set_font(vte, new_desc);
         pango_font_description_free(new_desc);
+
+        if (window) {
+            set_size_hints(window, (int)vte_terminal_get_char_width(vte),
+                           (int)vte_terminal_get_char_height(vte));
+        }
     }
 }
 
@@ -747,10 +752,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 break;
             case GDK_KEY_plus:
-                update_font_size(vte, 1);
+                update_font_size(vte, 1, info->config.size_hints ? info->window : nullptr);
                 break;
             case GDK_KEY_minus:
-                update_font_size(vte, -1);
+                update_font_size(vte, -1, info->config.size_hints ? info->window : nullptr);
                 break;
         }
         return TRUE;
