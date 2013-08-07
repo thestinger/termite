@@ -88,7 +88,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, pseudo_transparency;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, pseudo_transparency, size_hints;
     int tag;
     char *config_file;
 };
@@ -149,6 +149,21 @@ static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity, gbo
         // TODO; need to make dynamic changes to the visual work
         // the obvious way is simply to hide the window and the restore shown widgets
     }
+}
+
+static void set_size_hints(GtkWindow *window, int char_width, int char_height)
+{
+    static const GdkWindowHints wh = (GdkWindowHints)(GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+    GdkGeometry hints;
+
+    hints.base_width = char_width;
+    hints.base_height = char_height;
+    hints.min_width = char_width;
+    hints.min_height = char_height;
+    hints.width_inc  = char_width;
+    hints.height_inc = char_height;
+
+    gtk_window_set_geometry_hints(GTK_WINDOW(window), NULL, &hints, wh);
 }
 
 static void launch_in_directory(VteTerminal *vte) {
@@ -1175,6 +1190,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->pseudo_transparency = cfg_bool("pseudo_transparency", FALSE);
+    info->size_hints = cfg_bool("size_hints", FALSE);
 
     if (info->clickable_url) {
         info->tag =
@@ -1243,6 +1259,11 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         if (!info->opacity_set) {
             set_opacity(GTK_WIDGET(window), vte, *opacity, info->pseudo_transparency);
         }
+    }
+
+    if (info->size_hints) {
+        set_size_hints(GTK_WINDOW(window), (int)vte_terminal_get_char_width(vte),
+                       (int)vte_terminal_get_char_height(vte));
     }
 
     load_theme(window, vte, config, info->hints);
@@ -1344,7 +1365,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
