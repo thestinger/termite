@@ -88,7 +88,8 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, pseudo_transparency;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, pseudo_transparency,
+             set_size_hints;
     int tag;
     char *config_file;
 };
@@ -1175,6 +1176,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->pseudo_transparency = cfg_bool("pseudo_transparency", FALSE);
+    info->set_size_hints = cfg_bool("set_size_hints", FALSE);
 
     if (info->clickable_url) {
         info->tag =
@@ -1243,6 +1245,24 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         if (!info->opacity_set) {
             set_opacity(GTK_WIDGET(window), vte, *opacity, info->pseudo_transparency);
         }
+    }
+
+    if (info->set_size_hints) {
+        long char_width = vte_terminal_get_char_width(vte);
+        long char_height = vte_terminal_get_char_height(vte);
+
+        GdkGeometry hints;
+        hints.base_width  = (int) char_width;
+        hints.base_height = (int) char_height;
+        hints.min_width   = (int) char_width;
+        hints.min_height  = (int) char_height;
+        hints.width_inc   = (int) char_width;
+        hints.height_inc  = (int) char_height;
+
+        gtk_window_set_geometry_hints(GTK_WINDOW(window), NULL, &hints,
+                                      (GdkWindowHints) (GDK_HINT_RESIZE_INC |
+                                                        GDK_HINT_MIN_SIZE |
+                                                        GDK_HINT_BASE_SIZE));
     }
 
     load_theme(window, vte, config, info->hints);
@@ -1344,7 +1364,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
