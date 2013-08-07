@@ -70,7 +70,6 @@ struct url_data {
 };
 
 struct search_panel_info {
-    VteTerminal *vte;
     GtkWidget *entry;
     GtkWidget *panel;
     GtkWidget *da;
@@ -94,12 +93,15 @@ struct config_info {
 };
 
 struct keybind_info {
+    GtkWindow *window;
+    VteTerminal *vte;
     search_panel_info panel;
     select_info select;
     config_info config;
 };
 
 struct draw_cb_info {
+    VteTerminal *vte;
     search_panel_info *panel;
     hint_info *hints;
 };
@@ -116,7 +118,7 @@ static gboolean focus_cb(GtkWindow *window);
 
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
-static void overlay_show(search_panel_info *info, overlay_mode mode, bool complete);
+static void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte);
 static void get_vte_padding(VteTerminal *vte, int *w, int *h);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
@@ -277,10 +279,10 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
     if (!info->panel->url_list.empty()) {
         char buffer[std::numeric_limits<unsigned>::digits10 + 1];
 
-        const long cw = vte_terminal_get_char_width(info->panel->vte);
-        const long ch = vte_terminal_get_char_height(info->panel->vte);
+        const long cw = vte_terminal_get_char_width(info->vte);
+        const long ch = vte_terminal_get_char_height(info->vte);
         const PangoFontDescription *desc = info->hints->font ?
-            info->hints->font : vte_terminal_get_font(info->panel->vte);
+            info->hints->font : vte_terminal_get_font(info->vte);
         size_t len = info->panel->fulltext == nullptr ?
             0 : strlen(info->panel->fulltext);
 
@@ -619,7 +621,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         if (modifiers == GDK_CONTROL_MASK) {
             switch (gdk_keyval_to_lower(event->keyval)) {
                 case GDK_KEY_bracketleft:
-                    exit_command_mode(info->panel.vte, &info->select);
+                    exit_command_mode(vte, &info->select);
                     gtk_widget_hide(info->panel.da);
                     gtk_widget_hide(info->panel.panel);
                     info->panel.url_list.clear();
@@ -654,7 +656,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         }
         switch (event->keyval) {
             case GDK_KEY_Escape:
-                exit_command_mode(info->panel.vte, &info->select);
+                exit_command_mode(vte, &info->select);
                 gtk_widget_hide(info->panel.da);
                 gtk_widget_hide(info->panel.panel);
                 info->panel.url_list.clear();
@@ -713,10 +715,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 vte_terminal_copy_clipboard(vte);
                 break;
             case GDK_KEY_slash:
-                overlay_show(&info->panel, overlay_mode::search, true);
+                overlay_show(&info->panel, overlay_mode::search, vte);
                 break;
             case GDK_KEY_question:
-                overlay_show(&info->panel, overlay_mode::rsearch, true);
+                overlay_show(&info->panel, overlay_mode::rsearch, vte);
                 break;
             case GDK_KEY_n:
                 vte_terminal_search_find_next(vte);
@@ -742,7 +744,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_x:
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
-                overlay_show(&info->panel, overlay_mode::urlselect, false);
+                overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 break;
             case GDK_KEY_plus:
                 update_font_size(vte, 1);
@@ -765,7 +767,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 enter_command_mode(vte, &info->select);
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
-                overlay_show(&info->panel, overlay_mode::urlselect, false);
+                overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 exit_command_mode(vte, &info->select);
                 return TRUE;
             case GDK_KEY_c:
@@ -780,7 +782,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        overlay_show(&info->panel, overlay_mode::completion, true);
+        overlay_show(&info->panel, overlay_mode::completion, vte);
         return TRUE;
     }
     return FALSE;
@@ -858,13 +860,13 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
 
             switch (info->panel.mode) {
                 case overlay_mode::search:
-                    search(info->panel.vte, text, false);
+                    search(info->vte, text, false);
                     break;
                 case overlay_mode::rsearch:
-                    search(info->panel.vte, text, true);
+                    search(info->vte, text, true);
                     break;
                 case overlay_mode::completion:
-                    vte_terminal_feed_child(info->panel.vte, text, -1);
+                    vte_terminal_feed_child(info->vte, text, -1);
                     break;
                 case overlay_mode::urlselect:
                     launch_url(info->config.browser, text, &info->panel);
@@ -885,7 +887,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
         }
         info->panel.mode = overlay_mode::hidden;
         gtk_widget_hide(info->panel.panel);
-        gtk_widget_grab_focus(GTK_WIDGET(info->panel.vte));
+        gtk_widget_grab_focus(GTK_WIDGET(info->vte));
     }
     return ret;
 }
@@ -979,13 +981,13 @@ void search(VteTerminal *vte, const char *pattern, bool reverse) {
     vte_terminal_copy_primary(vte);
 }
 
-void overlay_show(search_panel_info *info, overlay_mode mode, bool complete) {
-    if (complete) {
+void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte) {
+    if (vte) {
         GtkEntryCompletion *completion = gtk_entry_completion_new();
         gtk_entry_set_completion(GTK_ENTRY(info->entry), completion);
         g_object_unref(completion);
 
-        GtkTreeModel *completion_model = create_completion_model(info->vte);
+        GtkTreeModel *completion_model = create_completion_model(vte);
         gtk_entry_completion_set_model(completion, completion_model);
         g_object_unref(completion_model);
 
@@ -1356,8 +1358,8 @@ int main(int argc, char **argv) {
     }
 
     keybind_info info {
-        {vte,
-         gtk_entry_new(),
+        GTK_WINDOW(window), vte,
+        {gtk_entry_new(),
          gtk_alignment_new(0, 0, 1, 1),
          gtk_drawing_area_new(),
          overlay_mode::hidden,
@@ -1402,7 +1404,7 @@ int main(int argc, char **argv) {
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
     g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
-    draw_cb_info draw_cb_info{&info.panel, &info.config.hints};
+    draw_cb_info draw_cb_info{vte, &info.panel, &info.config.hints};
     g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &draw_cb_info);
 
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
