@@ -1107,6 +1107,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
     if (auto color = get_config_color(config, "colors", "foreground")) {
         vte_terminal_set_color_foreground(vte, &*color);
+        vte_terminal_set_color_bold(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "foreground_bold")) {
         vte_terminal_set_color_bold(vte, &*color);
