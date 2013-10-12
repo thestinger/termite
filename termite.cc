@@ -1046,10 +1046,10 @@ auto get_config_string(std::bind(get_config<char *>, g_key_file_get_string,
 auto get_config_double(std::bind(get_config<double>, g_key_file_get_double,
                                  _1, _2, _3));
 
-static maybe<GdkColor> get_config_color(GKeyFile *config, const char *section, const char *key) {
+static maybe<GdkRGBA> get_config_color(GKeyFile *config, const char *section, const char *key) {
     if (auto s = get_config_string(config, section, key)) {
-        GdkColor color;
-        if (gdk_color_parse(*s, &color)) {
+        GdkRGBA color;
+        if (gdk_rgba_parse(&color, *s)) {
             g_free(*s);
             return color;
         }
@@ -1070,7 +1070,7 @@ get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
 }
 
 static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hint_info &hints) {
-    std::array<GdkColor, 255> palette;
+    std::array<GdkRGBA, 255> palette;
     char color_key[] = "color000";
 
     for (unsigned i = 0; i < palette.size(); i++) {
@@ -1078,49 +1078,44 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
         if (auto color = get_config_color(config, "colors", color_key)) {
             palette[i] = *color;
         } else if (i < 16) {
-            palette[i].blue = (i & 4) ? 0xc000 : 0;
-            palette[i].green = (i & 2) ? 0xc000 : 0;
-            palette[i].red = (i & 1) ? 0xc000 : 0;
-            if (i > 7) {
-                palette[i].blue = (guint16)(palette[i].blue + 0x3fff);
-                palette[i].green = (guint16)(palette[i].green + 0x3fff);
-                palette[i].red = (guint16)(palette[i].red + 0x3fff);
-            }
+            palette[i].blue = (((i & 4) ? 0xc000 : 0) + (i > 7 ? 0x3fff: 0)) / 65535.0;
+            palette[i].green = (((i & 2) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
+            palette[i].red = (((i & 1) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
         } else if (i < 232) {
             const unsigned j = i - 16;
             const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
             const unsigned red =   (r == 0) ? 0 : r * 40 + 55;
             const unsigned green = (g == 0) ? 0 : g * 40 + 55;
             const unsigned blue =  (b == 0) ? 0 : b * 40 + 55;
-            palette[i].red   = (guint16)(red | red << 8);
-            palette[i].green = (guint16)(green | green << 8);
-            palette[i].blue  = (guint16)(blue | blue << 8);
+            palette[i].red   = (red | red << 8) / 65535.0;
+            palette[i].green = (green | green << 8) / 65535.0;
+            palette[i].blue  = (blue | blue << 8) / 65535.0;
         } else if (i < 256) {
             const unsigned shade = 8 + (i - 232) * 10;
-            palette[i].red = palette[i].green = palette[i].blue = (guint16)(shade | shade << 8);
+            palette[i].red = palette[i].green = palette[i].blue = (shade | shade << 8) / 65535.0;
         }
     }
 
-    vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
+    vte_terminal_set_colors_rgba(vte, nullptr, nullptr, palette.data(), palette.size());
     if (auto color = get_config_color(config, "colors", "foreground")) {
-        vte_terminal_set_color_foreground(vte, &*color);
-        vte_terminal_set_color_bold(vte, &*color);
+        vte_terminal_set_color_foreground_rgba(vte, &*color);
+        vte_terminal_set_color_bold_rgba(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "foreground_bold")) {
-        vte_terminal_set_color_bold(vte, &*color);
+        vte_terminal_set_color_bold_rgba(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "foreground_dim")) {
-        vte_terminal_set_color_dim(vte, &*color);
+        vte_terminal_set_color_dim_rgba(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "background")) {
-        vte_terminal_set_color_background(vte, &*color);
-        gtk_widget_modify_bg((GtkWidget *)window, GTK_STATE_NORMAL, &*color);
+        vte_terminal_set_color_background_rgba(vte, &*color);
+        gtk_widget_override_background_color(GTK_WIDGET(window), GTK_STATE_FLAG_NORMAL, &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
-        vte_terminal_set_color_cursor(vte, &*color);
+        vte_terminal_set_color_cursor_rgba(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "highlight")) {
-        vte_terminal_set_color_highlight(vte, &*color);
+        vte_terminal_set_color_highlight_rgba(vte, &*color);
     }
 
     if (auto s = get_config_string(config, "hints", "font")) {
