@@ -87,7 +87,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, pseudo_transparency, size_hints;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, size_hints;
     int tag;
     char *config_file;
 };
@@ -107,7 +107,7 @@ struct draw_cb_info {
 };
 
 static void launch_browser(char *browser, char *url);
-static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity, gboolean pseudo);
+static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
@@ -132,10 +132,7 @@ void launch_browser(char *browser, char *url) {
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
 }
 
-static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity, gboolean psuedo) {
-    vte_terminal_set_background_saturation(vte, opacity);
-    vte_terminal_set_background_transparent(vte, psuedo);
-
+static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity) {
     GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
     GdkVisual *visual;
 
@@ -1117,7 +1114,6 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     }
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
-        vte_terminal_set_background_tint_color(vte, &*color);
         gtk_widget_modify_bg((GtkWidget *)window, GTK_STATE_NORMAL, &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
@@ -1197,7 +1193,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->dynamic_title = cfg_bool("dynamic_title", TRUE);
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
-    info->pseudo_transparency = cfg_bool("pseudo_transparency", FALSE);
     info->size_hints = cfg_bool("size_hints", FALSE);
 
     if (info->clickable_url) {
@@ -1265,7 +1260,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
     if (auto opacity = get_config_double(config, "options", "transparency")) {
         if (!info->opacity_set) {
-            set_opacity(GTK_WIDGET(window), vte, *opacity, info->pseudo_transparency);
+            set_opacity(GTK_WIDGET(window), vte, *opacity);
         }
     }
 
@@ -1373,7 +1368,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
@@ -1437,7 +1432,7 @@ int main(int argc, char **argv) {
 
     if (trans > 0.0) {
         info.config.opacity_set = true;
-        set_opacity(GTK_WIDGET(window), vte, trans, info.config.pseudo_transparency);
+        set_opacity(GTK_WIDGET(window), vte, trans);
     }
 
     gtk_widget_grab_focus(vte_widget);
