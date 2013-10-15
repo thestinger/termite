@@ -1062,9 +1062,10 @@ static maybe<GdkRGBA> get_config_color(GKeyFile *config, const char *section, co
 static maybe<cairo_pattern_t *>
 get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
     if (auto color = get_config_color(config, group, key)) {
-        return cairo_pattern_create_rgb(color->red   / 65535.0,
-                                        color->green / 65535.0,
-                                        color->blue  / 65535.0);
+        return cairo_pattern_create_rgba(color->red,
+                                         color->green,
+                                         color->blue,
+                                         color->alpha);
     }
     return {};
 }
