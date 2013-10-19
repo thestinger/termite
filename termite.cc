@@ -87,7 +87,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, opacity_set, size_hints;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
     int tag;
     char *config_file;
 };
@@ -107,7 +107,6 @@ struct draw_cb_info {
 };
 
 static void launch_browser(char *browser, char *url);
-static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info);
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
@@ -132,26 +131,7 @@ void launch_browser(char *browser, char *url) {
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
 }
 
-static void set_opacity(GtkWidget *window, VteTerminal *vte, double opacity) {
-    GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
-    GdkVisual *visual;
-
-    if (opacity > 0.0 && (visual = gdk_screen_get_rgba_visual(screen))) {
-        vte_terminal_set_opacity(vte, (guint16)(0xffff * (1 - opacity)));
-    } else {
-        visual = gdk_screen_get_system_visual(screen);
-        vte_terminal_set_opacity(vte, G_MAXUINT16);
-    }
-    if (visual != gtk_widget_get_visual(GTK_WIDGET(window))) {
-        gtk_widget_set_visual(GTK_WIDGET(window), visual);
-
-        // TODO; need to make dynamic changes to the visual work
-        // the obvious way is simply to hide the window and the restore shown widgets
-    }
-}
-
-static void set_size_hints(GtkWindow *window, int char_width, int char_height)
-{
+static void set_size_hints(GtkWindow *window, int char_width, int char_height) {
     static const GdkWindowHints wh = (GdkWindowHints)(GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
     GdkGeometry hints;
 
@@ -1254,12 +1234,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         g_free(*s);
     }
 
-    if (auto opacity = get_config_double(config, "options", "transparency")) {
-        if (!info->opacity_set) {
-            set_opacity(GTK_WIDGET(window), vte, *opacity);
-        }
-    }
-
     if (info->size_hints) {
         set_size_hints(GTK_WINDOW(window), (int)vte_terminal_get_char_width(vte),
                        (int)vte_terminal_get_char_height(vte));
@@ -1283,14 +1257,12 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr;
-    double trans = 0.0;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
-        {"transparency", 'x', 0, G_OPTION_ARG_DOUBLE, &trans, "Initial transparency", "OPACITY"},
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
@@ -1364,7 +1336,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file}
+         nullptr, FALSE, FALSE, FALSE, FALSE, -1, config_file}
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
@@ -1424,11 +1396,6 @@ int main(int argc, char **argv) {
             g_printerr("Invalid geometry string: %s\n", geometry);
         }
         g_free(geometry);
-    }
-
-    if (trans > 0.0) {
-        info.config.opacity_set = true;
-        set_opacity(GTK_WIDGET(window), vte, trans);
     }
 
     gtk_widget_grab_focus(vte_widget);
