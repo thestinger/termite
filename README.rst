@@ -3,7 +3,7 @@ with tiling and/or tabbing support.
 
 Termite looks for the configuration file in the following order:
 ``$XDG_CONFIG_HOME/termite/config``, ``~/.config/termite/config``,
-``$XDG_CONFIG_DIRS/termite/config``, ``/etc/xdg/termite.cfg``.
+``$XDG_CONFIG_DIRS/termite/config``, ``/etc/xdg/termite/config``.
 
 Termite's exit status is 1 on a failure, including a termination of the child
 process from an uncaught signal. Otherwise the exit status is that of the child
