@@ -126,6 +126,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, GKeyFile *config);
 static long first_row(VteTerminal *vte);
 
+static std::function<void ()> reload_config;
+
 void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
@@ -759,8 +761,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 vte_terminal_paste_clipboard(vte);
                 return TRUE;
             case GDK_KEY_r:
-                load_config(GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(vte))),
-                            vte, &info->config, nullptr);
+                reload_config();
                 return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
@@ -1340,6 +1341,11 @@ int main(int argc, char **argv) {
     };
 
     load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry);
+
+    reload_config = [&]{
+        load_config(GTK_WINDOW(window), vte, &info.config, nullptr);
+    };
+    signal(SIGUSR1, [](int){ reload_config(); });
 
     vte_terminal_set_pty_object(vte, pty);
     vte_pty_set_term(pty, term);
