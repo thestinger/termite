@@ -1249,6 +1249,11 @@ static void exit_with_status(VteTerminal *vte) {
     exit(WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE);
 }
 
+static void exit_with_success(VteTerminal *vte) {
+    gtk_main_quit();
+    exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char **argv) {
     GError *error = nullptr;
     const char *const term = "xterm-termite";
@@ -1373,7 +1378,7 @@ int main(int argc, char **argv) {
     if (!hold) {
         g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), nullptr);
     }
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), nullptr);
+    g_signal_connect(window, "destroy", G_CALLBACK(exit_with_success), nullptr);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
