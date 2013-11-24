@@ -1187,12 +1187,16 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     g_free(info->browser);
+    info->browser = nullptr;
+
     if (auto s = get_config_string(config, "options", "browser")) {
         info->browser = *s;
     } else {
         info->browser = g_strdup(g_getenv("BROWSER"));
-        if (!info->browser) info->clickable_url = false;
     }
+
+    if (!info->browser)
+        info->clickable_url = false;
 
     if (auto s = get_config_string(config, "options", "font")) {
         vte_terminal_set_font_from_string(vte, *s);
