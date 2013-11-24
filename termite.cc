@@ -1172,6 +1172,20 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->size_hints = cfg_bool("size_hints", FALSE);
 
+    g_free(info->browser);
+    info->browser = nullptr;
+
+    if (auto s = get_config_string(config, "options", "browser")) {
+        info->browser = *s;
+    } else {
+        info->browser = g_strdup(g_getenv("BROWSER"));
+    }
+
+    if (!info->browser) {
+        g_warning("There is no browser configured, disabling clickable_url and url hints");
+        info->clickable_url = false;
+    }
+
     if (info->clickable_url) {
         info->tag =
             vte_terminal_match_add_gregex(vte,
@@ -1185,18 +1199,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         vte_terminal_match_remove(vte, info->tag);
         info->tag = -1;
     }
-
-    g_free(info->browser);
-    info->browser = nullptr;
-
-    if (auto s = get_config_string(config, "options", "browser")) {
-        info->browser = *s;
-    } else {
-        info->browser = g_strdup(g_getenv("BROWSER"));
-    }
-
-    if (!info->browser)
-        info->clickable_url = false;
 
     if (auto s = get_config_string(config, "options", "font")) {
         vte_terminal_set_font_from_string(vte, *s);
