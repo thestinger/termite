@@ -726,7 +726,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 exit_command_mode(vte, &info->select);
                 break;
             case GDK_KEY_x:
-                if (!info->config.clickable_url)
+                if (!info->config.browser)
                     break;
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
