@@ -791,8 +791,16 @@ static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
 }
 
 gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info) {
+    const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean ret = FALSE;
 
+    if (modifiers == GDK_CONTROL_MASK) {
+        switch (event->keyval) {
+            case GDK_KEY_bracketleft:
+                ret = TRUE;
+                break;
+        }
+    }
     switch (event->keyval) {
         case GDK_KEY_BackSpace:
         case GDK_KEY_0:
