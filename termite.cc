@@ -1265,7 +1265,7 @@ static void exit_with_status(VteTerminal *vte) {
     exit(WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE);
 }
 
-static void exit_with_success(VteTerminal *vte) {
+static void exit_with_success(VteTerminal *) {
     gtk_main_quit();
     exit(EXIT_SUCCESS);
 }
