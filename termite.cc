@@ -27,6 +27,7 @@
 #include <set>
 #include <string>
 
+#include <termios.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
@@ -127,6 +128,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, GKeyFile *config);
 static long first_row(VteTerminal *vte);
+static void reset_vte(VteTerminal *vte);
 
 static std::function<void ()> reload_config;
 
@@ -356,6 +358,45 @@ static void toggle_visual(VteTerminal *vte, select_info *select, vi_mode mode) {
 static long first_row(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     return (long)gtk_adjustment_get_lower(adjust);
+}
+
+static void reset_vte(VteTerminal *vte) {
+    #define DISABLED(val)   ((int)(val) <= 0)
+    #define CHK(val, dft)   (DISABLED(val) ? dft : val)
+
+    struct termios mode;
+    VtePty *pty = vte_terminal_get_pty_object(vte);
+    int fd = vte_pty_get_fd(pty);
+
+    if (tcgetattr(fd, &mode) < 0)
+        g_warning("Failed to get VTE's terminal attributes");
+
+    mode.c_cc[VDISCARD] = CHK(mode.c_cc[VDISCARD], CDISCARD);
+    mode.c_cc[VEOF] = CHK(mode.c_cc[VEOF], CEOF);
+    mode.c_cc[VERASE] = CHK(mode.c_cc[VERASE], CERASE);
+    mode.c_cc[VINTR] = CHK(mode.c_cc[VINTR], CINTR);
+    mode.c_cc[VKILL] = CHK(mode.c_cc[VKILL], CKILL);
+    mode.c_cc[VLNEXT] = CHK(mode.c_cc[VLNEXT], CLNEXT);
+    mode.c_cc[VQUIT] = CHK(mode.c_cc[VQUIT], CQUIT);
+    mode.c_cc[VREPRINT] = CHK(mode.c_cc[VREPRINT], CRPRNT);
+    mode.c_cc[VSTART] = CHK(mode.c_cc[VSTART], CSTART);
+    mode.c_cc[VSTOP] = CHK(mode.c_cc[VSTOP], CSTOP);
+    mode.c_cc[VSUSP] = CHK(mode.c_cc[VSUSP], CSUSP);
+    mode.c_cc[VWERASE] = CHK(mode.c_cc[VWERASE], CWERASE);
+
+    mode.c_iflag &= ~(IGNBRK | PARMRK | INPCK | ISTRIP | INLCR |
+                      IGNCR | IUCLC | IXANY | IXOFF);
+    mode.c_iflag |= (BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL);
+    mode.c_oflag &= ~(OLCUC | OCRNL | ONOCR | ONLRET | OFILL | OFDEL |
+                      NLDLY | CRDLY | TABDLY | BSDLY | VTDLY | FFDLY);
+    mode.c_oflag |= (OPOST | ONLCR);
+    mode.c_cflag &= ~(CSIZE | CSTOPB | PARENB | PARODD | CLOCAL);
+    mode.c_cflag |= (CS8 | CREAD);
+    mode.c_lflag &= ~(ECHONL | NOFLSH | TOSTOP | ECHOPRT | XCASE);
+    mode.c_lflag |= (ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
+
+    if (tcsetattr(fd, TCSADRAIN, &mode) < 0)
+        g_warning("Failed to set VTE's terminal attributes");
 }
 
 static long last_row(VteTerminal *vte) {
@@ -680,6 +721,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_B:
                 move_backward_blank_word(vte, &info->select);
+                break;
+            case GDK_KEY_c:
+                reset_vte(vte);
                 break;
             case GDK_KEY_w:
                 move_forward_word(vte, &info->select);
