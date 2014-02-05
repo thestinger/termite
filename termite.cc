@@ -923,6 +923,9 @@ gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_i
             launch_browser(info->browser, match);
             g_free(match);
             return TRUE;
+        } else if(event->button == 3 && event->type == GDK_BUTTON_PRESS && match) {
+            GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+            gtk_clipboard_set_text(clipboard, match, -1);
         }
     }
     return FALSE;
