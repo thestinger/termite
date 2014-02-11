@@ -12,8 +12,9 @@ process.
 DEPENDENCIES
 ============
 
-A vte version >= ``0.34``. A patch is required to expose the functions needed
-for keyboard selection.
+A vte version >= ``0.34``. A `patch
+<https://github.com/thestinger/termite/blob/master/expose_select_text.patch>`_
+is required to expose the functions needed for keyboard selection.
 
 BUILDING
 ========
