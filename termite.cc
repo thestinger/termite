@@ -917,16 +917,20 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 }
 
 gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info) {
-    if (info->clickable_url) {
+    if (info->clickable_url && event->type == GDK_BUTTON_PRESS) {
         char *match = check_match(vte, (int)event->x, (int)event->y);
-        if (event->button == 1 && event->type == GDK_BUTTON_PRESS && match) {
+        if (!match)
+            return FALSE;
+
+        if (event->button == 1) {
             launch_browser(info->browser, match);
             g_free(match);
-            return TRUE;
-        } else if(event->button == 3 && event->type == GDK_BUTTON_PRESS && match) {
+        } else if(event->button == 3) {
             GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
             gtk_clipboard_set_text(clipboard, match, -1);
         }
+
+        return TRUE;
     }
     return FALSE;
 }
