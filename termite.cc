@@ -406,7 +406,7 @@ static void open_selection(char *browser, VteTerminal *vte) {
         }
         g_free(selection);
     } else {
-        g_printerr("no browser to open url");
+        g_printerr("no browser to open url\n");
     }
 }
 
