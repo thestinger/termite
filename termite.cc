@@ -132,7 +132,19 @@ static std::function<void ()> reload_config;
 
 void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
-    g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH, nullptr, nullptr, nullptr, nullptr);
+    GError *error = nullptr;
+
+    if (!browser) {
+        g_printerr("Browser not set, can't open url\n");
+        return;
+    }
+
+    g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH,
+                  nullptr, nullptr, nullptr, &error);
+    if (error) {
+        g_printerr("Error launching %s %s\n", browser, url);
+        g_error_free(error);
+    }
 }
 
 static void set_size_hints(GtkWindow *window, int char_width, int char_height) {
