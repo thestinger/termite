@@ -135,14 +135,14 @@ void launch_browser(char *browser, char *url) {
     GError *error = nullptr;
 
     if (!browser) {
-        g_printerr("Browser not set, can't open url\n");
+        g_printerr("browser not set, can't open url\n");
         return;
     }
 
     g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH,
                   nullptr, nullptr, nullptr, &error);
     if (error) {
-        g_printerr("Error launching %s %s\n", browser, url);
+        g_printerr("error launching '%s': %s\n", browser, error->message);
         g_error_free(error);
     }
 }
@@ -164,7 +164,7 @@ static void set_size_hints(GtkWindow *window, int char_width, int char_height) {
 static void launch_in_directory(VteTerminal *vte) {
     const char *uri = vte_terminal_get_current_directory_uri(vte);
     if (!uri) {
-        g_printerr("no directory uri set");
+        g_printerr("no directory uri set\n");
         return;
     }
     auto dir = make_unique(g_filename_from_uri(uri, nullptr, nullptr), g_free);
@@ -204,7 +204,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
         g_match_info_free(info);
 
         if (error) {
-            g_printerr("Error while matching: %s\n", error->message);
+            g_printerr("error while matching: %s\n", error->message);
             g_error_free(error);
         }
     }
@@ -1365,7 +1365,7 @@ int main(int argc, char **argv) {
         char **argvp;
         g_shell_parse_argv(execute, &argcp, &argvp, &error);
         if (error) {
-            g_printerr("Failed to parse command: %s\n", error->message);
+            g_printerr("failed to parse command: %s\n", error->message);
             return EXIT_FAILURE;
         }
         command_argv = argvp;
@@ -1377,7 +1377,7 @@ int main(int argc, char **argv) {
     VtePty *pty = vte_terminal_pty_new(vte, VTE_PTY_DEFAULT, &error);
 
     if (!pty) {
-        g_printerr("Failed to create pty: %s\n", error->message);
+        g_printerr("failed to create pty: %s\n", error->message);
         return EXIT_FAILURE;
     }
 
@@ -1455,7 +1455,7 @@ int main(int argc, char **argv) {
         gtk_widget_show_all(panel_overlay);
         gtk_widget_show_all(info.panel.panel);
         if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
-            g_printerr("Invalid geometry string: %s\n", geometry);
+            g_printerr("invalid geometry string: %s\n", geometry);
         }
         g_free(geometry);
     }
@@ -1467,7 +1467,7 @@ int main(int argc, char **argv) {
 
     GdkWindow *gdk_window = gtk_widget_get_window(window);
     if (!gdk_window) {
-        g_printerr("no window");
+        g_printerr("no window\n");
         return EXIT_FAILURE;
     }
     char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
@@ -1484,7 +1484,7 @@ int main(int argc, char **argv) {
                       &ppid, &error)) {
         vte_terminal_watch_child(vte, ppid);
     } else {
-        g_printerr("The command failed to run: %s\n", error->message);
+        g_printerr("the command failed to run: %s\n", error->message);
         return EXIT_FAILURE;
     }
 
