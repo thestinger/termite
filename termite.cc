@@ -314,6 +314,7 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
     if (!info->panel->url_list.empty()) {
         char buffer[std::numeric_limits<unsigned>::digits10 + 1];
 
+        int padding_left, padding_top, padding_right, padding_bottom;
         const long cw = vte_terminal_get_char_width(info->vte);
         const long ch = vte_terminal_get_char_height(info->vte);
         const PangoFontDescription *desc = info->hints->font ?
@@ -325,10 +326,12 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
         cairo_set_source_rgb(cr, 0, 0, 0);
         cairo_stroke(cr);
 
+        get_vte_padding(info->vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
+
         for (unsigned i = 0; i < info->panel->url_list.size(); i++) {
             const url_data &data = info->panel->url_list[i];
-            const long x = data.col * cw;
-            const long y = data.row * ch;
+            const long x = data.col * cw + padding_left;
+            const long y = data.row * ch + padding_top;
             bool active = false;
 
             snprintf(buffer, sizeof(buffer), "%u", i + 1);
