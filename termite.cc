@@ -121,7 +121,7 @@ static gboolean focus_cb(GtkWindow *window);
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte);
-static void get_vte_padding(VteTerminal *vte, int *w, int *h);
+static void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom);
 static char *check_match(VteTerminal *vte, int event_x, int event_y);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry);
@@ -1079,25 +1079,30 @@ void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte) 
     gtk_widget_grab_focus(info->entry);
 }
 
-void get_vte_padding(VteTerminal *vte, int *w, int *h) {
+void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom) {
     GtkBorder *border = nullptr;
     gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, nullptr);
     if (!border) {
         g_warning("VTE's inner-border property unavailable");
-        *w = *h = 0;
+        *left = *top = *right = *bottom = 0;
     } else {
-        *w = border->left + border->right;
-        *h = border->top + border->bottom;
+        *left = border->left;
+        *right = border->right;
+        *top = border->top;
+        *bottom = border->bottom;
         gtk_border_free(border);
     }
 }
 
 char *check_match(VteTerminal *vte, int event_x, int event_y) {
-    int xpad, ypad, tag;
-    get_vte_padding(vte, &xpad, &ypad);
+    int tag, padding_left, padding_top, padding_right, padding_bottom;
+    const long char_width = vte_terminal_get_char_width(vte);
+    const long char_height = vte_terminal_get_char_height(vte);
+
+    get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
     return vte_terminal_match_check(vte,
-                                    (event_x - ypad) / vte_terminal_get_char_width(vte),
-                                    (event_y - ypad) / vte_terminal_get_char_height(vte),
+                                    (event_x - padding_left) / char_width,
+                                    (event_y - padding_top) / char_height,
                                     &tag);
 }
 
@@ -1540,14 +1545,15 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    int width, height, padding_w, padding_h;
-    long char_width = vte_terminal_get_char_width(vte);
-    long char_height = vte_terminal_get_char_height(vte);
+    int width, height, padding_left, padding_top, padding_right, padding_bottom;
+    const long char_width = vte_terminal_get_char_width(vte);
+    const long char_height = vte_terminal_get_char_height(vte);
 
     gtk_window_get_size(GTK_WINDOW(window), &width, &height);
-    get_vte_padding(vte, &padding_w, &padding_h);
-    vte_terminal_set_size(vte, (width - padding_w) / char_width,
-                          (height - padding_h) / char_height);
+    get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
+    vte_terminal_set_size(vte,
+                          (width - padding_left - padding_right) / char_width,
+                          (height - padding_top - padding_bottom) / char_height);
 
     g_strfreev(env);
 
