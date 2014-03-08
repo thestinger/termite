@@ -88,7 +88,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints, modify_other_keys;
     int tag;
     char *config_file;
 };
@@ -160,12 +160,14 @@ static const std::map<int, const char *> modify_table = {
 };
 
 static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info) {
-    unsigned int keyval = gdk_keyval_to_lower(event->keyval);
-    auto entry = modify_table.find((int)keyval);
+    if (info->config.modify_other_keys) {
+        unsigned int keyval = gdk_keyval_to_lower(event->keyval);
+        auto entry = modify_table.find((int)keyval);
 
-    if (entry != modify_table.end()) {
-        vte_terminal_feed_child(info->vte, entry->second, -1);
-        return TRUE;
+        if (entry != modify_table.end()) {
+            vte_terminal_feed_child(info->vte, entry->second, -1);
+            return TRUE;
+        }
     }
     return FALSE;
 }
@@ -1263,6 +1265,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->size_hints = cfg_bool("size_hints", FALSE);
+    info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
 
     g_free(info->browser);
     info->browser = nullptr;
@@ -1440,7 +1443,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file},
         gtk_window_fullscreen
     };
 
