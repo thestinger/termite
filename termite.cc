@@ -990,12 +990,12 @@ gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_i
 
         if (event->button == 1) {
             launch_browser(info->browser, match);
-            g_free(match);
         } else if(event->button == 3) {
             GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
             gtk_clipboard_set_text(clipboard, match, -1);
         }
 
+        g_free(match);
         return TRUE;
     }
     return FALSE;
