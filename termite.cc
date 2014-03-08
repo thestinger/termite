@@ -219,9 +219,9 @@ static void launch_in_directory(VteTerminal *vte) {
 static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, nullptr);
     GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
-    char *content = vte_terminal_get_text(vte, nullptr, nullptr, attributes);
+    auto content = make_unique(vte_terminal_get_text(vte, nullptr, nullptr, attributes), g_free);
 
-    for (char *s_ptr = content, *saveptr; ; s_ptr = nullptr) {
+    for (char *s_ptr = content.get(), *saveptr; ; s_ptr = nullptr) {
         const char *token = strtok_r(s_ptr, "\n", &saveptr);
         if (!token) {
             break;
@@ -236,7 +236,7 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             g_match_info_fetch_pos(info, 0, &pos, nullptr);
 
             const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
-            const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content);
+            const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content.get());
 
             panel_info->url_list.emplace_back(g_match_info_fetch(info, 0),
                                               attr.column,
@@ -251,7 +251,6 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             g_error_free(error);
         }
     }
-    g_free(content);
     g_regex_unref(regex);
     g_array_free(attributes, TRUE);
 }
@@ -458,11 +457,9 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 static void open_selection(char *browser, VteTerminal *vte) {
     if (browser) {
         AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
-        char *selection = atk_text_get_selection(text, 0, nullptr, nullptr);
-        if (selection && selection[0]) {
-            launch_browser(browser, selection);
-        }
-        g_free(selection);
+        auto selection = make_unique(atk_text_get_selection(text, 0, nullptr, nullptr), g_free);
+        if (selection && *selection)
+            launch_browser(browser, selection.get());
     } else {
         g_printerr("no browser to open url\n");
     }
@@ -985,18 +982,17 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 
 gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info) {
     if (info->clickable_url && event->type == GDK_BUTTON_PRESS) {
-        char *match = check_match(vte, (int)event->x, (int)event->y);
+        auto match = make_unique(check_match(vte, (int)event->x, (int)event->y), g_free);
         if (!match)
             return FALSE;
 
         if (event->button == 1) {
-            launch_browser(info->browser, match);
+            launch_browser(info->browser, match.get());
         } else if(event->button == 3) {
             GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-            gtk_clipboard_set_text(clipboard, match, -1);
+            gtk_clipboard_set_text(clipboard, match.get(), -1);
         }
 
-        g_free(match);
         return TRUE;
     }
     return FALSE;
