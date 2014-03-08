@@ -22,6 +22,7 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <vector>
 #include <set>
@@ -87,7 +88,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints, modify_other_keys;
     int tag;
     char *config_file;
 };
@@ -129,6 +130,47 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 static long first_row(VteTerminal *vte);
 
 static std::function<void ()> reload_config;
+
+static const std::map<int, const char *> modify_table = {
+    { GDK_KEY_Tab,        "\033[27;5;9~"  },
+    { GDK_KEY_Return,     "\033[27;5;13~" },
+    { GDK_KEY_apostrophe, "\033[27;5;39~" },
+    { GDK_KEY_comma,      "\033[27;5;44~" },
+    { GDK_KEY_minus,      "\033[27;5;45~" },
+    { GDK_KEY_period,     "\033[27;5;46~" },
+    { GDK_KEY_0,          "\033[27;5;48~" },
+    { GDK_KEY_1,          "\033[27;5;49~" },
+    { GDK_KEY_9,          "\033[27;5;57~" },
+    { GDK_KEY_semicolon,  "\033[27;5;59~" },
+    { GDK_KEY_equal,      "\033[27;5;61~" },
+    { GDK_KEY_exclam,     "\033[27;6;33~" },
+    { GDK_KEY_quotedbl,   "\033[27;6;34~" },
+    { GDK_KEY_numbersign, "\033[27;6;35~" },
+    { GDK_KEY_dollar,     "\033[27;6;36~" },
+    { GDK_KEY_percent,    "\033[27;6;37~" },
+    { GDK_KEY_ampersand,  "\033[27;6;38~" },
+    { GDK_KEY_parenleft,  "\033[27;6;40~" },
+    { GDK_KEY_parenright, "\033[27;6;41~" },
+    { GDK_KEY_asterisk,   "\033[27;6;42~" },
+    { GDK_KEY_plus,       "\033[27;6;43~" },
+    { GDK_KEY_colon,      "\033[27;6;58~" },
+    { GDK_KEY_less,       "\033[27;6;60~" },
+    { GDK_KEY_greater,    "\033[27;6;62~" },
+    { GDK_KEY_question,   "\033[27;6;63~" },
+};
+
+static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info) {
+    if (info->config.modify_other_keys) {
+        unsigned int keyval = gdk_keyval_to_lower(event->keyval);
+        auto entry = modify_table.find((int)keyval);
+
+        if (entry != modify_table.end()) {
+            vte_terminal_feed_child(info->vte, entry->second, -1);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
 
 void launch_browser(char *browser, char *url) {
     char *browser_cmd[3] = {browser, url, nullptr};
@@ -791,10 +833,19 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_r:
                 reload_config();
                 return TRUE;
+            default:
+                if (modify_key_feed(event, info))
+                    return TRUE;
         }
-    } else if (modifiers == GDK_CONTROL_MASK && event->keyval == GDK_KEY_Tab) {
-        overlay_show(&info->panel, overlay_mode::completion, vte);
-        return TRUE;
+    } else if (modifiers == GDK_CONTROL_MASK) {
+        switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_Tab:
+                overlay_show(&info->panel, overlay_mode::completion, vte);
+                return TRUE;
+            default:
+                if (modify_key_feed(event, info))
+                    return TRUE;
+        }
     }
     return FALSE;
 }
@@ -1214,6 +1265,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->size_hints = cfg_bool("size_hints", FALSE);
+    info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
 
     g_free(info->browser);
     info->browser = nullptr;
@@ -1391,7 +1443,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file},
         gtk_window_fullscreen
     };
 
