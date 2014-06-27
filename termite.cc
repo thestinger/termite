@@ -89,6 +89,7 @@ struct config_info {
     hint_info hints;
     char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints, modify_other_keys;
+    gboolean fullscreen;
     int tag;
     char *config_file;
 };
@@ -669,7 +670,7 @@ gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
 
-    if (event->keyval == GDK_KEY_F11)
+    if (info->config.fullscreen && event->keyval == GDK_KEY_F11)
         info->fullscreen_toggle(info->window);
 
     if (info->select.mode != vi_mode::insert) {
@@ -1274,6 +1275,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->size_hints = cfg_bool("size_hints", FALSE);
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
+    info->fullscreen = cfg_bool("fullscreen", TRUE);
 
     g_free(info->browser);
     info->browser = nullptr;
@@ -1451,7 +1453,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file},
         gtk_window_fullscreen
     };
 
@@ -1489,7 +1491,6 @@ int main(int argc, char **argv) {
         g_signal_connect(vte, "child-exited", G_CALLBACK(exit_with_status), nullptr);
     }
     g_signal_connect(window, "destroy", G_CALLBACK(exit_with_success), nullptr);
-    g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb), &info);
     g_signal_connect(vte, "key-press-event", G_CALLBACK(key_press_cb), &info);
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
@@ -1500,6 +1501,10 @@ int main(int argc, char **argv) {
 
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), nullptr);
+
+    if (info.config.fullscreen) {
+        g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb), &info);
+    }
 
     if (title) {
         info.config.dynamic_title = FALSE;
