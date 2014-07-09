@@ -50,7 +50,7 @@ unicode input (standard GTK binding)
 .IP "\fBctrl-tab\fP"
 start scrollback completion
 .IP "\fBctrl-shift-space\fP"
-start command mode
+enter selection mode
 .IP "\fBctrl-shift-t\fP"
 open a new terminal in the current directory
 .IP "\fBctrl-shift-up\fP"
@@ -61,14 +61,14 @@ scroll down a line
 scroll up a page
 .IP "\fBshift-pagedown\fP"
 scroll down a page
-.SS Command Mode
-In \fBCommand Mode\fP you interact with the interface of \fBtermite\fP
+.SS Selection Mode
+In \fBSelection Mode\fP you interact with the interface of \fBtermite\fP
 and the visual representation of the programs running within it. You can
 search, mark and copy contents from the display for use in other
 programs.
 .PP
 .IP "\fBescape\fP or \fBctrl-[\fP"
-deactivate command mode
+enter insert mode
 .IP "\fBx\fP"
 activate url hints mode
 .IP "\fBv\fP"
@@ -114,7 +114,7 @@ reverse url search
 .IP "\fBo\fP"
 open the current selection as a url
 .IP "\fBReturn\fP"
-open the current selection as a url and exit command mode
+open the current selection as a url and enter insert mode
 .IP "\fBn\fP"
 next search match
 .IP "\fBN\fP"
