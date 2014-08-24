@@ -1,0 +1,56 @@
+.TH termite.config 5 "2014-08-24" "termite.config" "Termite Config"
+.SH NAME
+termite.conf \- Termite configuration file
+.SH SYNOPSIS
+\fI$XDG_CONFIG_HOME/termite/config\fR
+.SH DESCRIPTION
+The configuration file format for the \fBtermite\fR
+.SH OPTIONS
+.PP
+.IP \fIallow_bold\fR
+Allow the output of bold characters when the bold escape sequence
+appears
+.IP \fIaudible_bell\fR
+Have the terminal beep on the terminal bell.
+.IP \fIbrowser\fR
+Set the default browser for opening links. If its not set,
+\fI$BROWSER\fR is read. If that's not set, url hints will be disabled.
+.IP \fIclickable_url\fR
+Auto-detected URLs can be clicked on to open them in your browser. Only
+enabled if a browser is configured or detected.
+.IP \fIcursor_blink\fR
+Specify the how the terminal's cursor should behave. Accepts
+\fBsystem\fR to respect the gtk global configuration, \fBon\fR and
+\fBoff\fR to explicitly enable or disable them.
+.IP \fIcursor_shape\fR
+Specify how the cursor should look. Accepts \fBblock\fR, \fBibeam\fR and
+\fBunderline\fR.
+.IP \fIdynamic_title\fR
+Settings dynamic title allows the terminal and the shell to update the
+terminal's title.
+.IP \fIfont\fR
+The font description for the terminal's font.
+.IP \fIgeometry\fR
+The default window geometry for new terminal windows.
+.IP \fIicon_name\fR
+The name of the icon to be used for the terminal process.
+.IP \fImouse_autohide\fR
+Automatically hide the mouse pointer when you start typing.
+.IP \fIresize_grip\fR
+Add a resize grip to the window
+.IP \fIscrollback_lines\fR
+Set the number of lines to limit the terminal's scrollback.
+.IP \fIscroll_on_keystroke\fR
+Scroll to the bottom automatically when a key is pressed.
+.IP \fIscroll_on_output\fR
+Scroll to the bottom when the shell generates output.
+.IP \fIsearch_wrap\fR
+Search from top again when you hit the bottom.
+.IP \fIsize_hints\fR
+Enable size hints. Locks the terminal resizing to increments of the
+terminal's cell size. Requires a window manager that respects scroll
+hints.
+.IP \fIurgent_on_bell\fR
+Sets the window as urgent on the terminal bell.
+.IP \fIvisible_bell\fR
+Have the terminal visually flash on the terminal bell.
