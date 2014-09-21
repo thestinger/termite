@@ -1366,7 +1366,6 @@ static char *get_user_shell_with_fallback() {
     return g_strdup("/bin/sh");
 }
 
-
 int main(int argc, char **argv) {
     GError *error = nullptr;
     const char *const term = "xterm-termite";
