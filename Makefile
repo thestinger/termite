@@ -1,7 +1,7 @@
 VERSION = $(shell git describe --tags)
 PREFIX = /usr/local
 GTK = gtk+-3.0
-VTE = vte-2.90
+VTE = vte-2.91
 TERMINFO = ${PREFIX}/share/terminfo
 
 CXXFLAGS := -std=c++11 -O3 \

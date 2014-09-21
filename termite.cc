@@ -31,7 +31,6 @@
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
-#include <vte/vteaccess.h>
 
 #include "url_regex.hh"
 #include "util/clamp.hh"
@@ -116,7 +115,7 @@ static gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info 
 static gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info);
 static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *alloc);
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info);
-static void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell);
+static void bell_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
 
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
@@ -218,7 +217,7 @@ static void launch_in_directory(VteTerminal *vte) {
 
 static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, nullptr);
-    GArray *attributes = g_array_new(FALSE, FALSE, sizeof (vte_char_attributes));
+    GArray *attributes = g_array_new(FALSE, FALSE, sizeof (VteCharAttributes));
     auto content = make_unique(vte_terminal_get_text(vte, nullptr, nullptr, attributes), g_free);
 
     for (char *s_ptr = content.get(), *saveptr; ; s_ptr = nullptr) {
@@ -235,8 +234,8 @@ static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
             int pos;
             g_match_info_fetch_pos(info, 0, &pos, nullptr);
 
-            const long first_row = g_array_index(attributes, vte_char_attributes, 0).row;
-            const auto attr = g_array_index(attributes, vte_char_attributes, token + pos - content.get());
+            const long first_row = g_array_index(attributes, VteCharAttributes, 0).row;
+            const auto attr = g_array_index(attributes, VteCharAttributes, token + pos - content.get());
 
             panel_info->url_list.emplace_back(g_match_info_fetch(info, 0),
                                               attr.column,
@@ -346,7 +345,7 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
 }
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
-    vte_terminal_select_none(vte);
+    vte_terminal_unselect_all(vte);
 
     if (select->mode == vi_mode::command) {
         return;
@@ -394,7 +393,7 @@ static void enter_command_mode(VteTerminal *vte, select_info *select) {
 static void exit_command_mode(VteTerminal *vte, select_info *select) {
     vte_terminal_set_cursor_position(vte, select->origin_col, select->origin_row);
     vte_terminal_connect_pty_read(vte);
-    vte_terminal_select_none(vte);
+    vte_terminal_unselect_all(vte);
     select->mode = vi_mode::insert;
 }
 
@@ -456,10 +455,10 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 
 static void open_selection(char *browser, VteTerminal *vte) {
     if (browser) {
-        AtkText *text = ATK_TEXT(vte_terminal_accessible_new(vte));
-        auto selection = make_unique(atk_text_get_selection(text, 0, nullptr, nullptr), g_free);
-        if (selection && *selection)
+        auto selection = make_unique(vte_terminal_get_selection(vte), g_free);
+        if (selection && *selection) {
             launch_browser(browser, selection.get());
+        }
     } else {
         g_printerr("no browser to open url\n");
     }
@@ -469,6 +468,13 @@ static std::unique_ptr<char, decltype(&g_free)>
 get_text_range(VteTerminal *vte, long start_row, long start_col, long end_row, long end_col) {
     return {vte_terminal_get_text_range(vte, start_row, start_col, end_row, end_col,
                                         nullptr, nullptr, nullptr), g_free};
+}
+
+static bool is_word_char(gunichar c) {
+    static const char *word_char_ascii_punct = "-,.;/?%&#:_=+@~";
+    return g_unichar_isgraph(c) &&
+           (g_unichar_isalnum(c) || (g_unichar_ispunct(c) &&
+                                     (c >= 0x80 || strchr(word_char_ascii_punct, (int)c) != NULL)));
 }
 
 template<typename F>
@@ -508,7 +514,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
 }
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
-    move_backward(vte, select, std::bind(vte_terminal_is_word_char, vte, _1));
+    move_backward(vte, select, is_word_char);
 }
 
 static void move_backward_blank_word(VteTerminal *vte, select_info *select) {
@@ -620,7 +626,7 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word) {
 }
 
 static void move_forward_word(VteTerminal *vte, select_info *select) {
-    move_forward(vte, select, std::bind(vte_terminal_is_word_char, vte, _1));
+    move_forward(vte, select, is_word_char);
 }
 
 static void move_forward_blank_word(VteTerminal *vte, select_info *select) {
@@ -998,7 +1004,7 @@ gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_i
     return FALSE;
 }
 
-void beep_cb(GtkWidget *vte, gboolean *urgent_on_bell) {
+static void bell_cb(GtkWidget *vte, gboolean *urgent_on_bell) {
     if (*urgent_on_bell) {
         gtk_window_set_urgency_hint(GTK_WINDOW(gtk_widget_get_toplevel(vte)), TRUE);
     }
@@ -1048,10 +1054,10 @@ void search(VteTerminal *vte, const char *pattern, bool reverse) {
     GRegex *regex = vte_terminal_search_get_gregex(vte);
     if (regex) g_regex_unref(regex);
     regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, nullptr);
-    vte_terminal_search_set_gregex(vte, regex);
+    vte_terminal_search_set_gregex(vte, regex, (GRegexMatchFlags)0);
 
     if (!terminal_search(vte)) {
-        vte_terminal_select_none(vte);
+        vte_terminal_unselect_all(vte);
         terminal_search(vte);
     }
 
@@ -1080,18 +1086,14 @@ void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte) 
 }
 
 void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom) {
-    GtkBorder *border = nullptr;
-    gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &border, nullptr);
-    if (!border) {
-        g_warning("VTE's inner-border property unavailable");
-        *left = *top = *right = *bottom = 0;
-    } else {
-        *left = border->left;
-        *right = border->right;
-        *top = border->top;
-        *bottom = border->bottom;
-        gtk_border_free(border);
-    }
+    GtkBorder border;
+    gtk_style_context_get_padding(gtk_widget_get_style_context(GTK_WIDGET(vte)),
+                                  gtk_widget_get_state_flags(GTK_WIDGET(vte)),
+                                  &border);
+    *left = border.left;
+    *right = border.right;
+    *top = border.top;
+    *bottom = border.bottom;
 }
 
 char *check_match(VteTerminal *vte, int event_x, int event_y) {
@@ -1177,26 +1179,23 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
         }
     }
 
-    vte_terminal_set_colors_rgba(vte, nullptr, nullptr, palette.data(), palette.size());
+    vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
     if (auto color = get_config_color(config, "colors", "foreground")) {
-        vte_terminal_set_color_foreground_rgba(vte, &*color);
-        vte_terminal_set_color_bold_rgba(vte, &*color);
+        vte_terminal_set_color_foreground(vte, &*color);
+        vte_terminal_set_color_bold(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "foreground_bold")) {
-        vte_terminal_set_color_bold_rgba(vte, &*color);
-    }
-    if (auto color = get_config_color(config, "colors", "foreground_dim")) {
-        vte_terminal_set_color_dim_rgba(vte, &*color);
+        vte_terminal_set_color_bold(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "background")) {
-        vte_terminal_set_color_background_rgba(vte, &*color);
+        vte_terminal_set_color_background(vte, &*color);
         gtk_widget_override_background_color(GTK_WIDGET(window), GTK_STATE_FLAG_NORMAL, &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
-        vte_terminal_set_color_cursor_rgba(vte, &*color);
+        vte_terminal_set_color_cursor(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "highlight")) {
-        vte_terminal_set_color_highlight_rgba(vte, &*color);
+        vte_terminal_set_color_highlight(vte, &*color);
     }
 
     if (auto s = get_config_string(config, "hints", "font")) {
@@ -1262,7 +1261,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
     vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
     vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
-    vte_terminal_set_visible_bell(vte, cfg_bool("visual_bell", FALSE));
+    //vte_terminal_set_visible_bell(vte, cfg_bool("visual_bell", FALSE));
     vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
     vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
     vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
@@ -1302,12 +1301,9 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (auto s = get_config_string(config, "options", "font")) {
-        vte_terminal_set_font_from_string(vte, *s);
-        g_free(*s);
-    }
-
-    if (auto s = get_config_string(config, "options", "word_chars")) {
-        vte_terminal_set_word_chars(vte, *s);
+        PangoFontDescription *font = pango_font_description_from_string(*s);
+        vte_terminal_set_font(vte, font);
+        pango_font_description_free(font);
         g_free(*s);
     }
 
@@ -1350,8 +1346,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     load_theme(window, vte, config, info->hints);
 }/*}}}*/
 
-static void exit_with_status(VteTerminal *vte) {
-    int status = vte_terminal_get_child_exit_status(vte);
+static void exit_with_status(VteTerminal *, int status) {
     gtk_main_quit();
     exit(WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE);
 }
@@ -1360,6 +1355,17 @@ static void exit_with_success(VteTerminal *) {
     gtk_main_quit();
     exit(EXIT_SUCCESS);
 }
+
+static char *get_user_shell_with_fallback() {
+    if (char *command = vte_get_user_shell())
+        return command;
+
+    if (const char *env = g_getenv("SHELL"))
+        return g_strdup(env);
+
+    return g_strdup("/bin/sh");
+}
+
 
 int main(int argc, char **argv) {
     GError *error = nullptr;
@@ -1428,11 +1434,11 @@ int main(int argc, char **argv) {
         }
         command_argv = argvp;
     } else {
-        default_argv[0] = vte_terminal_get_user_shell_with_fallback();
+        default_argv[0] = get_user_shell_with_fallback();
         command_argv = default_argv;
     }
 
-    VtePty *pty = vte_terminal_pty_new(vte, VTE_PTY_DEFAULT, &error);
+    VtePty *pty = vte_terminal_pty_new_sync(vte, VTE_PTY_DEFAULT, NULL, &error);
 
     if (!pty) {
         g_printerr("failed to create pty: %s\n", error->message);
@@ -1460,8 +1466,7 @@ int main(int argc, char **argv) {
     };
     signal(SIGUSR1, [](int){ reload_config(); });
 
-    vte_terminal_set_pty_object(vte, pty);
-    vte_pty_set_term(pty, term);
+    vte_terminal_set_pty(vte, pty);
 
     GdkRGBA transparent {0, 0, 0, 0};
 
@@ -1491,7 +1496,7 @@ int main(int argc, char **argv) {
     g_signal_connect(info.panel.entry, "key-press-event", G_CALLBACK(entry_key_press_cb), &info);
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
-    g_signal_connect(vte, "beep", G_CALLBACK(beep_cb), &info.config.urgent_on_bell);
+    g_signal_connect(vte, "bell", G_CALLBACK(bell_cb), &info.config.urgent_on_bell);
     draw_cb_info draw_cb_info{vte, &info.panel, &info.config.hints};
     g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &draw_cb_info);
 
