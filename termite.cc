@@ -1443,13 +1443,6 @@ int main(int argc, char **argv) {
         command_argv = default_argv;
     }
 
-    VtePty *pty = vte_terminal_pty_new_sync(vte, VTE_PTY_DEFAULT, NULL, &error);
-
-    if (!pty) {
-        g_printerr("failed to create pty: %s\n", error->message);
-        return EXIT_FAILURE;
-    }
-
     keybind_info info {
         GTK_WINDOW(window), vte,
         {gtk_entry_new(),
@@ -1470,8 +1463,6 @@ int main(int argc, char **argv) {
         load_config(GTK_WINDOW(window), vte, &info.config, nullptr);
     };
     signal(SIGUSR1, [](int){ reload_config(); });
-
-    vte_terminal_set_pty(vte, pty);
 
     GdkRGBA transparent {0, 0, 0, 0};
 
@@ -1548,12 +1539,11 @@ int main(int argc, char **argv) {
     env = g_environ_setenv(env, "TERM", term, TRUE);
     env = g_environ_setenv(env, "VTE_VERSION", "3405", TRUE);
 
-    GPid ppid;
-    if (g_spawn_async(nullptr, command_argv, env,
-                      (GSpawnFlags)(G_SPAWN_DO_NOT_REAP_CHILD | G_SPAWN_SEARCH_PATH),
-                      (GSpawnChildSetupFunc)vte_pty_child_setup, pty,
-                      &ppid, &error)) {
-        vte_terminal_watch_child(vte, ppid);
+    GPid child_pid;
+    if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, nullptr, command_argv, env,
+                                G_SPAWN_SEARCH_PATH, nullptr, nullptr, &child_pid, nullptr,
+                                &error)) {
+        vte_terminal_watch_child(vte, child_pid);
     } else {
         g_printerr("the command failed to run: %s\n", error->message);
         return EXIT_FAILURE;
