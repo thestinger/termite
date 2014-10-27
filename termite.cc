@@ -1371,6 +1371,16 @@ static char *get_user_shell_with_fallback() {
     return g_strdup("/bin/sh");
 }
 
+static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *old_screen, void *) {
+    GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+
+    if (!visual)
+        visual = gdk_screen_get_system_visual(screen);
+
+    gtk_widget_set_visual(GTK_WIDGET(window), visual);
+}
+
 int main(int argc, char **argv) {
     GError *error = nullptr;
     const char *const term = "xterm-termite";
@@ -1497,6 +1507,9 @@ int main(int argc, char **argv) {
 
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
     g_signal_connect(window, "focus-out-event", G_CALLBACK(focus_cb), nullptr);
+
+    on_alpha_screen_changed(GTK_WINDOW(window), nullptr, nullptr);
+    g_signal_connect(window, "screen-changed", G_CALLBACK(on_alpha_screen_changed), nullptr);
 
     if (info.config.fullscreen) {
         g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb), &info);
