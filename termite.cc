@@ -1370,7 +1370,7 @@ static char *get_user_shell_with_fallback() {
     return g_strdup("/bin/sh");
 }
 
-static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *old_screen, void *) {
+static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *, void *) {
     GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
 
