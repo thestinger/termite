@@ -1263,7 +1263,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                                     config, "options", key).get_value_or(value);
     };
 
-    gtk_window_set_has_resize_grip(window, cfg_bool("resize_grip", FALSE));
     vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
     vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
     vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
