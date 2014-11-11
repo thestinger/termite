@@ -39,6 +39,34 @@
 
 using namespace std::placeholders;
 
+/* Allow scales a bit smaller and a bit larger than the usual pango ranges */
+#define TERMINAL_SCALE_XXX_SMALL   (PANGO_SCALE_XX_SMALL/1.2)
+#define TERMINAL_SCALE_XXXX_SMALL  (TERMINAL_SCALE_XXX_SMALL/1.2)
+#define TERMINAL_SCALE_XXXXX_SMALL (TERMINAL_SCALE_XXXX_SMALL/1.2)
+#define TERMINAL_SCALE_XXX_LARGE   (PANGO_SCALE_XX_LARGE*1.2)
+#define TERMINAL_SCALE_XXXX_LARGE  (TERMINAL_SCALE_XXX_LARGE*1.2)
+#define TERMINAL_SCALE_XXXXX_LARGE (TERMINAL_SCALE_XXXX_LARGE*1.2)
+#define TERMINAL_SCALE_MINIMUM     (TERMINAL_SCALE_XXXXX_SMALL/1.2)
+#define TERMINAL_SCALE_MAXIMUM     (TERMINAL_SCALE_XXXXX_LARGE*1.2)
+
+static const std::vector<double> zoom_factors = {
+    TERMINAL_SCALE_MINIMUM,
+    TERMINAL_SCALE_XXXXX_SMALL,
+    TERMINAL_SCALE_XXXX_SMALL,
+    TERMINAL_SCALE_XXX_SMALL,
+    PANGO_SCALE_XX_SMALL,
+    PANGO_SCALE_X_SMALL,
+    PANGO_SCALE_SMALL,
+    PANGO_SCALE_MEDIUM,
+    PANGO_SCALE_LARGE,
+    PANGO_SCALE_X_LARGE,
+    PANGO_SCALE_XX_LARGE,
+    TERMINAL_SCALE_XXX_LARGE,
+    TERMINAL_SCALE_XXXX_LARGE,
+    TERMINAL_SCALE_XXXXX_LARGE,
+    TERMINAL_SCALE_MAXIMUM
+};
+
 enum class overlay_mode {
     hidden,
     search,
@@ -640,9 +668,26 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
                          title ? title : "termite");
 }
 
-static void update_font_scale(VteTerminal *vte, gdouble update) {
+static void increase_font_scale(VteTerminal *vte) {
     gdouble scale = vte_terminal_get_font_scale(vte);
-    vte_terminal_set_font_scale(vte, scale + update);
+
+    for (auto factor : zoom_factors) {
+        if ((factor - scale) > 1e-6) {
+            vte_terminal_set_font_scale(vte, factor);
+            return;
+        }
+    }
+}
+
+static void decrease_font_scale(VteTerminal *vte) {
+    gdouble scale = vte_terminal_get_font_scale(vte);
+
+    for (auto factor : zoom_factors) {
+        if ((scale - factor) > 1e-6) {
+            vte_terminal_set_font_scale(vte, factor);
+            return;
+        }
+    }
 }
 
 gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *info) {
@@ -797,10 +842,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 break;
             case GDK_KEY_plus:
-                update_font_scale(vte, 0.1);
+                increase_font_scale(vte);
                 break;
             case GDK_KEY_minus:
-                update_font_scale(vte, -0.1);
+                decrease_font_scale(vte);
                 break;
         }
         return TRUE;
