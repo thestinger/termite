@@ -671,9 +671,9 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
 static void increase_font_scale(VteTerminal *vte) {
     gdouble scale = vte_terminal_get_font_scale(vte);
 
-    for (auto factor : zoom_factors) {
-        if ((factor - scale) > 1e-6) {
-            vte_terminal_set_font_scale(vte, factor);
+    for (auto it = zoom_factors.begin(); it != zoom_factors.end(); ++it) {
+        if ((*it - scale) > 1e-6) {
+            vte_terminal_set_font_scale(vte, *it);
             return;
         }
     }
@@ -682,9 +682,9 @@ static void increase_font_scale(VteTerminal *vte) {
 static void decrease_font_scale(VteTerminal *vte) {
     gdouble scale = vte_terminal_get_font_scale(vte);
 
-    for (auto factor : zoom_factors) {
-        if ((scale - factor) > 1e-6) {
-            vte_terminal_set_font_scale(vte, factor);
+    for (auto it = zoom_factors.rbegin(); it != zoom_factors.rend(); ++it) {
+        if ((scale - *it) > 1e-6) {
+            vte_terminal_set_font_scale(vte, *it);
             return;
         }
     }
