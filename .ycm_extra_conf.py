@@ -37,7 +37,7 @@ flags = [
 ]
 
 flags += pkg_config('gtk+-3.0')
-flags += pkg_config('vte-2.90')
+flags += pkg_config('vte-2.91')
 
 
 def DirectoryOfThisScript():
