@@ -856,6 +856,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 launch_in_directory(vte);
                 return TRUE;
             case GDK_KEY_space:
+            case GDK_KEY_nobreakspace: // shift-space on some keyboard layouts
                 enter_command_mode(vte, &info->select);
                 return TRUE;
             case GDK_KEY_x:
