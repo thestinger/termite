@@ -8,7 +8,7 @@ dynamic_title = true
 urgent_on_bell = true
 clickable_url = true
 font = Monospace 9
-scrollback_lines = 1000
+scrollback_lines = 10000
 search_wrap = true
 #icon_name = terminal
 #geometry = 640x480
@@ -20,7 +20,7 @@ cursor_blink = system
 cursor_shape = block
 
 # $BROWSER is used by default
-#browser = firefox
+#browser = chromium
 
 # set size hints for the window
 #size_hints = false
