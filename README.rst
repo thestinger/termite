@@ -76,7 +76,7 @@ INSERT MODE
             fi
 
 SELECTION MODE
-------------
+--------------
 
 +--------------------------+-----------------------------------------------------------+
 | ``escape`` or ``ctrl-[`` | enter insert mode                                         |
@@ -148,3 +148,19 @@ completions, escape closes the widget and enter accepts the input.
 
 In hints mode, the input will be accepted as soon as termite considers it a
 unique match.
+
+PADDING
+=======
+
+Internal padding can be added by using CSS to style the VTE widget. Adding the
+follow snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
+``~/.config/gtk-3.0/gtk.css``) will add uniform 2px padding around the edges:
+
+.. code:: css
+
+    VteTerminal {
+        padding: 2px;
+    }
+
+This can also be used to add varying amounts of padding to each side via
+standard usage of the CSS padding property.
