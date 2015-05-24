@@ -749,6 +749,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         }
         switch (event->keyval) {
             case GDK_KEY_Escape:
+            case GDK_KEY_q:
                 exit_command_mode(vte, &info->select);
                 gtk_widget_hide(info->panel.da);
                 gtk_widget_hide(info->panel.panel);
