@@ -1404,7 +1404,11 @@ static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *, void *) {
     GdkScreen *screen = gtk_widget_get_screen(GTK_WIDGET(window));
     GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
 
-    if (!visual)
+    GtkStyleContext *context = gtk_widget_get_style_context(GTK_WIDGET(window));
+    GdkRGBA color;
+    gtk_style_context_get_background_color(context,GTK_STATE_FLAG_NORMAL,&color);
+
+    if ((color.alpha == 1) || !visual)
         visual = gdk_screen_get_system_visual(screen);
 
     gtk_widget_set_visual(GTK_WIDGET(window), visual);
