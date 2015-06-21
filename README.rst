@@ -12,9 +12,13 @@ process.
 DEPENDENCIES
 ============
 
-A vte version >= ``0.38.0``. A `patch
-<https://github.com/thestinger/termite/blob/master/expose_select_text.patch>`_
-is required to expose the functions needed for keyboard selection.
+The `vte-ng <https://github.com/thestinger/vte-ng>`_ project is required until
+VTE exposes the necessary functions for keyboard text selection and URL hints
+(if ever). A simple patch `has been submitted upstream
+<https://bugzilla.gnome.org/show_bug.cgi?id=679658#c10>`_ but they're unwilling
+to expose functionality that's not required by GNOME Terminal even if there's
+no extra maintenance (it already exists internally) and no additional backwards
+compatibility hazards.
 
 BUILDING
 ========
