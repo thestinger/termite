@@ -159,6 +159,19 @@ static long first_row(VteTerminal *vte);
 
 static std::function<void ()> reload_config;
 
+static void override_background_color(GtkWidget *widget, GdkRGBA *rgba) {
+    GtkCssProvider *provider = gtk_css_provider_new();
+
+    char *css = g_strdup_printf("* { background-color: %s; }", gdk_rgba_to_string(rgba));
+    gtk_css_provider_load_from_data(provider, css, -1, nullptr);
+    g_free(css);
+
+    gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
+                                   GTK_STYLE_PROVIDER(provider),
+                                   GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    g_object_unref(provider);
+}
+
 static const std::map<int, const char *> modify_table = {
     { GDK_KEY_Tab,        "\033[27;5;9~"  },
     { GDK_KEY_Return,     "\033[27;5;13~" },
@@ -1226,7 +1239,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     }
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
-        gtk_widget_override_background_color(GTK_WIDGET(window), GTK_STATE_FLAG_NORMAL, &*color);
+        override_background_color(GTK_WIDGET(window), &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
         vte_terminal_set_color_cursor(vte, &*color);
@@ -1505,8 +1518,8 @@ int main(int argc, char **argv) {
 
     GdkRGBA transparent {0, 0, 0, 0};
 
-    gtk_widget_override_background_color(hint_overlay, GTK_STATE_FLAG_NORMAL, &transparent);
-    gtk_widget_override_background_color(info.panel.da, GTK_STATE_FLAG_NORMAL, &transparent);
+    override_background_color(hint_overlay, &transparent);
+    override_background_color(info.panel.da, &transparent);
 
     gtk_widget_set_halign(info.panel.da, GTK_ALIGN_FILL);
     gtk_widget_set_valign(info.panel.da, GTK_ALIGN_FILL);
