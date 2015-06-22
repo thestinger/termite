@@ -259,7 +259,7 @@ static void launch_in_directory(VteTerminal *vte) {
 
 static void find_urls(VteTerminal *vte, search_panel_info *panel_info) {
     GRegex *regex = g_regex_new(url_regex, G_REGEX_CASELESS, G_REGEX_MATCH_NOTEMPTY, nullptr);
-    GArray *attributes = g_array_new(FALSE, FALSE, sizeof (VteCharAttributes));
+    GArray *attributes = g_array_new(FALSE, FALSE, sizeof(VteCharAttributes));
     auto content = make_unique(vte_terminal_get_text(vte, nullptr, nullptr, attributes), g_free);
 
     for (char *s_ptr = content.get(), *saveptr; ; s_ptr = nullptr) {
@@ -1207,7 +1207,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     char color_key[] = "color000";
 
     for (unsigned i = 0; i < palette.size(); i++) {
-        snprintf(color_key, sizeof color_key, "color%u", i);
+        snprintf(color_key, sizeof(color_key), "color%u", i);
         if (auto color = get_config_color(config, "colors", color_key)) {
             palette[i] = *color;
         } else if (i < 16) {
@@ -1588,7 +1588,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
-    snprintf(xid_s, sizeof xid_s, "%lu", GDK_WINDOW_XID(gdk_window));
+    snprintf(xid_s, sizeof(xid_s), "%lu", GDK_WINDOW_XID(gdk_window));
     char **env = g_get_environ();
     env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
     env = g_environ_setenv(env, "TERM", term, TRUE);
