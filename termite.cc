@@ -209,12 +209,13 @@ void launch_browser(char *browser, char *url) {
         return;
     }
 
-    g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH,
-                  nullptr, nullptr, nullptr, &error);
-    if (error) {
+    GPid child_pid;
+    if (!g_spawn_async(nullptr, browser_cmd, nullptr, G_SPAWN_SEARCH_PATH,
+                       nullptr, nullptr, &child_pid, &error)) {
         g_printerr("error launching '%s': %s\n", browser, error->message);
         g_error_free(error);
     }
+    g_spawn_close_pid(child_pid);
 }
 
 static void set_size_hints(GtkWindow *window, int char_width, int char_height) {
