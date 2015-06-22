@@ -28,9 +28,12 @@
 #include <set>
 #include <string>
 
-#include <gdk/gdkx.h>
 #include <gtk/gtk.h>
 #include <vte/vte.h>
+
+#ifdef GDK_WINDOWING_X11
+#include <gdk/gdkx.h>
+#endif
 
 #include "url_regex.hh"
 #include "util/clamp.hh"
@@ -1582,15 +1585,21 @@ int main(int argc, char **argv) {
     gtk_widget_hide(info.panel.panel);
     gtk_widget_hide(info.panel.da);
 
-    GdkWindow *gdk_window = gtk_widget_get_window(window);
-    if (!gdk_window) {
-        g_printerr("no window\n");
-        return EXIT_FAILURE;
-    }
-    char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
-    snprintf(xid_s, sizeof(xid_s), "%lu", GDK_WINDOW_XID(gdk_window));
     char **env = g_get_environ();
-    env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
+
+#ifdef GDK_WINDOWING_X11
+    if (GDK_IS_X11_SCREEN(gtk_widget_get_screen(window))) {
+        GdkWindow *gdk_window = gtk_widget_get_window(window);
+        if (!gdk_window) {
+            g_printerr("no window\n");
+            return EXIT_FAILURE;
+        }
+        char xid_s[std::numeric_limits<long unsigned>::digits10 + 1];
+        snprintf(xid_s, sizeof(xid_s), "%lu", GDK_WINDOW_XID(gdk_window));
+        env = g_environ_setenv(env, "WINDOWID", xid_s, TRUE);
+    }
+#endif
+
     env = g_environ_setenv(env, "TERM", term, TRUE);
 
     GPid child_pid;
