@@ -12,7 +12,6 @@ CXXFLAGS := -std=c++11 -O3 \
 	    -Wmissing-declarations \
 	    -Wstrict-overflow=5 \
 	    -Wcast-align \
-	    -Wcast-qual \
 	    -Wconversion \
 	    -Wunused-macros \
 	    -Wwrite-strings \
