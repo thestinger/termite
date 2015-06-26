@@ -1333,8 +1333,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (!info->browser) {
-        g_warning("Couldn't read BROWSER and there is no browser configured, disabling clickable_url and url hints");
-        info->clickable_url = false;
+        info->browser = g_strdup("xdg-open");
     }
 
     if (info->clickable_url) {

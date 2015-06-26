@@ -19,8 +19,8 @@ cursor_blink = system
 # "block", "underline" or "ibeam"
 cursor_shape = block
 
-# $BROWSER is used by default
-#browser = chromium
+# $BROWSER is used by default if set, with xdg-open as a fallback
+#browser = xdg-open
 
 # set size hints for the window
 #size_hints = false
