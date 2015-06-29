@@ -10,6 +10,7 @@ clickable_url = true
 font = Monospace 9
 scrollback_lines = 10000
 search_wrap = true
+maximized = false
 #icon_name = terminal
 #geometry = 640x480
 
