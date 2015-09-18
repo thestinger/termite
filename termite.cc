@@ -234,14 +234,20 @@ void launch_browser(char *browser, char *url) {
     g_spawn_close_pid(child_pid);
 }
 
-static void set_size_hints(GtkWindow *window, int char_width, int char_height) {
-    static const GdkWindowHints wh = (GdkWindowHints)(GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
+static void set_size_hints(GtkWindow *window, VteTerminal *vte) {
+    static const GdkWindowHints wh = (GdkWindowHints)(GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE |
+                                                      GDK_HINT_BASE_SIZE);
     GdkGeometry hints;
+    int padding_left, padding_top, padding_right, padding_bottom;
+    get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
 
-    hints.base_width = char_width;
-    hints.base_height = char_height;
-    hints.min_width = char_width;
-    hints.min_height = char_height;
+    const int char_width = (int)vte_terminal_get_char_width(vte);
+    const int char_height = (int)vte_terminal_get_char_height(vte);
+
+    hints.base_width = char_width + padding_left + padding_right;
+    hints.base_height = char_height + padding_top + padding_bottom;
+    hints.min_width = hints.base_width;
+    hints.min_height = hints.base_height;
     hints.width_inc  = char_width;
     hints.height_inc = char_height;
 
@@ -1389,8 +1395,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (info->size_hints) {
-        set_size_hints(GTK_WINDOW(window), (int)vte_terminal_get_char_width(vte),
-                       (int)vte_terminal_get_char_height(vte));
+        set_size_hints(GTK_WINDOW(window), vte);
     }
 
     load_theme(window, vte, config, info->hints);
