@@ -205,12 +205,13 @@ static const std::map<int, const char *> modify_table = {
     { GDK_KEY_question,   "\033[27;6;63~" },
 };
 
-static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info) {
+static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info,
+                                const std::map<int, const char *>& table) {
     if (info->config.modify_other_keys) {
         unsigned int keyval = gdk_keyval_to_lower(event->keyval);
-        auto entry = modify_table.find((int)keyval);
+        auto entry = table.find((int)keyval);
 
-        if (entry != modify_table.end()) {
+        if (entry != table.end()) {
             vte_terminal_feed_child(info->vte, entry->second, -1);
             return TRUE;
         }
@@ -902,7 +903,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 reload_config();
                 return TRUE;
             default:
-                if (modify_key_feed(event, info))
+                if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
     } else if (modifiers == GDK_CONTROL_MASK) {
@@ -911,7 +912,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::completion, vte);
                 return TRUE;
             default:
-                if (modify_key_feed(event, info))
+                if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
     }
