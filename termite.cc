@@ -237,13 +237,12 @@ void launch_browser(char *browser, char *url) {
 static void set_size_hints(GtkWindow *window, VteTerminal *vte) {
     static const GdkWindowHints wh = (GdkWindowHints)(GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE |
                                                       GDK_HINT_BASE_SIZE);
-    GdkGeometry hints;
+    const int char_width = (int)vte_terminal_get_char_width(vte);
+    const int char_height = (int)vte_terminal_get_char_height(vte);
     int padding_left, padding_top, padding_right, padding_bottom;
     get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
 
-    const int char_width = (int)vte_terminal_get_char_width(vte);
-    const int char_height = (int)vte_terminal_get_char_height(vte);
-
+    GdkGeometry hints;
     hints.base_width = char_width + padding_left + padding_right;
     hints.base_height = char_height + padding_top + padding_bottom;
     hints.min_width = hints.base_width;
@@ -385,7 +384,7 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
             bool active = false;
 
             snprintf(buffer, sizeof(buffer), "%u", i + 1);
-            if(len)
+            if (len)
                 active = strncmp(buffer, info->panel->fulltext, len) == 0;
 
             draw_marker(cr, desc, info->hints, x, y, buffer, active);
@@ -1053,7 +1052,7 @@ gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_i
 
         if (event->button == 1) {
             launch_browser(info->browser, match.get());
-        } else if(event->button == 3) {
+        } else if (event->button == 3) {
             GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
             gtk_clipboard_set_text(clipboard, match.get(), -1);
         }
