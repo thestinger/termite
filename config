@@ -25,6 +25,9 @@ cursor_shape = block
 # set size hints for the window
 #size_hints = false
 
+# Hide links that are no longer valid in url select overlay mode
+filter_unmatched_urls = true
+
 # emit escape sequences for other keys modified by Control
 #modify_other_keys = false
 
