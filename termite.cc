@@ -118,7 +118,8 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
-    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints, modify_other_keys;
+    gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
+    gboolean filter_unmatched_urls, modify_other_keys;
     gboolean fullscreen, maximized;
     int tag;
     char *config_file;
@@ -137,6 +138,7 @@ struct draw_cb_info {
     VteTerminal *vte;
     search_panel_info *panel;
     hint_info *hints;
+    gboolean filter_unmatched_urls;
 };
 
 static void launch_browser(char *browser, char *url);
@@ -387,7 +389,8 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
             if (len)
                 active = strncmp(buffer, info->panel->fulltext, len) == 0;
 
-            draw_marker(cr, desc, info->hints, x, y, buffer, active);
+            if (!info->filter_unmatched_urls || active || len == 0)
+                draw_marker(cr, desc, info->hints, x, y, buffer, active);
         }
     }
 
@@ -945,6 +948,13 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     }
     switch (event->keyval) {
         case GDK_KEY_BackSpace:
+            if (info->panel.mode == overlay_mode::urlselect) {
+                size_t slen = strlen(info->panel.fulltext);
+                if (info->panel.fulltext != nullptr && slen > 0)
+                    info->panel.fulltext[slen-1] = '\0';
+                gtk_widget_queue_draw(info->panel.da);
+            }
+            break;
         case GDK_KEY_0:
         case GDK_KEY_1:
         case GDK_KEY_2:
@@ -1325,6 +1335,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
     info->size_hints = cfg_bool("size_hints", FALSE);
+    info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
     info->maximized = cfg_bool("maximized", FALSE);
@@ -1513,7 +1524,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, -1, config_file},
         gtk_window_fullscreen
     };
 
@@ -1553,7 +1564,7 @@ int main(int argc, char **argv) {
     g_signal_connect(panel_overlay, "get-child-position", G_CALLBACK(position_overlay_cb), nullptr);
     g_signal_connect(vte, "button-press-event", G_CALLBACK(button_press_cb), &info.config);
     g_signal_connect(vte, "bell", G_CALLBACK(bell_cb), &info.config.urgent_on_bell);
-    draw_cb_info draw_cb_info{vte, &info.panel, &info.config.hints};
+    draw_cb_info draw_cb_info{vte, &info.panel, &info.config.hints, info.config.filter_unmatched_urls};
     g_signal_connect_swapped(info.panel.da, "draw", G_CALLBACK(draw_cb), &draw_cb_info);
 
     g_signal_connect(window, "focus-in-event",  G_CALLBACK(focus_cb), nullptr);
