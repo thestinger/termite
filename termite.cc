@@ -117,6 +117,7 @@ struct hint_info {
 
 struct config_info {
     hint_info hints;
+    char *term_env;
     char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
     gboolean filter_unmatched_urls, modify_other_keys;
@@ -1339,6 +1340,15 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
 
+    g_free(info->term_env);
+    info->term_env = nullptr;
+
+    if (auto s = get_config_string(config, "options", "term_env")) {
+      info->term_env = *s;
+    } else {
+      info->term_env = g_strdup("xterm-termite");
+    }
+
     g_free(info->browser);
     info->browser = nullptr;
 
@@ -1443,7 +1453,6 @@ static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *, void *) {
 
 int main(int argc, char **argv) {
     GError *error = nullptr;
-    const char *const term = "xterm-termite";
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
@@ -1522,7 +1531,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file},
         gtk_window_fullscreen
     };
 
@@ -1614,7 +1623,7 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    env = g_environ_setenv(env, "TERM", term, TRUE);
+    env = g_environ_setenv(env, "TERM", info.config.term_env, TRUE);
 
     GPid child_pid;
     if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, nullptr, command_argv, env,
