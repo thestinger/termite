@@ -1,4 +1,5 @@
 [options]
+#term_env = xterm-termite
 scroll_on_output = false
 scroll_on_keystroke = true
 audible_bell = false
