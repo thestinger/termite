@@ -1339,6 +1339,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
 
+    gtk_window_set_decorated(window, cfg_bool("decorated", TRUE));
+
     g_free(info->browser);
     info->browser = nullptr;
 
