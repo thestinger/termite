@@ -948,7 +948,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     }
     switch (event->keyval) {
         case GDK_KEY_BackSpace:
-            if (info->panel.mode == overlay_mode::urlselect) {
+            if (info->panel.mode == overlay_mode::urlselect && info->panel.fulltext) {
                 size_t slen = strlen(info->panel.fulltext);
                 if (info->panel.fulltext != nullptr && slen > 0)
                     info->panel.fulltext[slen-1] = '\0';
