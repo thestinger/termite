@@ -31,6 +31,9 @@ filter_unmatched_urls = true
 # emit escape sequences for extra modified keys
 #modify_other_keys = false
 
+# set desired TERM
+#term = xterm-termite
+
 [colors]
 #cursor = #dcdccc
 foreground = #dcdccc
