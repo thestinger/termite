@@ -205,12 +205,41 @@ static const std::map<int, const char *> modify_table = {
     { GDK_KEY_question,   "\033[27;6;63~" },
 };
 
-static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info) {
+static const std::map<int, const char *> modify_meta_table = {
+    { GDK_KEY_Tab,        "\033[27;13;9~"  },
+    { GDK_KEY_Return,     "\033[27;13;13~" },
+    { GDK_KEY_apostrophe, "\033[27;13;39~" },
+    { GDK_KEY_comma,      "\033[27;13;44~" },
+    { GDK_KEY_minus,      "\033[27;13;45~" },
+    { GDK_KEY_period,     "\033[27;13;46~" },
+    { GDK_KEY_0,          "\033[27;13;48~" },
+    { GDK_KEY_1,          "\033[27;13;49~" },
+    { GDK_KEY_9,          "\033[27;13;57~" },
+    { GDK_KEY_semicolon,  "\033[27;13;59~" },
+    { GDK_KEY_equal,      "\033[27;13;61~" },
+    { GDK_KEY_exclam,     "\033[27;14;33~" },
+    { GDK_KEY_quotedbl,   "\033[27;14;34~" },
+    { GDK_KEY_numbersign, "\033[27;14;35~" },
+    { GDK_KEY_dollar,     "\033[27;14;36~" },
+    { GDK_KEY_percent,    "\033[27;14;37~" },
+    { GDK_KEY_ampersand,  "\033[27;14;38~" },
+    { GDK_KEY_parenleft,  "\033[27;14;40~" },
+    { GDK_KEY_parenright, "\033[27;14;41~" },
+    { GDK_KEY_asterisk,   "\033[27;14;42~" },
+    { GDK_KEY_plus,       "\033[27;14;43~" },
+    { GDK_KEY_colon,      "\033[27;14;58~" },
+    { GDK_KEY_less,       "\033[27;14;60~" },
+    { GDK_KEY_greater,    "\033[27;14;62~" },
+    { GDK_KEY_question,   "\033[27;14;63~" },
+};
+
+static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info,
+                                const std::map<int, const char *>& table) {
     if (info->config.modify_other_keys) {
         unsigned int keyval = gdk_keyval_to_lower(event->keyval);
-        auto entry = modify_table.find((int)keyval);
+        auto entry = table.find((int)keyval);
 
-        if (entry != modify_table.end()) {
+        if (entry != table.end()) {
             vte_terminal_feed_child(info->vte, entry->second, -1);
             return TRUE;
         }
@@ -902,16 +931,20 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 reload_config();
                 return TRUE;
             default:
-                if (modify_key_feed(event, info))
+                if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
+    } else if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
+               (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
+        if (modify_key_feed(event, info, modify_meta_table))
+            return TRUE;
     } else if (modifiers == GDK_CONTROL_MASK) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_Tab:
                 overlay_show(&info->panel, overlay_mode::completion, vte);
                 return TRUE;
             default:
-                if (modify_key_feed(event, info))
+                if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
     }
@@ -948,7 +981,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     }
     switch (event->keyval) {
         case GDK_KEY_BackSpace:
-            if (info->panel.mode == overlay_mode::urlselect) {
+            if (info->panel.mode == overlay_mode::urlselect && info->panel.fulltext) {
                 size_t slen = strlen(info->panel.fulltext);
                 if (info->panel.fulltext != nullptr && slen > 0)
                     info->panel.fulltext[slen-1] = '\0';
