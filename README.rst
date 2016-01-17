@@ -146,6 +146,8 @@ SELECTION MODE
 +-----------------------------------+-----------------------------------------------------------+
 | ``-``                             | decrease font size                                        |
 +-----------------------------------+-----------------------------------------------------------+
+| ``=``                             | reset font size to default                                |
++-----------------------------------+-----------------------------------------------------------+
 
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
