@@ -123,6 +123,7 @@ struct config_info {
     gboolean fullscreen;
     int tag;
     char *config_file;
+    gdouble font_scale;
 };
 
 struct keybind_info {
@@ -722,6 +723,10 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
                          title ? title : "termite");
 }
 
+static void reset_font_scale(VteTerminal *vte, gdouble scale) {
+    vte_terminal_set_font_scale(vte, scale);
+}
+
 static void increase_font_scale(VteTerminal *vte) {
     gdouble scale = vte_terminal_get_font_scale(vte);
 
@@ -901,6 +906,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_minus:
                 decrease_font_scale(vte);
+                break;
+            case GDK_KEY_equal:
+                reset_font_scale(vte, info->config.font_scale);
                 break;
         }
         return TRUE;
@@ -1371,6 +1379,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
+    info->font_scale = vte_terminal_get_font_scale(vte);
 
     g_free(info->browser);
     info->browser = nullptr;
