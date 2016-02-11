@@ -37,7 +37,9 @@ termite: termite.cc url_regex.hh util/clamp.hh util/maybe.hh util/memory.hh
 
 install: termite termite.desktop termite.terminfo
 	mkdir -p ${DESTDIR}${TERMINFO}
+	mkdir -p ${DESTDIR}/etc/xdg/termite
 	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
+	install -Dm644 config ${DESTDIR}/etc/xdg/termite/config
 	install -Dm644 termite.desktop ${DESTDIR}${PREFIX}/share/applications/termite.desktop
 	install -Dm644 man/termite.1 ${DESTDIR}${PREFIX}/share/man/man1/termite.1
 	install -Dm644 man/termite.config.5 ${DESTDIR}${PREFIX}/share/man/man5/termite.config.5
