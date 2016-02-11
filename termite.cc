@@ -112,6 +112,7 @@ struct hint_info {
     PangoFontDescription *font;
     cairo_pattern_t *fg, *bg, *af, *ab, *border;
     double padding, border_width, roundness;
+    GdkRGBA background_select, background;
 };
 
 struct config_info {
@@ -160,6 +161,7 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry);
 static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, GKeyFile *config);
+
 static long first_row(VteTerminal *vte);
 
 static std::function<void ()> reload_config;
@@ -426,6 +428,7 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
     return FALSE;
 }
 
+
 static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_unselect_all(vte);
 
@@ -465,15 +468,17 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_copy_primary(vte);
 }
 
-static void enter_command_mode(VteTerminal *vte, select_info *select) {
+static void enter_command_mode(VteTerminal *vte, select_info *select, config_info *config) {
     vte_terminal_disconnect_pty_read(vte);
     select->mode = vi_mode::command;
     vte_terminal_get_cursor_position(vte, &select->origin_col, &select->origin_row);
+    vte_terminal_set_color_background(vte, &config->hints.background_select);
     update_selection(vte, select);
 }
 
-static void exit_command_mode(VteTerminal *vte, select_info *select) {
+static void exit_command_mode(VteTerminal *vte, select_info *select, config_info *config) {
     vte_terminal_set_cursor_position(vte, select->origin_col, select->origin_row);
+    vte_terminal_set_color_background(vte, &config->hints.background);
     vte_terminal_connect_pty_read(vte);
     vte_terminal_unselect_all(vte);
     select->mode = vi_mode::insert;
@@ -766,7 +771,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         if (modifiers == GDK_CONTROL_MASK) {
             switch (gdk_keyval_to_lower(event->keyval)) {
                 case GDK_KEY_bracketleft:
-                    exit_command_mode(vte, &info->select);
+                    exit_command_mode(vte, &info->select, &info->config);
                     gtk_widget_hide(info->panel.da);
                     gtk_widget_hide(info->panel.entry);
                     info->panel.url_list.clear();
@@ -808,7 +813,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         switch (event->keyval) {
             case GDK_KEY_Escape:
             case GDK_KEY_q:
-                exit_command_mode(vte, &info->select);
+                exit_command_mode(vte, &info->select, &info->config);
                 gtk_widget_hide(info->panel.da);
                 gtk_widget_hide(info->panel.entry);
                 info->panel.url_list.clear();
@@ -891,7 +896,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_Return:
                 open_selection(info->config.browser, vte);
-                exit_command_mode(vte, &info->select);
+                exit_command_mode(vte, &info->select, &info->config);
                 break;
             case GDK_KEY_x:
                 if (!info->config.browser)
@@ -919,14 +924,14 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 return TRUE;
             case GDK_KEY_space:
             case GDK_KEY_nobreakspace: // shift-space on some keyboard layouts
-                enter_command_mode(vte, &info->select);
+                enter_command_mode(vte, &info->select, &info->config);
                 return TRUE;
             case GDK_KEY_x:
-                enter_command_mode(vte, &info->select);
+                enter_command_mode(vte, &info->select, &info->config);
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
-                exit_command_mode(vte, &info->select);
+                exit_command_mode(vte, &info->select, &info->config);
                 return TRUE;
             case GDK_KEY_c:
                 vte_terminal_copy_clipboard(vte);
@@ -1298,6 +1303,10 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
         override_background_color(GTK_WIDGET(window), &*color);
+        hints.background = *color;
+    }
+    if (auto color = get_config_color(config, "colors", "background_select")) {
+        hints.background_select = *color;
     }
     if (auto color = get_config_color(config, "colors", "cursor")) {
         vte_terminal_set_color_cursor(vte, &*color);
