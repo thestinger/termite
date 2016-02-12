@@ -102,7 +102,6 @@ struct url_data {
 
 struct search_panel_info {
     GtkWidget *entry;
-    GtkWidget *panel;
     GtkWidget *da;
     overlay_mode mode;
     std::vector<url_data> url_list;
@@ -769,7 +768,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 case GDK_KEY_bracketleft:
                     exit_command_mode(vte, &info->select);
                     gtk_widget_hide(info->panel.da);
-                    gtk_widget_hide(info->panel.panel);
+                    gtk_widget_hide(info->panel.entry);
                     info->panel.url_list.clear();
                     break;
                 case GDK_KEY_v:
@@ -811,7 +810,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_q:
                 exit_command_mode(vte, &info->select);
                 gtk_widget_hide(info->panel.da);
-                gtk_widget_hide(info->panel.panel);
+                gtk_widget_hide(info->panel.entry);
                 info->panel.url_list.clear();
                 break;
             case GDK_KEY_Left:
@@ -1072,7 +1071,7 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
             info->panel.fulltext = nullptr;
         }
         info->panel.mode = overlay_mode::hidden;
-        gtk_widget_hide(info->panel.panel);
+        gtk_widget_hide(info->panel.entry);
         gtk_widget_grab_focus(GTK_WIDGET(info->vte));
     }
     return ret;
@@ -1190,7 +1189,7 @@ void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte) 
     gtk_entry_set_text(GTK_ENTRY(info->entry), "");
 
     info->mode = mode;
-    gtk_widget_show(info->panel);
+    gtk_widget_show(info->entry);
     gtk_widget_grab_focus(info->entry);
 }
 
@@ -1559,7 +1558,6 @@ int main(int argc, char **argv) {
     keybind_info info {
         GTK_WINDOW(window), vte,
         {gtk_entry_new(),
-         gtk_alignment_new(0, 0, 1, 1),
          gtk_drawing_area_new(),
          overlay_mode::hidden,
          std::vector<url_data>(),
@@ -1586,13 +1584,15 @@ int main(int argc, char **argv) {
     gtk_widget_set_valign(info.panel.da, GTK_ALIGN_FILL);
     gtk_overlay_add_overlay(GTK_OVERLAY(hint_overlay), info.panel.da);
 
-    gtk_alignment_set_padding(GTK_ALIGNMENT(info.panel.panel), 5, 5, 5, 5);
-    gtk_overlay_add_overlay(GTK_OVERLAY(panel_overlay), info.panel.panel);
+    gtk_widget_set_margin_start(info.panel.entry, 5);
+    gtk_widget_set_margin_end(info.panel.entry, 5);
+    gtk_widget_set_margin_top(info.panel.entry, 5);
+    gtk_widget_set_margin_bottom(info.panel.entry, 5);
+    gtk_overlay_add_overlay(GTK_OVERLAY(panel_overlay), info.panel.entry);
 
     gtk_widget_set_halign(info.panel.entry, GTK_ALIGN_START);
     gtk_widget_set_valign(info.panel.entry, GTK_ALIGN_END);
 
-    gtk_container_add(GTK_CONTAINER(info.panel.panel), info.panel.entry);
     gtk_container_add(GTK_CONTAINER(panel_overlay), hint_overlay);
     gtk_container_add(GTK_CONTAINER(hint_overlay), vte_widget);
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
@@ -1631,7 +1631,7 @@ int main(int argc, char **argv) {
 
     if (geometry) {
         gtk_widget_show_all(panel_overlay);
-        gtk_widget_show_all(info.panel.panel);
+        gtk_widget_show_all(info.panel.entry);
         if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
             g_printerr("invalid geometry string: %s\n", geometry);
         }
@@ -1644,7 +1644,7 @@ int main(int argc, char **argv) {
 
     gtk_widget_grab_focus(vte_widget);
     gtk_widget_show_all(window);
-    gtk_widget_hide(info.panel.panel);
+    gtk_widget_hide(info.panel.entry);
     gtk_widget_hide(info.panel.da);
 
     char **env = g_get_environ();
