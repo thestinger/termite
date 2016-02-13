@@ -121,6 +121,7 @@ struct config_info {
     gboolean filter_unmatched_urls, modify_other_keys;
     gboolean fullscreen;
     int tag;
+    char *term;
     char *config_file;
     gdouble font_scale;
 };
@@ -1393,6 +1394,13 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         info->browser = g_strdup("xdg-open");
     }
 
+    g_free(info->term);
+    info->term = nullptr;
+
+    if (auto s = get_config_string(config, "options", "term")) {
+        info->term = *s;
+    }
+
     if (info->clickable_url) {
         info->tag =
             vte_terminal_match_add_gregex(vte,
@@ -1562,7 +1570,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, nullptr, config_file},
         gtk_window_fullscreen
     };
 
@@ -1656,7 +1664,11 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    env = g_environ_setenv(env, "TERM", term, TRUE);
+    if (info.config.term) {
+        env = g_environ_setenv(env, "TERM", info.config.term, TRUE);
+    } else {
+        env = g_environ_setenv(env, "TERM", term, TRUE);
+    }
 
     GPid child_pid;
     if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, nullptr, command_argv, env,
