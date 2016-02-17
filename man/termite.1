@@ -3,7 +3,7 @@
 termite \- A keyboard-centric VTE-based terminal aimed for use with
 a tiling and/or tabbing enabled window manager.
 .SH SYNOPSIS
-\fBtermite\fP [options]
+\fBtermite\fP [options] [PROGRAM [ARGS ...]]
 .SH DESCRIPTION
 \fBtermite\fP is a GTK-based terminal emulator inteded for use within
 window managers with tiling and/or tabbing support. It provides a fast
@@ -14,8 +14,12 @@ terminal experience and pleasant array of keyboard-centric features.
 Display help message.
 .IP "\fB\-v\fR, \fB\-\-version\fR"
 Display version information.
+.IP "\fI PROGRAM \fB[\fIARGS\fB ...]"
+If present, tell termite to execute \fIPROGRAM\fP rather than the default shell. Any subsequent non-option arguments to termite become arguments to \fIPROGRAM\fP.
+.IP
+Overrides an \fB--exec\fP option (see below).
 .IP "\fB\-e\fR, \fB\-\-exec\fR\fB=\fR\fICOMMAND\fR"
-Tell termite start \fICOMMAND\fP instead of the shell.
+Tell termite to start \fICOMMAND\fP instead of the shell. This option is ignored if \fBPROGRAM\fP is given.
 .IP "\fB\-r\fR, \fB\-\-role\fR\fB=\fR\fIROLE\fR"
 The role to set the termite window to report itself with.
 .IP "\fB\-t\fR, \fB\-\-title\fR\fB=\fR\fITITLE\fR"
