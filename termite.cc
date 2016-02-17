@@ -1491,6 +1491,7 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr;
+    char **command_argv = nullptr;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
@@ -1500,6 +1501,8 @@ int main(int argc, char **argv) {
         {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &command_argv,
+            "Command with arguments to execute", "ARGS"},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1536,10 +1539,11 @@ int main(int argc, char **argv) {
         g_free(role);
     }
 
-    char **command_argv;
-    char *default_argv[2] = {nullptr, nullptr};
+    gboolean free_command_argv = FALSE;
 
-    if (execute) {
+    if (command_argv) {
+        free_command_argv = TRUE;
+    } else if (execute) {
         int argcp;
         char **argvp;
         g_shell_parse_argv(execute, &argcp, &argvp, &error);
@@ -1549,6 +1553,7 @@ int main(int argc, char **argv) {
         }
         command_argv = argvp;
     } else {
+        char *default_argv[2] = {nullptr, nullptr};
         default_argv[0] = get_user_shell_with_fallback();
         command_argv = default_argv;
     }
@@ -1679,6 +1684,9 @@ int main(int argc, char **argv) {
                           (height - padding_top - padding_bottom) / char_height);
 
     g_strfreev(env);
+    if (free_command_argv) {
+        g_strfreev(command_argv);
+    }
 
     gtk_main();
     return EXIT_FAILURE; // child process did not cause termination
