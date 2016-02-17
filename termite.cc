@@ -1502,7 +1502,7 @@ int main(int argc, char **argv) {
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &command_argv,
-            "Command with arguments to execute", "ARGS"},
+            "Command with arguments to execute", "[ -- PROGRAM [ARGS ... ]]"},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
