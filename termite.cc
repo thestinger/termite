@@ -945,6 +945,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_r:
                 reload_config();
                 return TRUE;
+            case GDK_KEY_a:
+                vte_terminal_select_all(vte);
+                return TRUE;
             default:
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
