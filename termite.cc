@@ -1562,7 +1562,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
         gtk_window_fullscreen
     };
 
