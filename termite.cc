@@ -155,7 +155,7 @@ static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte);
 static void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom);
-static char *check_match(VteTerminal *vte, int event_x, int event_y);
+static char *check_match(VteTerminal *vte, GdkEventButton *event);
 static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry);
 static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
@@ -1096,7 +1096,7 @@ gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRectangle *a
 
 gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info) {
     if (info->clickable_url && event->type == GDK_BUTTON_PRESS) {
-        auto match = make_unique(check_match(vte, (int)event->x, (int)event->y), g_free);
+        auto match = make_unique(check_match(vte, event), g_free);
         if (!match)
             return FALSE;
 
@@ -1204,16 +1204,10 @@ void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bot
     *bottom = border.bottom;
 }
 
-char *check_match(VteTerminal *vte, int event_x, int event_y) {
-    int tag, padding_left, padding_top, padding_right, padding_bottom;
-    const long char_width = vte_terminal_get_char_width(vte);
-    const long char_height = vte_terminal_get_char_height(vte);
+char *check_match(VteTerminal *vte, GdkEventButton *event) {
+    int tag;
 
-    get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
-    return vte_terminal_match_check(vte,
-                                    (event_x - padding_left) / char_width,
-                                    (event_y - padding_top) / char_height,
-                                    &tag);
+    return vte_terminal_match_check_event(vte, (GdkEvent*) event, &tag);
 }
 
 /* {{{ CONFIG LOADING */
@@ -1564,7 +1558,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, -1, config_file},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, -1, config_file, 0},
         gtk_window_fullscreen
     };
 
