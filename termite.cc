@@ -1458,11 +1458,11 @@ static void exit_with_success(VteTerminal *) {
 }
 
 static char *get_user_shell_with_fallback() {
-    if (char *command = vte_get_user_shell())
-        return command;
-
     if (const char *env = g_getenv("SHELL"))
         return g_strdup(env);
+
+    if (char *command = vte_get_user_shell())
+        return command;
 
     return g_strdup("/bin/sh");
 }
