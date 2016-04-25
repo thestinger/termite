@@ -842,6 +842,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 move_forward_blank_word(vte, &info->select);
                 break;
             case GDK_KEY_0:
+            case GDK_KEY_Home:
                 set_cursor_column(vte, &info->select, 0);
                 break;
             case GDK_KEY_asciicircum:
@@ -849,6 +850,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 move_first(vte, &info->select, std::not1(std::ref(g_unichar_isspace)));
                 break;
             case GDK_KEY_dollar:
+            case GDK_KEY_End:
                 move_to_eol(vte, &info->select);
                 break;
             case GDK_KEY_g:
