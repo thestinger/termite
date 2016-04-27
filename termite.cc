@@ -1501,8 +1501,11 @@ int main(int argc, char **argv) {
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("option parsing failed: %s\n", error->message);
+        g_clear_error (&error);
         return EXIT_FAILURE;
     }
+
+    g_option_context_free(context);
 
     if (version) {
         g_print("termite %s\n", TERMITE_VERSION);
