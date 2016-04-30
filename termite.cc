@@ -1296,6 +1296,9 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     if (auto color = get_config_color(config, "colors", "cursor")) {
         vte_terminal_set_color_cursor(vte, &*color);
     }
+    if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
+        vte_terminal_set_color_cursor_foreground(vte, &*color);
+    }
     if (auto color = get_config_color(config, "colors", "highlight")) {
         vte_terminal_set_color_highlight(vte, &*color);
     }
@@ -1503,8 +1506,11 @@ int main(int argc, char **argv) {
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("option parsing failed: %s\n", error->message);
+        g_clear_error (&error);
         return EXIT_FAILURE;
     }
+
+    g_option_context_free(context);
 
     if (version) {
         g_print("termite %s\n", TERMITE_VERSION);
