@@ -20,6 +20,7 @@
 #include <array>
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include <functional>
 #include <limits>
 #include <map>
