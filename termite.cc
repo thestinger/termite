@@ -509,7 +509,7 @@ static void update_scroll(VteTerminal *vte) {
     long cursor_row;
     vte_terminal_get_cursor_position(vte, nullptr, &cursor_row);
 
-    if (cursor_row < scroll_row) {
+    if ( (double)cursor_row < scroll_row) {
         gtk_adjustment_set_value(adjust, (double)cursor_row);
     } else if (cursor_row - n_rows >= (long)scroll_row) {
         gtk_adjustment_set_value(adjust, (double)(cursor_row - n_rows + 1));
