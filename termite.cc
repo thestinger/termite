@@ -168,8 +168,10 @@ static std::function<void ()> reload_config;
 static void override_background_color(GtkWidget *widget, GdkRGBA *rgba) {
     GtkCssProvider *provider = gtk_css_provider_new();
 
-    char *css = g_strdup_printf("* { background-color: %s; }", gdk_rgba_to_string(rgba));
+    gchar *colorstr = gdk_rgba_to_string(rgba);
+    char *css = g_strdup_printf("* { background-color: %s; }", colorstr);
     gtk_css_provider_load_from_data(provider, css, -1, nullptr);
+    g_free(colorstr);
     g_free(css);
 
     gtk_style_context_add_provider(gtk_widget_get_style_context(widget),
