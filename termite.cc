@@ -524,12 +524,16 @@ static void move(VteTerminal *vte, select_info *select, long col, long row) {
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
+    VteCursorBlinkMode mode = vte_terminal_get_cursor_blink_mode(vte);
+    vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
+
     vte_terminal_set_cursor_position(vte,
                                      clamp(cursor_col + col, 0l, end_col),
                                      clamp(cursor_row + row, first_row(vte), last_row(vte)));
 
     update_scroll(vte);
     update_selection(vte, select);
+    vte_terminal_set_cursor_blink_mode(vte, mode);
 }
 
 static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
