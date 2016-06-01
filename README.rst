@@ -162,12 +162,12 @@ PADDING
 =======
 
 Internal padding can be added by using CSS to style the VTE widget. Adding the
-follow snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
+following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 ``~/.config/gtk-3.0/gtk.css``) will add uniform 2px padding around the edges:
 
 .. code:: css
 
-    VteTerminal {
+    VteTerminal, vte-terminal {
         padding: 2px;
     }
 
