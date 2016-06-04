@@ -32,11 +32,13 @@ filter_unmatched_urls = true
 #modify_other_keys = false
 
 [colors]
-#cursor = #dcdccc
-#cursor_foreground = #dcdccc
 foreground = #dcdccc
 foreground_bold = #ffffff
 background = #3f3f3f
+
+# if both unset, cursor takes the text color and text takes the background color
+#cursor = #dcdccc
+#cursor_foreground = #dcdccc
 
 # 20% background transparency (requires a compositor)
 #background = rgba(63, 63, 63, 0.8)
