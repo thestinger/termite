@@ -766,8 +766,10 @@ gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
 
-    if (info->config.fullscreen && event->keyval == GDK_KEY_F11)
+    if (info->config.fullscreen && event->keyval == GDK_KEY_F11) {
         info->fullscreen_toggle(info->window);
+        return TRUE;
+    }
 
     if (info->select.mode != vi_mode::insert) {
         if (modifiers == GDK_CONTROL_MASK) {
