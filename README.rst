@@ -61,6 +61,12 @@ INSERT MODE
 +----------------------+---------------------------------------------+
 | ``shift-pagedown``   | scroll down a page                          |
 +----------------------+---------------------------------------------+
+| ``ctrl-+``           | increase font size                          |
++----------------------+---------------------------------------------+
+| ``ctrl--``           | decrease font size                          |
++----------------------+---------------------------------------------+
+| ``ctrl-=``           | reset font size to default                  |
++----------------------+---------------------------------------------+
 
 .. [1] The directory can be set by a process running in the terminal. For
        example, with zsh:
@@ -142,12 +148,6 @@ SELECTION MODE
 +-----------------------------------+-----------------------------------------------------------+
 | ``N``                             | previous search match                                     |
 +-----------------------------------+-----------------------------------------------------------+
-| ``+``                             | increase font size                                        |
-+-----------------------------------+-----------------------------------------------------------+
-| ``-``                             | decrease font size                                        |
-+-----------------------------------+-----------------------------------------------------------+
-| ``=``                             | reset font size to default                                |
-+-----------------------------------+-----------------------------------------------------------+
 
 During scrollback search, the current selection is changed to the search match
 and copied to the PRIMARY clipboard buffer.
@@ -162,12 +162,12 @@ PADDING
 =======
 
 Internal padding can be added by using CSS to style the VTE widget. Adding the
-follow snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
+following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 ``~/.config/gtk-3.0/gtk.css``) will add uniform 2px padding around the edges:
 
 .. code:: css
 
-    VteTerminal {
+    VteTerminal, vte-terminal {
         padding: 2px;
     }
 

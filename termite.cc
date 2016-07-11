@@ -766,8 +766,10 @@ gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
 
-    if (info->config.fullscreen && event->keyval == GDK_KEY_F11)
+    if (info->config.fullscreen && event->keyval == GDK_KEY_F11) {
         info->fullscreen_toggle(info->window);
+        return TRUE;
+    }
 
     if (info->select.mode != vi_mode::insert) {
         if (modifiers == GDK_CONTROL_MASK) {
@@ -909,20 +911,14 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 break;
-            case GDK_KEY_plus:
-                increase_font_scale(vte);
-                break;
-            case GDK_KEY_minus:
-                decrease_font_scale(vte);
-                break;
-            case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
-                break;
         }
         return TRUE;
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_plus:
+                increase_font_scale(vte);
+                return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
                 return TRUE;
@@ -958,6 +954,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_Tab:
                 overlay_show(&info->panel, overlay_mode::completion, vte);
+                return TRUE;
+            case GDK_KEY_minus:
+                decrease_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_equal:
+                reset_font_scale(vte, info->config.font_scale);
                 return TRUE;
             default:
                 if (modify_key_feed(event, info, modify_table))
@@ -1401,13 +1403,12 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (info->clickable_url) {
-        info->tag =
-            vte_terminal_match_add_gregex(vte,
-                                          g_regex_new(url_regex,
-                                                      G_REGEX_CASELESS,
-                                                      G_REGEX_MATCH_NOTEMPTY,
-                                                      nullptr),
-                                          (GRegexMatchFlags)0);
+        info->tag = vte_terminal_match_add_gregex(vte,
+            g_regex_new(url_regex,
+                        (GRegexCompileFlags)(G_REGEX_CASELESS | G_REGEX_MULTILINE),
+                        G_REGEX_MATCH_NOTEMPTY,
+                        nullptr),
+            (GRegexMatchFlags)0);
         vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
     } else if (info->tag != -1) {
         vte_terminal_match_remove(vte, info->tag);
