@@ -916,9 +916,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_plus:
-                increase_font_scale(vte);
-                return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
                 return TRUE;
@@ -946,14 +943,19 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
-    } else if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
-               (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
+    }
+    if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
+           (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
-    } else if (modifiers == GDK_CONTROL_MASK) {
-        switch (gdk_keyval_to_lower(event->keyval)) {
+    }
+    if (modifiers & GDK_CONTROL_MASK) {
+        switch (event->keyval) {
             case GDK_KEY_Tab:
                 overlay_show(&info->panel, overlay_mode::completion, vte);
+                return TRUE;
+            case GDK_KEY_plus:
+                increase_font_scale(vte);
                 return TRUE;
             case GDK_KEY_minus:
                 decrease_font_scale(vte);
