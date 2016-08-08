@@ -110,7 +110,8 @@ struct search_panel_info {
 };
 
 struct hint_info {
-    PangoFontDescription *font;
+    std::vector<PangoFontDescription *> font;
+    unsigned int current_font;
     cairo_pattern_t *fg, *bg, *af, *ab, *border;
     double padding, border_width, roundness;
 };
@@ -124,6 +125,8 @@ struct config_info {
     int tag;
     char *config_file;
     gdouble font_scale;
+    std::vector<PangoFontDescription *> fonts;
+    unsigned int current_font;
 };
 
 struct keybind_info {
@@ -400,8 +403,9 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
         int padding_left, padding_top, padding_right, padding_bottom;
         const long cw = vte_terminal_get_char_width(info->vte);
         const long ch = vte_terminal_get_char_height(info->vte);
-        const PangoFontDescription *desc = info->hints->font ?
-            info->hints->font : vte_terminal_get_font(info->vte);
+        unsigned int current_font = info->hints->current_font;
+        const PangoFontDescription *desc = info->hints->font[current_font] ?
+            info->hints->font[current_font] : vte_terminal_get_font(info->vte);
         size_t len = info->panel->fulltext == nullptr ?
             0 : strlen(info->panel->fulltext);
 
@@ -919,6 +923,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_plus:
                 increase_font_scale(vte);
                 return TRUE;
+            case GDK_KEY_underscore:
+                info->config.current_font++;
+                info->config.current_font %= info->config.fonts.size();
+                vte_terminal_set_font(vte, info->config.fonts[info->config.current_font]);
+                info->config.hints.current_font = info->config.current_font;
+                return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
                 return TRUE;
@@ -1265,6 +1275,20 @@ get_config_cairo_color(GKeyFile *config, const char *group, const char *key) {
     return {};
 }
 
+static std::vector<PangoFontDescription *> split_fonts (char *str) {
+    std::vector<PangoFontDescription *> ret;
+    std::string s(str);
+    std::string buf = "";
+    for (unsigned int i = 0; i<s.size(); i++) {
+        if (s[i] == ',') {
+            ret.push_back(pango_font_description_from_string(buf.data()));
+            buf = "";
+        } else buf += s[i];
+    }
+    ret.push_back(pango_font_description_from_string(buf.data()));
+    return ret;
+}
+
 static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hint_info &hints) {
     std::array<GdkRGBA, 256> palette;
     char color_key[] = "color000";
@@ -1315,7 +1339,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     }
 
     if (auto s = get_config_string(config, "hints", "font")) {
-        hints.font = pango_font_description_from_string(*s);
+        hints.font = split_fonts(*s);
         g_free(*s);
     }
 
@@ -1415,9 +1439,9 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (auto s = get_config_string(config, "options", "font")) {
-        PangoFontDescription *font = pango_font_description_from_string(*s);
-        vte_terminal_set_font(vte, font);
-        pango_font_description_free(font);
+        info->fonts = split_fonts(*s);
+        info->current_font = 0;
+        vte_terminal_set_font(vte, info->fonts[info->current_font]);
         g_free(*s);
     }
 
@@ -1573,8 +1597,8 @@ int main(int argc, char **argv) {
          std::vector<url_data>(),
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
-        {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+        {{{}, 0, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0, {}, 0},
         gtk_window_fullscreen
     };
 
