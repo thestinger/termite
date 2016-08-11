@@ -8,7 +8,7 @@ database = None
 def pkg_config(pkg):
   def not_whitespace(string):
     return not (string == '' or string == '\n')
-  output = subprocess.check_output(['pkg-config', '--cflags', pkg]).strip()
+  output = subprocess.check_output(['pkg-config', '--cflags', pkg], universal_newlines=True).strip()
   return filter(not_whitespace, output.split(' '))
 
 flags = [
