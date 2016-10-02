@@ -1279,6 +1279,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
             palette[i].blue = (((i & 4) ? 0xc000 : 0) + (i > 7 ? 0x3fff: 0)) / 65535.0;
             palette[i].green = (((i & 2) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
             palette[i].red = (((i & 1) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
+            palette[i].alpha = 0;
         } else if (i < 232) {
             const unsigned j = i - 16;
             const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
@@ -1288,9 +1289,11 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
             palette[i].red   = (red | red << 8) / 65535.0;
             palette[i].green = (green | green << 8) / 65535.0;
             palette[i].blue  = (blue | blue << 8) / 65535.0;
+            palette[i].alpha = 0;
         } else if (i < 256) {
             const unsigned shade = 8 + (i - 232) * 10;
             palette[i].red = palette[i].green = palette[i].blue = (shade | shade << 8) / 65535.0;
+            palette[i].alpha = 0;
         }
     }
 
