@@ -916,9 +916,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_plus:
-                increase_font_scale(vte);
-                return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
                 return TRUE;
@@ -946,14 +943,19 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
-    } else if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
-               (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
+    }
+    if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
+           (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
-    } else if (modifiers == GDK_CONTROL_MASK) {
-        switch (gdk_keyval_to_lower(event->keyval)) {
+    }
+    if (modifiers & GDK_CONTROL_MASK) {
+        switch (event->keyval) {
             case GDK_KEY_Tab:
                 overlay_show(&info->panel, overlay_mode::completion, vte);
+                return TRUE;
+            case GDK_KEY_plus:
+                increase_font_scale(vte);
                 return TRUE;
             case GDK_KEY_minus:
                 decrease_font_scale(vte);
@@ -1277,6 +1279,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
             palette[i].blue = (((i & 4) ? 0xc000 : 0) + (i > 7 ? 0x3fff: 0)) / 65535.0;
             palette[i].green = (((i & 2) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
             palette[i].red = (((i & 1) ? 0xc000 : 0) + (i > 7 ? 0x3fff : 0)) / 65535.0;
+            palette[i].alpha = 0;
         } else if (i < 232) {
             const unsigned j = i - 16;
             const unsigned r = j / 36, g = (j / 6) % 6, b = j % 6;
@@ -1286,9 +1289,11 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
             palette[i].red   = (red | red << 8) / 65535.0;
             palette[i].green = (green | green << 8) / 65535.0;
             palette[i].blue  = (blue | blue << 8) / 65535.0;
+            palette[i].alpha = 0;
         } else if (i < 256) {
             const unsigned shade = 8 + (i - 232) * 10;
             palette[i].red = palette[i].green = palette[i].blue = (shade | shade << 8) / 65535.0;
+            palette[i].alpha = 0;
         }
     }
 
