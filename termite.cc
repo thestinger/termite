@@ -1313,7 +1313,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
         vte_terminal_set_color_cursor(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
-        vte_terminal_set_color_cursor_foreground(vte, &*color);
+        vte_terminal_set_color_foreground(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "highlight")) {
         vte_terminal_set_color_highlight(vte, &*color);
