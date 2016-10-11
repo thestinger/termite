@@ -32,8 +32,11 @@ filter_unmatched_urls = true
 #modify_other_keys = false
 
 [colors]
+# If both of these are unset, cursor falls back to the foreground color,
+# and cursor_foreground falls back to the background color.
 #cursor = #dcdccc
 #cursor_foreground = #dcdccc
+
 foreground = #dcdccc
 foreground_bold = #ffffff
 background = #3f3f3f
