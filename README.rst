@@ -203,9 +203,10 @@ TERMINFO
 
 termite.terminfo is a terminfo entry which defines termite's capabilities to
 libraries such as nvi, rogue, and ncurses, as well as apps that use these
-libraries (like tmux.)
-
-The simplest way to add termite's terminfo to your system is to use ``tic``:
+libraries (like tmux.) If you installed termite via `make install`, this was
+done for you on your local system. If you need to do this manually or do it
+on any remote servers, the simplest way to add termite's terminfo is to use
+``tic``:
 
 ::
 
