@@ -23,6 +23,30 @@ compatibility hazards.
 If no browser is configured and $BROWSER is unset, xdg-open from xdg-utils is
 used as a fallback.
 
+BUILDING VTE-NG
+---------------
+
+To build vte, you'll need
+
+* gobject-introspection-1.0 (For Debian, this package is named libgirepository1.0-dev)
+* gperf
+* gtk-doc-tools
+* valac
+
+Once dependencies are met, you can build and install by running the following:
+
+::
+
+    git clone https://github.com/thestinger/vte-ng.git
+    cd vte-ng
+    ./autogen.sh
+    ./configure
+    make && make install
+
+If when running termite you get an error about
+``vte_terminal_get_cursor_position``, that indicates that vte-ng isn't
+installed properly yet.
+
 BUILDING
 ========
 ::
