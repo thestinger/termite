@@ -197,3 +197,18 @@ following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 
 This can also be used to add varying amounts of padding to each side via
 standard usage of the CSS padding property.
+
+TERMINFO
+========
+
+termite.terminfo is a terminfo entry which defines termite's capabilities to
+libraries such as nvi, rogue, and ncurses, as well as apps that use these
+libraries (like tmux.)
+
+The simplest way to add termite's terminfo to your system is to use ``tic``:
+
+::
+
+    tic termite.terminfo
+
+Without this, apps (like tmux) may not run properly.
