@@ -210,6 +210,6 @@ on any remote servers, the simplest way to add termite's terminfo is to use
 
 ::
 
-    tic termite.terminfo
+    tic -x termite.terminfo
 
 Without this, apps (like tmux) may not run properly.
