@@ -1,18 +1,21 @@
 [options]
-#scroll_on_output = false
-#scroll_on_keystroke = true
-#audible_bell = false
-#mouse_autohide = false
 #allow_bold = true
-#dynamic_title = true
-#urgent_on_bell = true
+#audible_bell = false
 #clickable_url = true
+#dynamic_title = true
 font = Monospace 9
 #fullscreen = true
+#geometry = 640x480
+#icon_name = terminal
+#mouse_autohide = false
+#scroll_on_output = false
+#scroll_on_keystroke = true
 scrollback_lines = 10000
 #search_wrap = true
-#icon_name = terminal
-#geometry = 640x480
+#urgent_on_bell = true
+
+# $BROWSER is used by default if set, with xdg-open as a fallback
+#browser = xdg-open
 
 # "system", "on" or "off"
 #cursor_blink = system
@@ -20,17 +23,14 @@ scrollback_lines = 10000
 # "block", "underline" or "ibeam"
 #cursor_shape = block
 
-# $BROWSER is used by default if set, with xdg-open as a fallback
-#browser = xdg-open
-
-# set size hints for the window
-#size_hints = false
-
 # Hide links that are no longer valid in url select overlay mode
 #filter_unmatched_urls = true
 
 # Emit escape sequences for extra modified keys
 #modify_other_keys = false
+
+# set size hints for the window
+#size_hints = false
 
 [colors]
 # If both of these are unset, cursor falls back to the foreground color,
