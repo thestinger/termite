@@ -29,7 +29,7 @@ cursor_shape = block
 # Hide links that are no longer valid in url select overlay mode
 filter_unmatched_urls = true
 
-# emit escape sequences for extra modified keys
+# Emit escape sequences for extra modified keys
 #modify_other_keys = false
 
 [colors]
@@ -45,10 +45,10 @@ background = #3f3f3f
 # 20% background transparency (requires a compositor)
 #background = rgba(63, 63, 63, 0.8)
 
-# if unset, will reverse foreground and background
+# If unset, will reverse foreground and background
 highlight = #2f2f2f
 
-# colors from color0 to color254 can be set
+# Colors from color0 to color254 can be set
 color0 = #3f3f3f
 color1 = #705050
 color2 = #60b48a
