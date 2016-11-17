@@ -8,6 +8,7 @@ dynamic_title = true
 urgent_on_bell = true
 clickable_url = true
 font = Monospace 9
+#fullscreen = true
 scrollback_lines = 10000
 search_wrap = true
 #icon_name = terminal
