@@ -1302,6 +1302,12 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     }
 
     vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
+    if (auto color = get_config_color(config, "colors", "cursor")) {
+        vte_terminal_set_color_cursor(vte, &*color);
+    }
+    if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
+        vte_terminal_set_color_cursor_foreground(vte, &*color);
+    }
     if (auto color = get_config_color(config, "colors", "foreground")) {
         vte_terminal_set_color_foreground(vte, &*color);
         vte_terminal_set_color_bold(vte, &*color);
@@ -1312,12 +1318,6 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
         override_background_color(GTK_WIDGET(window), &*color);
-    }
-    if (auto color = get_config_color(config, "colors", "cursor")) {
-        vte_terminal_set_color_cursor(vte, &*color);
-    }
-    if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
-        vte_terminal_set_color_cursor_foreground(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "highlight")) {
         vte_terminal_set_color_highlight(vte, &*color);
