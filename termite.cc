@@ -560,7 +560,7 @@ get_text_range(VteTerminal *vte, long start_row, long start_col, long end_row, l
 }
 
 static bool is_word_char(gunichar c) {
-    static const char *word_char_ascii_punct = "-,.;/?%&#:_=+@~";
+    static const char *word_char_ascii_punct = "-,./?%&#_=+@~";
     return g_unichar_isgraph(c) &&
            (g_unichar_isalnum(c) || (g_unichar_ispunct(c) &&
                                      (c >= 0x80 || strchr(word_char_ascii_punct, (int)c) != NULL)));
@@ -587,6 +587,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
     bool in_word = false;
 
     for (long i = length - 2; i > 0; i--) {
+        cursor_col--;
         if (!is_word(codepoints[i - 1])) {
             if (in_word) {
                 break;
@@ -594,7 +595,6 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
         } else {
             in_word = true;
         }
-        cursor_col--;
     }
     vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
     update_selection(vte, select);
@@ -916,6 +916,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_plus:
+                increase_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_equal:
+                reset_font_scale(vte, info->config.font_scale);
+                return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
                 return TRUE;
@@ -943,14 +949,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
         }
-    }
-    if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
-           (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
+    } else if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
+               (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
-    }
-    if (modifiers & GDK_CONTROL_MASK) {
-        switch (event->keyval) {
+    } else if (modifiers == GDK_CONTROL_MASK) {
+        switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_Tab:
                 overlay_show(&info->panel, overlay_mode::completion, vte);
                 return TRUE;
