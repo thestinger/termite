@@ -41,35 +41,10 @@
 #include "util/maybe.hh"
 #include "util/memory.hh"
 
+#define TERMITE_MIN_FONT_SIZE (1 * PANGO_SCALE)
+#define TERMITE_MAX_FONT_SIZE (72 * PANGO_SCALE)
+
 using namespace std::placeholders;
-
-/* Allow scales a bit smaller and a bit larger than the usual pango ranges */
-#define TERMINAL_SCALE_XXX_SMALL   (PANGO_SCALE_XX_SMALL/1.2)
-#define TERMINAL_SCALE_XXXX_SMALL  (TERMINAL_SCALE_XXX_SMALL/1.2)
-#define TERMINAL_SCALE_XXXXX_SMALL (TERMINAL_SCALE_XXXX_SMALL/1.2)
-#define TERMINAL_SCALE_XXX_LARGE   (PANGO_SCALE_XX_LARGE*1.2)
-#define TERMINAL_SCALE_XXXX_LARGE  (TERMINAL_SCALE_XXX_LARGE*1.2)
-#define TERMINAL_SCALE_XXXXX_LARGE (TERMINAL_SCALE_XXXX_LARGE*1.2)
-#define TERMINAL_SCALE_MINIMUM     (TERMINAL_SCALE_XXXXX_SMALL/1.2)
-#define TERMINAL_SCALE_MAXIMUM     (TERMINAL_SCALE_XXXXX_LARGE*1.2)
-
-static const std::vector<double> zoom_factors = {
-    TERMINAL_SCALE_MINIMUM,
-    TERMINAL_SCALE_XXXXX_SMALL,
-    TERMINAL_SCALE_XXXX_SMALL,
-    TERMINAL_SCALE_XXX_SMALL,
-    PANGO_SCALE_XX_SMALL,
-    PANGO_SCALE_X_SMALL,
-    PANGO_SCALE_SMALL,
-    PANGO_SCALE_MEDIUM,
-    PANGO_SCALE_LARGE,
-    PANGO_SCALE_X_LARGE,
-    PANGO_SCALE_XX_LARGE,
-    TERMINAL_SCALE_XXX_LARGE,
-    TERMINAL_SCALE_XXXX_LARGE,
-    TERMINAL_SCALE_XXXXX_LARGE,
-    TERMINAL_SCALE_MAXIMUM
-};
 
 enum class overlay_mode {
     hidden,
@@ -123,7 +98,7 @@ struct config_info {
     gboolean fullscreen;
     int tag;
     char *config_file;
-    gdouble font_scale;
+    const PangoFontDescription *font_info;
 };
 
 struct keybind_info {
@@ -729,30 +704,38 @@ void window_title_cb(VteTerminal *vte, gboolean *dynamic_title) {
                          title ? title : "termite");
 }
 
-static void reset_font_scale(VteTerminal *vte, gdouble scale) {
-    vte_terminal_set_font_scale(vte, scale);
+static void __chg_font_size(VteTerminal *vte, const PangoFontDescription *font_info, int delta) {
+    PangoFontDescription *new_info =\
+        pango_font_description_copy_static(vte_terminal_get_font(vte));
+    if (!new_info) {
+        return;
+    }
+    
+    gint new_size;
+    if (!font_info) {
+        gint f_size = pango_font_description_get_size(new_info);
+        int true_delta = (int)(delta * PANGO_SCALE);
+        new_size =\
+            std::max(std::min(f_size + true_delta, TERMITE_MAX_FONT_SIZE), TERMITE_MIN_FONT_SIZE);
+    } else {
+        new_size = pango_font_description_get_size(font_info);
+    }
+
+    pango_font_description_set_size(new_info, new_size);
+    vte_terminal_set_font(vte, new_info);
+    pango_font_description_free(new_info);
 }
 
-static void increase_font_scale(VteTerminal *vte) {
-    gdouble scale = vte_terminal_get_font_scale(vte);
-
-    for (auto it = zoom_factors.begin(); it != zoom_factors.end(); ++it) {
-        if ((*it - scale) > 1e-6) {
-            vte_terminal_set_font_scale(vte, *it);
-            return;
-        }
-    }
+static void reset_font_size(VteTerminal *vte, const PangoFontDescription *font_info) {
+    __chg_font_size(vte, font_info, 0);
 }
 
-static void decrease_font_scale(VteTerminal *vte) {
-    gdouble scale = vte_terminal_get_font_scale(vte);
+static void increase_font_size(VteTerminal *vte) {
+    __chg_font_size(vte, nullptr, 1);
+}
 
-    for (auto it = zoom_factors.rbegin(); it != zoom_factors.rend(); ++it) {
-        if ((scale - *it) > 1e-6) {
-            vte_terminal_set_font_scale(vte, *it);
-            return;
-        }
-    }
+static void decrease_font_size(VteTerminal *vte) {
+    __chg_font_size(vte, nullptr, -1);
 }
 
 gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *info) {
@@ -917,10 +900,10 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
         switch (gdk_keyval_to_lower(event->keyval)) {
             case GDK_KEY_plus:
-                increase_font_scale(vte);
+                increase_font_size(vte);
                 return TRUE;
             case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
+                reset_font_size(vte, info->config.font_info);
                 return TRUE;
             case GDK_KEY_t:
                 launch_in_directory(vte);
@@ -959,13 +942,13 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::completion, vte);
                 return TRUE;
             case GDK_KEY_plus:
-                increase_font_scale(vte);
+                increase_font_size(vte);
                 return TRUE;
             case GDK_KEY_minus:
-                decrease_font_scale(vte);
+                decrease_font_size(vte);
                 return TRUE;
             case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
+                reset_font_size(vte, info->config.font_info);
                 return TRUE;
             default:
                 if (modify_key_feed(event, info, modify_table))
@@ -1395,7 +1378,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
-    info->font_scale = vte_terminal_get_font_scale(vte);
 
     g_free(info->browser);
     info->browser = nullptr;
@@ -1429,6 +1411,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         pango_font_description_free(font);
         g_free(*s);
     }
+
+    info->font_info  = vte_terminal_get_font(vte);
 
     if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
         vte_terminal_set_scrollback_lines(vte, *i);
