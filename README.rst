@@ -23,6 +23,30 @@ compatibility hazards.
 If no browser is configured and $BROWSER is unset, xdg-open from xdg-utils is
 used as a fallback.
 
+BUILDING VTE-NG
+---------------
+
+To build vte, you'll need
+
+* gobject-introspection-1.0 (For Debian, this package is named libgirepository1.0-dev)
+* gperf
+* gtk-doc-tools
+* valac
+
+Once dependencies are met, you can build and install by running the following:
+
+::
+
+    git clone https://github.com/thestinger/vte-ng.git
+    cd vte-ng
+    ./autogen.sh
+    ./configure
+    make && make install
+
+If when running termite you get an error about
+``vte_terminal_get_cursor_position``, that indicates that vte-ng isn't
+installed properly yet.
+
 BUILDING
 ========
 ::
@@ -173,3 +197,19 @@ following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 
 This can also be used to add varying amounts of padding to each side via
 standard usage of the CSS padding property.
+
+TERMINFO
+========
+
+termite.terminfo is a terminfo entry which defines termite's capabilities to
+libraries such as nvi, rogue, and ncurses, as well as apps that use these
+libraries (like tmux.) If you installed termite via `make install`, this was
+done for you on your local system. If you need to do this manually or do it
+on any remote servers, the simplest way to add termite's terminfo is to use
+``tic``:
+
+::
+
+    tic -x termite.terminfo
+
+Without this, apps (like tmux) may not run properly.
