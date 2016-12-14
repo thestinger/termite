@@ -710,13 +710,17 @@ static void __chg_font_size(VteTerminal *vte, const PangoFontDescription *font_i
     if (!new_info) {
         return;
     }
-    
+
     gint new_size;
+
     if (!font_info) {
         gint f_size = pango_font_description_get_size(new_info);
-        int true_delta = (int)(delta * PANGO_SCALE);
+        int true_delta = reinterpret_cast<int>(delta * PANGO_SCALE);
         new_size =\
-            std::max(std::min(f_size + true_delta, TERMITE_MAX_FONT_SIZE), TERMITE_MIN_FONT_SIZE);
+            std::max(
+                std::min( f_size + true_delta, TERMITE_MAX_FONT_SIZE),
+                TERMITE_MIN_FONT_SIZE
+            );
     } else {
         new_size = pango_font_description_get_size(font_info);
     }
@@ -1412,7 +1416,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         g_free(*s);
     }
 
-    info->font_info  = vte_terminal_get_font(vte);
+    info->font_info = pango_font_description_copy(vte_terminal_get_font(vte));
 
     if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
         vte_terminal_set_scrollback_lines(vte, *i);
