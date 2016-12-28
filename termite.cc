@@ -1423,6 +1423,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         info->tag = -1;
     }
 
+    gtk_window_set_decorated(window, cfg_bool("client_side_decoration", TRUE));
+
     if (auto s = get_config_string(config, "options", "font")) {
         PangoFontDescription *font = pango_font_description_from_string(*s);
         vte_terminal_set_font(vte, font);
