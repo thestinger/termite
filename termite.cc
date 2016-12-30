@@ -1179,10 +1179,10 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
 void search(VteTerminal *vte, const char *pattern, bool reverse) {
     auto terminal_search = reverse ? vte_terminal_search_find_previous : vte_terminal_search_find_next;
 
-    GRegex *regex = vte_terminal_search_get_gregex(vte);
-    if (regex) g_regex_unref(regex);
-    regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, nullptr);
-    vte_terminal_search_set_gregex(vte, regex, (GRegexMatchFlags)0);
+    VteRegex *regex = vte_terminal_search_get_regex(vte);
+    if (regex) vte_regex_unref(regex);
+    regex = vte_regex_new_for_search(pattern, -1, 0, nullptr);
+    vte_terminal_search_set_regex(vte, regex, 0);
 
     if (!terminal_search(vte)) {
         vte_terminal_unselect_all(vte);
