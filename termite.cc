@@ -36,6 +36,9 @@
 #include <gdk/gdkx.h>
 #endif
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 #include "url_regex.hh"
 #include "util/clamp.hh"
 #include "util/maybe.hh"
@@ -1411,12 +1414,12 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (info->clickable_url) {
-        info->tag = vte_terminal_match_add_gregex(vte,
-            g_regex_new(url_regex,
-                        (GRegexCompileFlags)(G_REGEX_CASELESS | G_REGEX_MULTILINE),
-                        G_REGEX_MATCH_NOTEMPTY,
-                        nullptr),
-            (GRegexMatchFlags)0);
+        info->tag = vte_terminal_match_add_regex(vte,
+                                                 vte_regex_new_for_match(url_regex,
+                                                                         -1,
+                                                                         PCRE2_CASELESS | PCRE2_MULTILINE | PCRE2_NOTEMPTY,
+                                                                         nullptr),
+                                                 0);
         vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
     } else if (info->tag != -1) {
         vte_terminal_match_remove(vte, info->tag);
