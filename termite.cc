@@ -92,6 +92,7 @@ enum class vi_mode {
 
 struct select_info {
     vi_mode mode;
+    long count;
     long begin_col;
     long begin_row;
     long origin_col;
@@ -539,8 +540,19 @@ static void update_scroll(VteTerminal *vte) {
     }
 }
 
+long get_count(select_info *select) {
+    long count = 1;
+    if ( select->count > 0 ) {
+        count = select->count;
+        select->count = 0;
+    }
+    return count;
+}
+
 static void move(VteTerminal *vte, select_info *select, long col, long row) {
     const long end_col = vte_terminal_get_column_count(vte) - 1;
+
+    long count = get_count(select);
 
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
@@ -549,8 +561,8 @@ static void move(VteTerminal *vte, select_info *select, long col, long row) {
     vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
 
     vte_terminal_set_cursor_position(vte,
-                                     clamp(cursor_col + col, 0l, end_col),
-                                     clamp(cursor_row + row, first_row(vte), last_row(vte)));
+                                     clamp(cursor_col + col * count, 0l, end_col),
+                                     clamp(cursor_row + row * count, first_row(vte), last_row(vte)));
 
     update_scroll(vte);
     update_selection(vte, select);
@@ -610,13 +622,18 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
         return;
     }
 
+    long count = get_count(select);
+
     bool in_word = false;
 
-    for (long i = length - 2; i > 0; i--) {
+    for (long i = length - 2; i >= 0; i--) {
         cursor_col--;
         if (!is_word(codepoints[i - 1])) {
             if (in_word) {
-                break;
+                if ( --count == 0 ) {
+                    break;
+                }
+                in_word = false;
             }
         } else {
             in_word = true;
@@ -722,13 +739,18 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word, bool 
         length--;
     }
 
+    long count = get_count(select);
+
     bool end_of_word = false;
 
     if (!goto_word_end) {
         for (long i = 1; i < length; i++) {
             if (is_word(codepoints[i - 1])) {
                 if (end_of_word) {
-                    break;
+                    if ( --count == 0 ) {
+                        break;
+                    }
+                    end_of_word = false;
                 }
             } else {
                 end_of_word = true;
@@ -739,7 +761,9 @@ static void move_forward(VteTerminal *vte, select_info *select, F is_word, bool 
         for (long i = 2; i <= length; i++) {
             cursor_col++;
             if (is_word(codepoints[i - 1]) && !is_word(codepoints[i])) {
-                break;
+                if ( --count == 0 ) {
+                    break;
+                }
             }
         }
     }
@@ -899,9 +923,25 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_E:
                 move_forward_end_blank_word(vte, &info->select);
                 break;
-            case GDK_KEY_0:
             case GDK_KEY_Home:
                 set_cursor_column(vte, &info->select, 0);
+                break;
+            case GDK_KEY_0:
+                if ( info->select.count == 0 ) {
+                    set_cursor_column(vte, &info->select, 0);
+                    break;
+                }
+                // fallthrough
+            case GDK_KEY_1:
+            case GDK_KEY_2:
+            case GDK_KEY_3:
+            case GDK_KEY_4:
+            case GDK_KEY_5:
+            case GDK_KEY_6:
+            case GDK_KEY_7:
+            case GDK_KEY_8:
+            case GDK_KEY_9:
+                info->select.count = info->select.count * 10 + (event->keyval - '0');
                 break;
             case GDK_KEY_asciicircum:
                 set_cursor_column(vte, &info->select, 0);
@@ -946,18 +986,26 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::rsearch, vte);
                 break;
             case GDK_KEY_n:
-                vte_terminal_search_find_next(vte);
+                for ( long i = get_count(&info->select); i > 0; i--) {
+                    vte_terminal_search_find_next(vte);
+                }
                 vte_terminal_copy_primary(vte);
                 break;
             case GDK_KEY_N:
-                vte_terminal_search_find_previous(vte);
+                for ( long i = get_count(&info->select); i > 0; i--) {
+                    vte_terminal_search_find_previous(vte);
+                }
                 vte_terminal_copy_primary(vte);
                 break;
             case GDK_KEY_u:
-                search(vte, url_regex, false);
+                for ( long i = get_count(&info->select); i > 0; i--) {
+                    search(vte, url_regex, false);
+                }
                 break;
             case GDK_KEY_U:
-                search(vte, url_regex, true);
+                for ( long i = get_count(&info->select); i > 0; i--) {
+                    search(vte, url_regex, true);
+                }
                 break;
             case GDK_KEY_o:
                 open_selection(info->config.browser, vte);
@@ -1701,7 +1749,7 @@ int main(int argc, char **argv) {
          overlay_mode::hidden,
          std::vector<url_data>(),
          nullptr},
-        {vi_mode::insert, 0, 0, 0, 0},
+        {vi_mode::insert, 0, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
          nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
         gtk_window_fullscreen

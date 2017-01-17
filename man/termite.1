@@ -96,19 +96,19 @@ visual line mode
 .IP "\fBctrl-v\fP"
 visual block mode
 .IP "\fBhjkl\fP or \fBarrow keys\fP"
-move cursor left/down/up/right
+\fB[count]\fP move cursor left/down/up/right
 .IP "\fBw\fP or \fBshift-right\fP"
-forward word
+\fB[count]\fP forward word
 .IP "\fBe\fP"
-forward to end of word
+\fB[count]\fP forward to end of word
 .IP "\fBb\fP or \fBshift-left\fP"
-backward word
+\fB[count]\fP backward word
 .IP "\fBW\fP or \fBctrl-right\fP"
-forward \fIWORD\fP (non-whitespace)
+\fB[count]\fP forward \fIWORD\fP (non-whitespace)
 .IP "\fBE\fP"
-forward to end of \fIWORD\fP (non-whitespace)
+\fB[count]\fP forward to end of \fIWORD\fP (non-whitespace)
 .IP "\fBB\fP or \fBctrl-left\fP"
-backward \fIWORD\fP (non-whitespace)
+\fB[count]\fP backward \fIWORD\fP (non-whitespace)
 .IP "\fBH\fP"
 move cursor to the top of the screen
 .IP "\fBM\fP"
@@ -126,13 +126,13 @@ jump to start of first row
 .IP "\fBG\fP"
 jump to start of last row
 .IP "\fBctrl-u\fP"
-move cursor a half screen up
+\fB[count]\fP move cursor a half screen up
 .IP "\fBctrl-d\fP"
-move cursor a half screen down
+\fB[count]\fP move cursor a half screen down
 .IP "\fBctrl-b\fP"
-move cursor a full screen up (back)
+\fB[count]\fP move cursor a full screen up (back)
 .IP "\fBctrl-f\fP"
-move cursor a full screen down (forward)
+\fB[count]\fP move cursor a full screen down (forward)
 .IP "\fBy\fP"
 copy to \fICLIPBOARD\fP
 .IP "\fB/\fP"
@@ -140,17 +140,17 @@ forward search
 .IP "\fB?\fP"
 reverse search
 .IP "\fBu\fP"
-forward url search
+\fB[count]\fP forward url search
 .IP "\fBU\fP"
-reverse url search
+\fB[count]\fP reverse url search
 .IP "\fBo\fP"
 open the current selection as a url
 .IP "\fBReturn\fP"
 open the current selection as a url and enter insert mode
 .IP "\fBn\fP"
-next search match
+\fB[count]\fP next search match
 .IP "\fBN\fP"
-previous search match
+\fB[count]\fP previous search match
 .SS Hints Mode
 The
 \fBHints Mode\fP is meant for accessing urls outputted to the terminal.
