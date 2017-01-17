@@ -507,6 +507,23 @@ static long last_row(VteTerminal *vte) {
     return (long)gtk_adjustment_get_upper(adjust) - 1;
 }
 
+static long top_row(VteTerminal *vte) {
+    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
+    return (long)gtk_adjustment_get_value(adjust);
+}
+
+static long middle_row(VteTerminal *vte) {
+    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
+    return (long)gtk_adjustment_get_value(adjust) +
+                (long)vte_terminal_get_row_count(vte) / 2;
+}
+
+static long bottom_row(VteTerminal *vte) {
+    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
+    return (long)gtk_adjustment_get_value(adjust) +
+                (long)vte_terminal_get_row_count(vte) - 1;
+}
+
 static void update_scroll(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     const double scroll_row = gtk_adjustment_get_value(adjust);
@@ -893,6 +910,15 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 break;
             case GDK_KEY_G:
                 move_to_row_start(vte, &info->select, last_row(vte));
+                break;
+            case GDK_KEY_H:
+                move_to_row_start(vte, &info->select, top_row(vte));
+                break;
+            case GDK_KEY_M:
+                move_to_row_start(vte, &info->select, middle_row(vte));
+                break;
+            case GDK_KEY_L:
+                move_to_row_start(vte, &info->select, bottom_row(vte));
                 break;
             case GDK_KEY_v:
                 toggle_visual(vte, &info->select, vi_mode::visual);
