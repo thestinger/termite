@@ -10,6 +10,8 @@ font = Monospace 9
 #mouse_autohide = false
 #scroll_on_output = false
 #scroll_on_keystroke = true
+# Length of the scrollback buffer, 0 disabled the scrollback buffer
+# and setting it to a negative value means "infinite scrollback"
 scrollback_lines = 10000
 #search_wrap = true
 #urgent_on_bell = true
