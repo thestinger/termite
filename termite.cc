@@ -186,6 +186,7 @@ static const std::map<int, const char *> modify_table = {
     { GDK_KEY_apostrophe, "\033[27;5;39~" },
     { GDK_KEY_comma,      "\033[27;5;44~" },
     { GDK_KEY_minus,      "\033[27;5;45~" },
+    { GDK_KEY_dash,       "\033[27;5;45~" },
     { GDK_KEY_period,     "\033[27;5;46~" },
     { GDK_KEY_0,          "\033[27;5;48~" },
     { GDK_KEY_1,          "\033[27;5;49~" },
@@ -214,6 +215,7 @@ static const std::map<int, const char *> modify_meta_table = {
     { GDK_KEY_apostrophe, "\033[27;13;39~" },
     { GDK_KEY_comma,      "\033[27;13;44~" },
     { GDK_KEY_minus,      "\033[27;13;45~" },
+    { GDK_KEY_dash,       "\033[27;13;45~" },
     { GDK_KEY_period,     "\033[27;13;46~" },
     { GDK_KEY_0,          "\033[27;13;48~" },
     { GDK_KEY_1,          "\033[27;13;49~" },
@@ -962,6 +964,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 increase_font_scale(vte);
                 return TRUE;
             case GDK_KEY_minus:
+                decrease_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_dash:
                 decrease_font_scale(vte);
                 return TRUE;
             case GDK_KEY_equal:
