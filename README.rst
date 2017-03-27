@@ -173,3 +173,22 @@ following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 
 This can also be used to add varying amounts of padding to each side via
 standard usage of the CSS padding property.
+
+TERMINFO
+========
+
+When working on a remote system with termite's terminfo missing, an error might
+occur:
+
+::
+
+    Error opening terminal: xterm-termite
+
+To solve this issue, copy the terminfo to your remote system and install it for
+the logged in user. Or on Arch Linux install ``termite-terminfo``.
+
+::
+
+    scp termite.terminfo remoteserver:
+    # On the remote server
+    tic -x termite.terminfo
