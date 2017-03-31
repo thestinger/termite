@@ -1480,11 +1480,17 @@ static void exit_with_success(VteTerminal *) {
 }
 
 static char *get_user_shell_with_fallback() {
-    if (const char *env = g_getenv("SHELL"))
-        return g_strdup(env);
+    if (const char *env = g_getenv("SHELL") )
+    {
+        if (!((env != NULL) && (env[0] == '\0')))
+            return g_strdup(env);
+    }
 
     if (char *command = vte_get_user_shell())
-        return command;
+    {
+        if (!((command != NULL) && (command[0] == '\0')))
+           return command;
+    }
 
     return g_strdup("/bin/sh");
 }
