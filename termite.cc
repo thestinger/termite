@@ -1639,6 +1639,7 @@ int main(int argc, char **argv) {
     };
     g_option_context_add_main_entries(context, entries, nullptr);
     g_option_context_add_group(context, gtk_get_option_group(TRUE));
+    g_option_context_set_strict_posix(context, TRUE);
 
     if (!g_option_context_parse(context, &argc, &argv, &error)) {
         g_printerr("option parsing failed: %s\n", error->message);
