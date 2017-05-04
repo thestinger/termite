@@ -1302,6 +1302,12 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     }
 
     vte_terminal_set_colors(vte, nullptr, nullptr, palette.data(), palette.size());
+    if (auto color = get_config_color(config, "colors", "cursor")) {
+        vte_terminal_set_color_cursor(vte, &*color);
+    }
+    if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
+        vte_terminal_set_color_cursor_foreground(vte, &*color);
+    }
     if (auto color = get_config_color(config, "colors", "foreground")) {
         vte_terminal_set_color_foreground(vte, &*color);
         vte_terminal_set_color_bold(vte, &*color);
@@ -1312,12 +1318,6 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     if (auto color = get_config_color(config, "colors", "background")) {
         vte_terminal_set_color_background(vte, &*color);
         override_background_color(GTK_WIDGET(window), &*color);
-    }
-    if (auto color = get_config_color(config, "colors", "cursor")) {
-        vte_terminal_set_color_cursor(vte, &*color);
-    }
-    if (auto color = get_config_color(config, "colors", "cursor_foreground")) {
-        vte_terminal_set_color_cursor_foreground(vte, &*color);
     }
     if (auto color = get_config_color(config, "colors", "highlight")) {
         vte_terminal_set_color_highlight(vte, &*color);
@@ -1371,31 +1371,26 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
 
 static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, char **icon, GKeyFile *config) {
-    if (geometry) {
-        if (auto s = get_config_string(config, "options", "geometry")) {
-            *geometry = *s;
-        }
-    }
 
     auto cfg_bool = [config](const char *key, gboolean value) {
         return get_config<gboolean>(g_key_file_get_boolean,
                                     config, "options", key).get_value_or(value);
     };
 
-    vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
-    vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
+    info->clickable_url = cfg_bool("clickable_url", TRUE);
+    info->dynamic_title = cfg_bool("dynamic_title", TRUE);
+    info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
+    info->fullscreen = cfg_bool("fullscreen", TRUE);
+    info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
+    info->size_hints = cfg_bool("size_hints", FALSE);
+    info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
+    info->font_scale = vte_terminal_get_font_scale(vte);
+    vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
+    vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
     vte_terminal_set_audible_bell(vte, cfg_bool("audible_bell", FALSE));
     vte_terminal_set_mouse_autohide(vte, cfg_bool("mouse_autohide", FALSE));
-    vte_terminal_set_allow_bold(vte, cfg_bool("allow_bold", TRUE));
-    vte_terminal_search_set_wrap_around(vte, cfg_bool("search_wrap", TRUE));
-    info->dynamic_title = cfg_bool("dynamic_title", TRUE);
-    info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
-    info->clickable_url = cfg_bool("clickable_url", TRUE);
-    info->size_hints = cfg_bool("size_hints", FALSE);
-    info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
-    info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
-    info->fullscreen = cfg_bool("fullscreen", TRUE);
-    info->font_scale = vte_terminal_get_font_scale(vte);
+    vte_terminal_set_scroll_on_output(vte, cfg_bool("scroll_on_output", FALSE));
+    vte_terminal_set_scroll_on_keystroke(vte, cfg_bool("scroll_on_keystroke", TRUE));
 
     g_free(info->browser);
     info->browser = nullptr;
@@ -1423,17 +1418,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         info->tag = -1;
     }
 
-    if (auto s = get_config_string(config, "options", "font")) {
-        PangoFontDescription *font = pango_font_description_from_string(*s);
-        vte_terminal_set_font(vte, font);
-        pango_font_description_free(font);
-        g_free(*s);
-    }
-
-    if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
-        vte_terminal_set_scrollback_lines(vte, *i);
-    }
-
     if (auto s = get_config_string(config, "options", "cursor_blink")) {
         if (!g_ascii_strcasecmp(*s, "system")) {
             vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_SYSTEM);
@@ -1456,10 +1440,27 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
         g_free(*s);
     }
 
+    if (auto s = get_config_string(config, "options", "font")) {
+        PangoFontDescription *font = pango_font_description_from_string(*s);
+        vte_terminal_set_font(vte, font);
+        pango_font_description_free(font);
+        g_free(*s);
+    }
+
+    if (geometry) {
+        if (auto s = get_config_string(config, "options", "geometry")) {
+            *geometry = *s;
+        }
+    }
+
     if (icon) {
         if (auto s = get_config_string(config, "options", "icon_name")) {
             *icon = *s;
         }
+    }
+
+    if (auto s = get_config_integer(config, "options", "scrollback_lines")) {
+        vte_terminal_set_scrollback_lines(vte, *s);
     }
 
     if (info->size_hints) {
