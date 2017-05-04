@@ -20,6 +20,15 @@ to expose functionality that's not required by GNOME Terminal even if there's
 no extra maintenance (it already exists internally) and no additional backwards
 compatibility hazards.
 
+To install the latest version of the vte-ng dependency from Github, run
+::
+
+    git clone https://github.com/thestinger/vte-ng.git
+    cd vte-ng
+    ./autogen.sh
+    sudo make
+    sudo make install
+
 If no browser is configured and $BROWSER is unset, xdg-open from xdg-utils is
 used as a fallback.
 
