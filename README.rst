@@ -158,6 +158,45 @@ completions, escape closes the widget and enter accepts the input.
 In hints mode, the input will be accepted as soon as termite considers it a
 unique match.
 
+FONTS AND COLORS
+================
+Termite reads its font and color settings from its config file (usually ``~/.config/termite/config``, but see above for search order). The following settings are supported:
+
+.. code::
+
+    [options]
+    font = Monospace 9
+    font = Hack 10
+    # ... and additional fallback fonts, ones specified later take precedence
+
+    [colors]
+    foreground = #839496
+    forground_bold = #839496
+    background = #002b36
+    cursor = #073642
+    cursor_forground = #dc322f
+    highlight = #859900
+    
+    color0 = #073642
+    color1 = #dc322f
+    color2 = #859900
+    color3 = #b58900
+    color4 = #268bd2
+    color5 = #d33682
+    color6 = #2aa198
+    color7 = #eee8d5
+    color9 = #cb4b16
+    color8 = #002b36
+    color10 = #586e75
+    color11 = #657b83
+    color12 = #839496
+    color13 = #6c71c4
+    color14 = #93a1a1
+    color15 = #fdf6e3
+    # ... and up to color<255> = #<rgb hex value>
+
+Colours in exemplar are taken from Solarized dark (http://ethanschoonover.com/solarized)
+
 PADDING
 =======
 
