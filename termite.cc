@@ -1397,6 +1397,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     info->fullscreen = cfg_bool("fullscreen", TRUE);
     info->font_scale = vte_terminal_get_font_scale(vte);
 
+    gtk_window_set_decorated(window, cfg_bool("decorated", TRUE));
+
     g_free(info->browser);
     info->browser = nullptr;
 
