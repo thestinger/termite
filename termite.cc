@@ -1552,6 +1552,12 @@ int main(int argc, char **argv) {
     GtkWidget *vte_widget = vte_terminal_new();
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
 
+    GdkScreen *screen = gtk_widget_get_screen(window);
+    GdkVisual *visual = gdk_screen_get_rgba_visual(screen);
+    if (visual) {
+        gtk_widget_set_visual(GTK_WIDGET(window), visual);
+    }
+
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
         g_free(role);
