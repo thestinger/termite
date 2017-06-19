@@ -5,6 +5,7 @@
 #dynamic_title = true
 font = Monospace 9
 #fullscreen = true
+#maximized = false
 #geometry = 640x480
 #icon_name = terminal
 #mouse_autohide = false
