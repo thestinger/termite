@@ -32,6 +32,9 @@
 #include <gtk/gtk.h>
 #include <vte/vte.h>
 
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
+
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -1176,10 +1179,13 @@ GtkTreeModel *create_completion_model(VteTerminal *vte) {
 void search(VteTerminal *vte, const char *pattern, bool reverse) {
     auto terminal_search = reverse ? vte_terminal_search_find_previous : vte_terminal_search_find_next;
 
-    GRegex *regex = vte_terminal_search_get_gregex(vte);
-    if (regex) g_regex_unref(regex);
-    regex = g_regex_new(pattern, (GRegexCompileFlags)0, (GRegexMatchFlags)0, nullptr);
-    vte_terminal_search_set_gregex(vte, regex, (GRegexMatchFlags)0);
+    VteRegex *regex = vte_terminal_search_get_regex(vte);
+    if (regex) vte_regex_unref(regex);
+    vte_terminal_search_set_regex(vte,
+                    vte_regex_new_for_search(pattern,
+                                    (gssize) strlen(pattern),
+                                    PCRE2_MULTILINE | PCRE2_CASELESS,
+                                    nullptr), 0);
 
     if (!terminal_search(vte)) {
         vte_terminal_unselect_all(vte);
@@ -1411,12 +1417,12 @@ static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (info->clickable_url) {
-        info->tag = vte_terminal_match_add_gregex(vte,
-            g_regex_new(url_regex,
-                        (GRegexCompileFlags)(G_REGEX_CASELESS | G_REGEX_MULTILINE),
-                        G_REGEX_MATCH_NOTEMPTY,
-                        nullptr),
-            (GRegexMatchFlags)0);
+        info->tag = vte_terminal_match_add_regex(vte,
+                vte_regex_new_for_match(url_regex,
+                                        (gssize) strlen(url_regex),
+                                        PCRE2_MULTILINE | PCRE2_NOTEMPTY,
+                                        nullptr),
+                0);
         vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
     } else if (info->tag != -1) {
         vte_terminal_match_remove(vte, info->tag);
