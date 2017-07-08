@@ -1371,25 +1371,35 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
                         char **geometry, char **icon) {
     const std::string default_path = "/termite/config";
     GKeyFile *config = g_key_file_new();
+    GError *error = nullptr;
 
     gboolean loaded = FALSE;
 
     if (info->config_file) {
         loaded = g_key_file_load_from_file(config,
                                            info->config_file,
-                                           G_KEY_FILE_NONE, nullptr);
+                                           G_KEY_FILE_NONE, &error);
+        if (!loaded)
+            g_printerr("%s parsing failed: %s\n", info->config_file,
+                       error->message);
     }
 
     if (!loaded) {
         loaded = g_key_file_load_from_file(config,
                                            (g_get_user_config_dir() + default_path).c_str(),
-                                           G_KEY_FILE_NONE, nullptr);
+                                           G_KEY_FILE_NONE, &error);
+        if (!loaded)
+            g_printerr("%s parsing failed: %s\n", (g_get_user_config_dir() + default_path).c_str(),
+                       error->message);
     }
 
     for (const char *const *dir = g_get_system_config_dirs();
          !loaded && *dir; dir++) {
         loaded = g_key_file_load_from_file(config, (*dir + default_path).c_str(),
-                                           G_KEY_FILE_NONE, nullptr);
+                                           G_KEY_FILE_NONE, &error);
+        if (!loaded)
+            g_printerr("%s parsing failed: %s\n", (*dir + default_path).c_str(),
+                       error->message);
     }
 
     if (loaded) {
