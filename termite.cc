@@ -1579,6 +1579,7 @@ int main(int argc, char **argv) {
         return EXIT_SUCCESS;
     }
 
+/*
     if (directory) {
         if (chdir(directory) == -1) {
             perror("chdir");
@@ -1586,6 +1587,7 @@ int main(int argc, char **argv) {
         }
         g_free(directory);
     }
+*/
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -1729,7 +1731,7 @@ int main(int argc, char **argv) {
     env = g_environ_setenv(env, "TERM", term, TRUE);
 
     GPid child_pid;
-    if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, nullptr, command_argv, env,
+    if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, directory, command_argv, env,
                                 G_SPAWN_SEARCH_PATH, nullptr, nullptr, &child_pid, nullptr,
                                 &error)) {
         vte_terminal_watch_child(vte, child_pid);
