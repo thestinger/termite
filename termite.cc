@@ -195,6 +195,7 @@ static const std::map<int, const char *> modify_table = {
     { GDK_KEY_9,          "\033[27;5;57~" },
     { GDK_KEY_semicolon,  "\033[27;5;59~" },
     { GDK_KEY_equal,      "\033[27;5;61~" },
+    { GDK_KEY_c,          "\033[27;6;99~" },
     { GDK_KEY_exclam,     "\033[27;6;33~" },
     { GDK_KEY_quotedbl,   "\033[27;6;34~" },
     { GDK_KEY_numbersign, "\033[27;6;35~" },
@@ -962,15 +963,17 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 exit_command_mode(vte, &info->select);
                 return TRUE;
-            case GDK_KEY_c:
-                vte_terminal_copy_clipboard(vte);
-                return TRUE;
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
                 return TRUE;
             case GDK_KEY_r:
                 reload_config();
                 return TRUE;
+            case GDK_KEY_c:
+                if (vte_terminal_get_has_selection(vte)) {
+                    vte_terminal_copy_clipboard(vte);
+                    return TRUE;
+                }
             default:
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
