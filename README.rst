@@ -167,13 +167,13 @@ unique match.
 PADDING
 =======
 
-Internal padding can be added by using CSS to style the VTE widget. Adding the
-following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
+Internal padding can be added by using CSS to style Termite. Adding
+the following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 ``~/.config/gtk-3.0/gtk.css``) will add uniform 2px padding around the edges:
 
 .. code:: css
 
-    VteTerminal, vte-terminal {
+    .termite {
         padding: 2px;
     }
 
