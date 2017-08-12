@@ -1624,6 +1624,7 @@ int main(int argc, char **argv) {
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_style_context_add_class(gtk_widget_get_style_context(hbox),"termite");
     GtkWidget *scrollbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte_widget)));
     gtk_box_pack_start(GTK_BOX(hbox), hint_overlay, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), scrollbar, FALSE, FALSE, 0);
