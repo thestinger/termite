@@ -1737,7 +1737,9 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    g_free(directory);
+    if (directory) {
+        g_free(directory);
+    }
 
     int width, height, padding_left, padding_top, padding_right, padding_bottom;
     const long char_width = vte_terminal_get_char_width(vte);
