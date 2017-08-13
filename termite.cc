@@ -1579,15 +1579,12 @@ int main(int argc, char **argv) {
         return EXIT_SUCCESS;
     }
 
-/*
     if (directory) {
-        if (chdir(directory) == -1) {
+        if (access(directory, X_OK) == -1) {
             perror("chdir");
             return EXIT_FAILURE;
         }
-        g_free(directory);
     }
-*/
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -1739,6 +1736,8 @@ int main(int argc, char **argv) {
         g_printerr("the command failed to run: %s\n", error->message);
         return EXIT_FAILURE;
     }
+
+    g_free(directory);
 
     int width, height, padding_left, padding_top, padding_right, padding_bottom;
     const long char_width = vte_terminal_get_char_width(vte);
