@@ -160,10 +160,9 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte);
 static void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom);
 static char *check_match(VteTerminal *vte, GdkEventButton *event);
-static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        char **geometry, char **icon);
-static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        char **geometry, char **icon, GKeyFile *config);
+static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info, char **icon);
+static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info, char **icon,
+                       GKeyFile *config);
 static long first_row(VteTerminal *vte);
 
 static std::function<void ()> reload_config;
@@ -1396,8 +1395,7 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
 }
 
-static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        char **geometry, char **icon) {
+static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info, char **icon) {
     const std::string default_path = "/termite/config";
     GKeyFile *config = g_key_file_new();
     GError *error = nullptr;
@@ -1432,19 +1430,13 @@ static void load_config(GtkWindow *window, VteTerminal *vte, config_info *info,
     }
 
     if (loaded) {
-        set_config(window, vte, info, geometry, icon, config);
+        set_config(window, vte, info, icon, config);
     }
     g_key_file_free(config);
 }
 
-static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info,
-                        char **geometry, char **icon, GKeyFile *config) {
-    if (geometry) {
-        if (auto s = get_config_string(config, "options", "geometry")) {
-            *geometry = *s;
-        }
-    }
-
+static void set_config(GtkWindow *window, VteTerminal *vte, config_info *info, char **icon,
+                       GKeyFile *config) {
     auto cfg_bool = [config](const char *key, gboolean value) {
         return get_config<gboolean>(g_key_file_get_boolean,
                                     config, "options", key).get_value_or(value);
@@ -1578,7 +1570,7 @@ int main(int argc, char **argv) {
     gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(nullptr);
-    char *role = nullptr, *geometry = nullptr, *execute = nullptr, *config_file = nullptr;
+    char *role = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
@@ -1586,7 +1578,6 @@ int main(int argc, char **argv) {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
-        {"geometry", 0, 0, G_OPTION_ARG_STRING, &geometry, "Window geometry", "GEOMETRY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
@@ -1659,11 +1650,10 @@ int main(int argc, char **argv) {
         gtk_window_fullscreen
     };
 
-    load_config(GTK_WINDOW(window), vte, &info.config, geometry ? nullptr : &geometry,
-                icon ? nullptr : &icon);
+    load_config(GTK_WINDOW(window), vte, &info.config, icon ? nullptr : &icon);
 
     reload_config = [&]{
-        load_config(GTK_WINDOW(window), vte, &info.config, nullptr, nullptr);
+        load_config(GTK_WINDOW(window), vte, &info.config, nullptr);
     };
     signal(SIGUSR1, [](int){ reload_config(); });
 
@@ -1719,15 +1709,6 @@ int main(int argc, char **argv) {
         g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
                          &info.config.dynamic_title);
         window_title_cb(vte, &info.config.dynamic_title);
-    }
-
-    if (geometry) {
-        gtk_widget_show_all(panel_overlay);
-        gtk_widget_show_all(info.panel.entry);
-        if (!gtk_window_parse_geometry(GTK_WINDOW(window), geometry)) {
-            g_printerr("invalid geometry string: %s\n", geometry);
-        }
-        g_free(geometry);
     }
 
     if (icon) {
