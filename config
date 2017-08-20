@@ -34,6 +34,9 @@ scrollback_lines = 10000
 # set size hints for the window
 #size_hints = false
 
+# "off", "left" or "right"
+#scrollbar = off
+
 [colors]
 # If both of these are unset, cursor falls back to the foreground color,
 # and cursor_foreground falls back to the background color.
