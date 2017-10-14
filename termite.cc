@@ -1634,11 +1634,10 @@ int main(int argc, char **argv) {
     }
 
     if (directory) {
-        if (chdir(directory) == -1) {
+        if (access(directory, X_OK) == -1) {
             perror("chdir");
             return EXIT_FAILURE;
         }
-        g_free(directory);
     }
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1793,13 +1792,17 @@ int main(int argc, char **argv) {
     env = g_environ_setenv(env, "TERM", term, TRUE);
 
     GPid child_pid;
-    if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, nullptr, command_argv, env,
+    if (vte_terminal_spawn_sync(vte, VTE_PTY_DEFAULT, directory, command_argv, env,
                                 G_SPAWN_SEARCH_PATH, nullptr, nullptr, &child_pid, nullptr,
                                 &error)) {
         vte_terminal_watch_child(vte, child_pid);
     } else {
         g_printerr("the command failed to run: %s\n", error->message);
         return EXIT_FAILURE;
+    }
+
+    if (directory) {
+        g_free(directory);
     }
 
     int width, height, padding_left, padding_top, padding_right, padding_bottom;
