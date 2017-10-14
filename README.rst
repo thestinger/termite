@@ -196,11 +196,21 @@ occur:
 
     Error opening terminal: xterm-termite
 
-To solve this issue, copy the terminfo to your remote system and install it for
-the logged in user. Or on Arch Linux install ``termite-terminfo``.
+This means the remote system needs the `terminfo <https://raw.githubusercontent.com/thestinger/termite/master/termite.terminfo>`_
+file installed. It can be installed either system-wide _or for your local user_;
+you do not need to be root to solve this issue.
 
 ::
 
-    scp termite.terminfo remoteserver:
     # On the remote server
-    tic -x termite.terminfo
+    wget https://raw.githubusercontent.com/thestinger/termite/master/termite.terminfo
+    sudo tic -x termite.terminfo     # this should create /usr/share/terminfo/x/xterm-termite
+    # *or* do this
+    tic -x termite.terminfo     # this should create ~/.terminfo/x/xterm-termite
+
+Or Arch Linux you can just
+
+::
+
+    # On the remote server
+    pacman -S termite-terminfo  # this creates /usr/share/terminfo/x/xterm-termite
