@@ -179,7 +179,7 @@ the following snippet to ``$XDG_CONFIG_HOME/gtk-3.0/gtk.css`` (or
 
 .. code:: css
 
-    .termite {
+    vte-terminal {
         padding: 2px;
     }
 
