@@ -1620,13 +1620,12 @@ int main(int argc, char **argv) {
     gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(nullptr);
-    char *role = nullptr, *execute = nullptr, *config_file = nullptr;
+    char *role = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
     char **command_argv = nullptr;
     bool show_scrollbar = false;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
-        {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
@@ -1681,22 +1680,8 @@ int main(int argc, char **argv) {
         g_free(role);
     }
 
-    if (execute && command_argv) {
-        g_printerr("positional arguments incompatible with `-e`.\n");
-        return EXIT_FAILURE;
-    }
-
-    if (execute) {
-        int argcp;
-        char **argvp;
-        g_shell_parse_argv(execute, &argcp, &argvp, &error);
-        if (error) {
-            g_printerr("failed to parse command: %s\n", error->message);
-            return EXIT_FAILURE;
-        }
-        command_argv = argvp;
-    }
-    else if (!command_argv) {
+    bool execute = command_argv != nullptr;
+    if (!command_argv) {
         command_argv = g_new(char*, 2);
         command_argv[0] = get_user_shell_with_fallback();
         command_argv[1] = nullptr;
@@ -1776,7 +1761,9 @@ int main(int argc, char **argv) {
         g_signal_connect(vte, "window-title-changed", G_CALLBACK(window_title_cb),
                          &info.config.dynamic_title);
         if (execute) {
-            gtk_window_set_title(GTK_WINDOW(window), execute);
+            title = g_strjoinv(" ", command_argv);
+            gtk_window_set_title(GTK_WINDOW(window), title);
+            g_free(title);
         } else {
             window_title_cb(vte, &info.config.dynamic_title);
         }
