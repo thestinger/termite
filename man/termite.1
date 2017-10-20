@@ -3,12 +3,15 @@
 termite \- A keyboard-centric VTE-based terminal aimed for use with
 a tiling and/or tabbing enabled window manager.
 .SH SYNOPSIS
-\fBtermite\fP [options]
+\fBtermite\fP [options] [--] [COMMAND [ARGS...]]
 .SH DESCRIPTION
 \fBtermite\fP is a GTK-based terminal emulator intended for use within
 window managers with tiling and/or tabbing support. It provides a fast
 terminal experience and pleasant array of keyboard-centric features.
 .SH OPTIONS
+If non-option arguments are given, they specify the name and arguments
+of the command to be executed in the terminal window instead of the
+default shell.
 .PP
 .IP "\fB\-h\fR, \fB\-\-help\fR"
 Display help message.

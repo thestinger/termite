@@ -1622,6 +1622,7 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
+    char **command_argv = nullptr;
     bool show_scrollbar = false;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
@@ -1632,6 +1633,8 @@ int main(int argc, char **argv) {
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
+        {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &command_argv,
+            "Execute command with arguments.", "[COMMAND [ARGS...]]"},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1677,8 +1680,10 @@ int main(int argc, char **argv) {
         g_free(role);
     }
 
-    char **command_argv;
-    char *default_argv[2] = {nullptr, nullptr};
+    if (execute && command_argv) {
+        g_printerr("positional arguments incompatible with `-e`.\n");
+        return EXIT_FAILURE;
+    }
 
     if (execute) {
         int argcp;
@@ -1689,9 +1694,11 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
         command_argv = argvp;
-    } else {
-        default_argv[0] = get_user_shell_with_fallback();
-        command_argv = default_argv;
+    }
+    else if (!command_argv) {
+        command_argv = g_new(char*, 2);
+        command_argv[0] = get_user_shell_with_fallback();
+        command_argv[1] = nullptr;
     }
 
     keybind_info info {
@@ -1825,6 +1832,7 @@ int main(int argc, char **argv) {
                           (height - padding_top - padding_bottom) / char_height);
 
     g_strfreev(env);
+    g_strfreev(command_argv);
 
     gtk_main();
     return EXIT_FAILURE; // child process did not cause termination
