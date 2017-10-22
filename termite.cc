@@ -933,7 +933,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 toggle_visual(vte, &info->select, vi_mode::visual_line);
                 break;
             case GDK_KEY_y:
+#if VTE_CHECK_VERSION(0, 50, 0)
+                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
+#else
                 vte_terminal_copy_clipboard(vte);
+#endif
                 break;
             case GDK_KEY_slash:
                 overlay_show(&info->panel, overlay_mode::search, vte);
@@ -994,8 +998,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 exit_command_mode(vte, &info->select);
                 return TRUE;
-            case GDK_KEY_c:
+#if VTE_CHECK_VERSION(0, 50, 0)
+                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
+#else
                 vte_terminal_copy_clipboard(vte);
+#endif
                 return TRUE;
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
