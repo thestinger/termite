@@ -1171,6 +1171,9 @@ gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_i
     if (info->clickable_url && event->type == GDK_BUTTON_PRESS) {
 #if VTE_CHECK_VERSION (0, 49, 1)
         auto match = make_unique(vte_terminal_hyperlink_check_event(vte, (GdkEvent*)event), g_free);
+        if (!match) {
+            match = make_unique(check_match(vte, event), g_free);
+        }
 #else
         auto match = make_unique(check_match(vte, event), g_free);
 #endif
