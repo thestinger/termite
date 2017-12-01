@@ -564,6 +564,11 @@ static void move_to_row_start(VteTerminal *vte, select_info *select, long row) {
 }
 
 static void open_selection(char *browser, VteTerminal *vte) {
+    if (!vte_terminal_get_has_selection(vte)) {
+        g_printerr("no selection to open\n");
+        return;
+    }
+
     if (browser) {
         auto selection = make_unique(vte_terminal_get_selection(vte), g_free);
         if (selection && *selection) {
