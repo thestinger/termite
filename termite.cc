@@ -998,6 +998,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 exit_command_mode(vte, &info->select);
                 return TRUE;
+            case GDK_KEY_c:
 #if VTE_CHECK_VERSION(0, 50, 0)
                 vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
 #else
