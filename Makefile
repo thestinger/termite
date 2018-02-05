@@ -4,7 +4,7 @@ GTK = gtk+-3.0
 VTE = vte-2.91
 TERMINFO = ${PREFIX}/share/terminfo
 
-CXXFLAGS := -std=c++11 -O3 \
+CXXFLAGS := -std=c++14 -O3 \
 	    -Wall -Wextra -pedantic \
 	    -Winit-self \
 	    -Wshadow \
@@ -32,7 +32,7 @@ endif
 LDFLAGS := -s -Wl,--as-needed ${LDFLAGS}
 LDLIBS := ${shell pkg-config --libs ${GTK} ${VTE}}
 
-termite: termite.cc url_regex.hh util/clamp.hh util/maybe.hh util/memory.hh
+termite: termite.cc url_regex.hh util/clamp.hh util/maybe.hh
 	${CXX} ${CXXFLAGS} ${LDFLAGS} $< ${LDLIBS} -o $@
 
 install: termite termite.desktop termite.terminfo
