@@ -797,6 +797,34 @@ static void decrease_font_scale(VteTerminal *vte) {
     }
 }
 
+static void save_buffer(VteTerminal *vte) {
+    GFile *file_output;
+    GFileOutputStream *file_stream;
+    GCancellable *cancellable = g_cancellable_new();
+    GError *error = nullptr;
+
+    file_output = g_file_new_for_path("termite.log");
+    file_stream = g_file_replace(file_output, nullptr, FALSE,
+                                 (GFileCreateFlags)(G_FILE_CREATE_PRIVATE | G_FILE_CREATE_REPLACE_DESTINATION),
+                                 cancellable, &error);
+    if (error) {
+        g_printerr("error while creating a new save file: %s\n", error->message);
+        g_error_free(error);
+        g_object_unref(file_output);
+        return;
+    }
+
+    g_cancellable_reset(cancellable);
+
+    vte_terminal_write_contents_sync(vte, G_OUTPUT_STREAM(file_stream), VTE_WRITE_DEFAULT, cancellable, &error);
+    if (error) {
+        g_printerr("error while saving the buffer: %s\n", error->message);
+        g_error_free(error);
+    }
+
+    g_object_unref(file_output);
+}
+
 gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *info) {
     if (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
         info->fullscreen_toggle = gtk_window_unfullscreen;
@@ -1012,6 +1040,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 return TRUE;
             case GDK_KEY_l:
                 vte_terminal_reset(vte, TRUE, TRUE);
+                return TRUE;
+            case GDK_KEY_e:
+                save_buffer(vte);
                 return TRUE;
             default:
                 if (modify_key_feed(event, info, modify_table))
