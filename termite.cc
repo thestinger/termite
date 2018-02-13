@@ -120,6 +120,7 @@ struct hint_info {
 struct config_info {
     hint_info hints;
     char *browser;
+    char *pager;
     gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
     gboolean filter_unmatched_urls, modify_other_keys;
     gboolean fullscreen;
@@ -153,6 +154,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info);
 static void bell_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
+static char *get_user_shell_with_fallback();
 
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
@@ -797,32 +799,72 @@ static void decrease_font_scale(VteTerminal *vte) {
     }
 }
 
-static void save_buffer(VteTerminal *vte) {
-    GFile *file_output;
-    GFileOutputStream *file_stream;
-    GCancellable *cancellable = g_cancellable_new();
+static void remove_export_file_cb(GPid pid, gint status, gpointer user_data) {
+    GFile *file_output = (GFile*)user_data;
     GError *error = nullptr;
 
-    file_output = g_file_new_for_path("termite.log");
-    file_stream = g_file_replace(file_output, nullptr, FALSE,
-                                 (GFileCreateFlags)(G_FILE_CREATE_PRIVATE | G_FILE_CREATE_REPLACE_DESTINATION),
-                                 cancellable, &error);
+    (void)pid;
+    (void)status;
+
+    g_file_delete(file_output, nullptr, &error);
     if (error) {
-        g_printerr("error while creating a new save file: %s\n", error->message);
+        g_printerr("error while removing temporary file (%s): %s\n",
+                   g_file_get_path(file_output), error->message);
         g_error_free(error);
-        g_object_unref(file_output);
+    }
+    g_object_unref(file_output);
+
+}
+
+static void export_buffer(VteTerminal *vte, char *pager) {
+    GFile *file_output;
+    const char *file_path;
+    GFileIOStream *file_stream;
+    GCancellable *cancellable;
+    GError *error = nullptr;
+
+    file_output = g_file_new_tmp("termite-export-XXXXXX.log", &file_stream, &error);
+    if (!file_output) {
+        g_printerr("error while creating a new temporary file: %s\n", error->message);
+        g_error_free(error);
         return;
     }
 
-    g_cancellable_reset(cancellable);
+    file_path = g_file_get_path(file_output);
 
-    vte_terminal_write_contents_sync(vte, G_OUTPUT_STREAM(file_stream), VTE_WRITE_DEFAULT, cancellable, &error);
+    cancellable = g_cancellable_new();
+    vte_terminal_write_contents_sync(vte, g_io_stream_get_output_stream((GIOStream*)file_stream),
+                                     VTE_WRITE_DEFAULT, cancellable, &error);
     if (error) {
-        g_printerr("error while saving the buffer: %s\n", error->message);
+        g_printerr("error while saving the buffer to file (%s): %s\n", file_path, error->message);
         g_error_free(error);
+        return;
     }
 
-    g_object_unref(file_output);
+    {
+        gchar pager_cmd[128];
+        gchar *user_shell;
+        GPid child_pid;
+
+        user_shell = get_user_shell_with_fallback();
+        g_snprintf(pager_cmd, sizeof(pager_cmd) / sizeof(*pager_cmd),
+                   "%s -c \"%s < \\\"%s\\\"\"", user_shell, pager, file_path);
+
+        g_free(user_shell);
+
+        gchar terminal[] = "termite";
+        gchar terminal_execute_flag[] = "-e";
+        gchar *argv[] = {terminal, terminal_execute_flag, pager_cmd, nullptr};
+        g_spawn_async(nullptr, argv, nullptr, G_SPAWN_SEARCH_PATH,
+                      nullptr, nullptr, &child_pid, &error);
+        if (error) {
+            g_printerr("error while spawning the command to read the scrollback (%s): %s\n", file_path, error->message);
+            g_error_free(error);
+            return;
+        }
+
+        g_child_watch_add(child_pid, &remove_export_file_cb, (gpointer)file_output);
+    }
 }
 
 gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *info) {
@@ -1042,7 +1084,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 vte_terminal_reset(vte, TRUE, TRUE);
                 return TRUE;
             case GDK_KEY_e:
-                save_buffer(vte);
+                export_buffer(vte, info->config.pager);
                 return TRUE;
             default:
                 if (modify_key_feed(event, info, modify_table))
@@ -1529,6 +1571,21 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
         info->browser = g_strdup("xdg-open");
     }
 
+    if (auto s = get_config_string(config, "options", "pager")) {
+        info->pager = *s;
+    } else {
+        info->pager = g_strdup(g_getenv("PAGER"));
+    }
+
+    if (info->pager) {
+        gchar *pager_escaped = g_strescape(info->pager, nullptr);
+
+        g_free(info->pager);
+        info->pager = pager_escaped;
+    } else {
+        info->pager = g_strdup("more");
+    }
+
     if (info->clickable_url) {
         info->tag = vte_terminal_match_add_regex(vte,
                 vte_regex_new_for_match(url_regex,
@@ -1733,7 +1790,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+         nullptr, nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
         gtk_window_fullscreen
     };
 
