@@ -78,7 +78,8 @@ enum class overlay_mode {
     search,
     rsearch,
     completion,
-    urlselect
+    urlselect,
+    urlselectrange,
 };
 
 enum class vi_mode {
@@ -144,6 +145,7 @@ struct draw_cb_info {
     gboolean filter_unmatched_urls;
 };
 
+static void resolve_url_ids(std::vector<guint> &url_ids, guint max_id, gchar const *text);
 static void launch_browser(char *browser, char *url);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean window_state_cb(GtkWindow *window, GdkEventWindowState *event, keybind_info *info);
@@ -421,8 +423,12 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
             bool active = false;
 
             snprintf(buffer, sizeof(buffer), "%u", i + 1);
-            if (len)
-                active = strncmp(buffer, info->panel->fulltext, len) == 0;
+            if (len) {
+                std::vector<guint> url_ids;
+
+                resolve_url_ids(url_ids, (guint)info->panel->url_list.size(), info->panel->fulltext);
+                active = std::find(url_ids.begin(), url_ids.end(), i + 1) != url_ids.end();
+            }
 
             if (!info->filter_unmatched_urls || active || len == 0)
                 draw_marker(cr, desc, info->hints, x, y, buffer, active);
@@ -972,6 +978,13 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
                 break;
+            case GDK_KEY_numbersign:
+                if (!info->config.browser)
+                    break;
+                find_urls(vte, &info->panel);
+                gtk_widget_show(info->panel.da);
+                overlay_show(&info->panel, overlay_mode::urlselectrange, nullptr);
+                return TRUE;
         }
         return TRUE;
     }
@@ -995,6 +1008,13 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 find_urls(vte, &info->panel);
                 gtk_widget_show(info->panel.da);
                 overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
+                exit_command_mode(vte, &info->select);
+                return TRUE;
+            case GDK_KEY_numbersign:
+                enter_command_mode(vte, &info->select);
+                find_urls(vte, &info->panel);
+                gtk_widget_show(info->panel.da);
+                overlay_show(&info->panel, overlay_mode::urlselectrange, nullptr);
                 exit_command_mode(vte, &info->select);
                 return TRUE;
             case GDK_KEY_c:
@@ -1060,6 +1080,56 @@ static void synthesize_keypress(GtkWidget *widget, unsigned keyval) {
     gdk_event_put(&new_event);
 }
 
+void resolve_url_ids(std::vector<guint> &url_ids,
+                     guint max_id, gchar const *text) {
+    gchar **id_ranges_v;
+
+    if (!text) {
+        return;
+    }
+
+    id_ranges_v = g_strsplit(text, ",", 0);
+    const guint ranges_len = g_strv_length(id_ranges_v);
+    if (ranges_len) {
+        for (guint i = 0; i < ranges_len; i++) {
+            gchar **id_interval_v;
+
+            g_strstrip(id_ranges_v[i]);
+            id_interval_v = g_strsplit(id_ranges_v[i], "-", 2);
+            const guint interval_len = g_strv_length(id_interval_v);
+            if (interval_len == 1) {
+                char *endptr;
+                const guint n = static_cast<guint>(strtoul(id_interval_v[0], &endptr, 10));
+
+                if (*endptr) {
+                    continue;
+                }
+
+                url_ids.push_back(n);
+            } else if (interval_len == 2) {
+                char *endptr1, *endptr2;
+                const guint n1 = std::max(
+                                    static_cast<guint>(strtoul(id_interval_v[0], &endptr1, 10)),
+                                    static_cast<guint>(1));
+                const guint n2 = *id_interval_v[1] ?
+                                 static_cast<guint>(strtoul(id_interval_v[1], &endptr2, 10))
+                                 : max_id;
+
+                if (*endptr1 || (*id_interval_v[1] && *endptr2) || n2 < n1) {
+                    continue;
+                }
+
+                const guint interval_max_id = std::min(max_id, n2);
+                for (guint j = n1; j <= interval_max_id; j++) {
+                     url_ids.push_back(j);
+                }
+            }
+        }
+    }
+
+    g_strfreev(id_ranges_v);
+}
+
 gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
     gboolean ret = FALSE;
@@ -1073,13 +1143,16 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     }
     switch (event->keyval) {
         case GDK_KEY_BackSpace:
-            if (info->panel.mode == overlay_mode::urlselect && info->panel.fulltext) {
+            if ((info->panel.mode == overlay_mode::urlselect || info->panel.mode == overlay_mode::urlselectrange)
+                && info->panel.fulltext) {
                 size_t slen = strlen(info->panel.fulltext);
                 if (info->panel.fulltext != nullptr && slen > 0)
                     info->panel.fulltext[slen-1] = '\0';
                 gtk_widget_queue_draw(info->panel.da);
             }
             break;
+        case GDK_KEY_minus:
+        case GDK_KEY_comma:
         case GDK_KEY_0:
         case GDK_KEY_1:
         case GDK_KEY_2:
@@ -1090,7 +1163,8 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
         case GDK_KEY_7:
         case GDK_KEY_8:
         case GDK_KEY_9:
-            if (info->panel.mode == overlay_mode::urlselect) {
+            if (info->panel.mode == overlay_mode::urlselect
+                && event->keyval != GDK_KEY_minus && event->keyval != GDK_KEY_comma) {
                 const char *const text = gtk_entry_get_text(entry);
                 size_t len = strlen(text);
                 free(info->panel.fulltext);
@@ -1110,6 +1184,15 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 } else {
                     gtk_widget_queue_draw(info->panel.da);
                 }
+            } else if (info->panel.mode == overlay_mode::urlselectrange) {
+                const char *const text = gtk_entry_get_text(entry);
+                size_t len = strlen(text);
+
+                free(info->panel.fulltext);
+                info->panel.fulltext = g_strndup(text, len + 1);
+                info->panel.fulltext[len] = (char)event->keyval;
+
+                gtk_widget_queue_draw(info->panel.da);
             }
             break;
         case GDK_KEY_Tab:
@@ -1141,6 +1224,15 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
                 case overlay_mode::urlselect:
                     launch_url(info->config.browser, text, &info->panel);
                     break;
+                case overlay_mode::urlselectrange: {
+                    std::vector<guint> url_ids;
+
+                    resolve_url_ids(url_ids, (guint)info->panel.url_list.size(), text);
+                    for (auto url_id : url_ids) {
+                        launch_browser(info->config.browser, info->panel.url_list[url_id - 1].url.get());
+                    }
+                    break;
+                }
                 case overlay_mode::hidden:
                     break;
             }
@@ -1149,7 +1241,8 @@ gboolean entry_key_press_cb(GtkEntry *entry, GdkEventKey *event, keybind_info *i
     }
 
     if (ret) {
-        if (info->panel.mode == overlay_mode::urlselect) {
+        if (info->panel.mode == overlay_mode::urlselect
+            || info->panel.mode == overlay_mode::urlselectrange) {
             gtk_widget_hide(info->panel.da);
             info->panel.url_list.clear();
             free(info->panel.fulltext);
