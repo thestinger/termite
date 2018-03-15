@@ -240,6 +240,9 @@ static const std::map<int, const char *> modify_meta_table = {
     { GDK_KEY_question,   "\033[27;14;63~" },
 };
 
+static constexpr const char *default_word_char = "-,./?%&#_=+@~";
+static const char *word_char_ascii_punct = default_word_char;
+
 static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info,
                                 const std::map<int, const char *>& table) {
     if (info->config.modify_other_keys) {
@@ -586,7 +589,6 @@ get_text_range(VteTerminal *vte, long start_row, long start_col, long end_row, l
 }
 
 static bool is_word_char(gunichar c) {
-    static const char *word_char_ascii_punct = "-,./?%&#_=+@~";
     return g_unichar_isgraph(c) &&
            (g_unichar_isalnum(c) || (g_unichar_ispunct(c) &&
                                      (c >= 0x80 || strchr(word_char_ascii_punct, (int)c) != NULL)));
@@ -1575,6 +1577,11 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
     if (show_scrollbar_ptr != nullptr) {
         *show_scrollbar_ptr = show_scrollbar;
     }
+
+    if (auto s = get_config_string(config, "options", "word_chars")) {
+        word_char_ascii_punct = *s;
+    }
+    vte_terminal_set_word_char_exceptions (vte, word_char_ascii_punct);
 
     load_theme(window, vte, config, info->hints);
 }/*}}}*/
