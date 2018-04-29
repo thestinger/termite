@@ -179,7 +179,7 @@ The directory can be set by a process running in the terminal. For
 example, with \fRzsh\fP:
 .IP
 .nf
-if [[ $TERM == xterm-termite ]]; then
+if [[ $TERM == termite ]]; then
   . /etc/profile.d/vte.sh
   __vte_osc7
 fi
@@ -188,7 +188,7 @@ fi
 or for example, with \fRbash\fP:
 .IP
 .nf
-if [[ $TERM == xterm-termite ]]; then
+if [[ $TERM == termite ]]; then
   . /etc/profile.d/vte.sh
   __vte_prompt_command
 fi

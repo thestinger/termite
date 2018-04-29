@@ -1615,7 +1615,7 @@ static void on_alpha_screen_changed(GtkWindow *window, GdkScreen *, void *) {
 
 int main(int argc, char **argv) {
     GError *error = nullptr;
-    const char *const term = "xterm-termite";
+    const char *const term = "termite";
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 

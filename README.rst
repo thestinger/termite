@@ -25,10 +25,13 @@ used as a fallback.
 
 BUILDING
 ========
-::
+.. code-block:: bash
 
     git clone --recursive https://github.com/thestinger/termite.git
     cd termite && make
+    # If ncurses version is under 6.1 then also do:
+    make terminfo
+
 
 KEYBINDINGS
 ===========
@@ -77,7 +80,7 @@ INSERT MODE
 
        .. code:: sh
 
-            if [[ $TERM == xterm-termite ]]; then
+            if [[ $TERM == termite ]]; then
               . /etc/profile.d/vte.sh
               __vte_osc7
             fi
@@ -87,7 +90,7 @@ INSERT MODE
 
        .. code:: sh
 
-            if [[ $TERM == xterm-termite ]]; then
+            if [[ $TERM == termite ]]; then
               . /etc/profile.d/vte.sh
               __vte_prompt_command
             fi
@@ -196,20 +199,25 @@ occur:
 
 ::
 
-    Error opening terminal: xterm-termite
+    Error opening terminal: termite
 
-To solve this issue, install the termite terminfo on your remote system.
+To solve this issue, on your remote system either update ncurses to the latest
+version (>=6.1) or, if you can't, install the termite terminfo manually.
 
 On Arch Linux:
 
-::
+.. code-block:: bash
 
-        pacman -S termite-terminfo
+    sudo pacman -S termite-terminfo
 
 On other systems:
 
-
-::
+.. code-block:: bash
 
     wget https://raw.githubusercontent.com/thestinger/termite/master/termite.terminfo
-    tic -x termite.terminfo
+
+    tic -x termite.terminfo # for local installation (in ~/.terminfo)
+
+    or
+
+    sudo tic -x termite.terminfo # for system-wide installation 
