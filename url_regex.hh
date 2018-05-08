@@ -9,7 +9,7 @@
 #define PORT            "(?:\\:[[:digit:]]{1,5})?"
 #define SCHEME          "(?:[[:alpha:]][+-.[:alnum:]]*:)"
 #define USERPASS        USERCHARS_CLASS "+(?:\\:" PASSCHARS_CLASS "+)?"
-#define URLPATH         "(?:/[[:alnum:]\\Q-_.!~*'();/?:@&=+$,#%\\E]*)?"
+#define URLPATH         "((?>[[:alnum:]\\Q-_.!~*';/?:@&=+$,#%\\E]+)|\\((?-1)\\))*"
 
 const char * const url_regex = SCHEME "//(?:" USERPASS "\\@)?" HOST PORT URLPATH;
 
