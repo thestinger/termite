@@ -154,6 +154,7 @@ static gboolean position_overlay_cb(GtkBin *overlay, GtkWidget *widget, GdkRecta
 static gboolean button_press_cb(VteTerminal *vte, GdkEventButton *event, const config_info *info);
 static void bell_cb(GtkWidget *vte, gboolean *urgent_on_bell);
 static gboolean focus_cb(GtkWindow *window);
+static void configure_cb(GtkWidget *widget, GdkEvent *event, VteTerminal *vte);
 
 static GtkTreeModel *create_completion_model(VteTerminal *vte);
 static void search(VteTerminal *vte, const char *pattern, bool reverse);
@@ -1215,6 +1216,22 @@ gboolean focus_cb(GtkWindow *window) {
     gtk_window_set_urgency_hint(window, FALSE);
     return FALSE;
 }
+
+void configure_cb(GtkWidget *widget, GdkEvent *event, VteTerminal *vte) {
+    if(GDK_CONFIGURE == event->type) {
+        const auto configure = &event->configure;
+        const auto screen = gtk_widget_get_screen(widget);
+        const auto monitor_num = gdk_screen_get_monitor_at_window(screen, configure->window);
+        const auto scale_factor = gdk_screen_get_monitor_scale_factor(screen, monitor_num);
+
+        GdkRectangle geometry{};
+        gdk_screen_get_monitor_geometry(screen, monitor_num, &geometry);
+
+        // Relatively arbitrary heuristic to detect likely "high DPI" monitors.
+        // Matches the behavior of the "reszoom" Chrome extension.
+        reset_font_scale(vte, ((scale_factor * geometry.width) > 2800) ? 1.25 : 1.0);
+    }
+}
 /* }}} */
 
 GtkTreeModel *create_completion_model(VteTerminal *vte) {
@@ -1755,6 +1772,8 @@ int main(int argc, char **argv) {
 
     on_alpha_screen_changed(GTK_WINDOW(window), nullptr, nullptr);
     g_signal_connect(window, "screen-changed", G_CALLBACK(on_alpha_screen_changed), nullptr);
+
+    g_signal_connect(window, "configure-event", G_CALLBACK(configure_cb), vte);
 
     if (info.config.fullscreen) {
         g_signal_connect(window, "window-state-event", G_CALLBACK(window_state_cb), &info);
