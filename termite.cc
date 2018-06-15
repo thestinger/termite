@@ -82,20 +82,97 @@ enum class overlay_mode {
     urlselect
 };
 
-enum class vi_mode {
-    insert,
-    command,
-    visual,
-    visual_line,
-    visual_block
+namespace vi_mode {
+    constexpr unsigned int insert    = 1,
+    command   = 2,
+    visual    = 4,
+    visual_line = 8,
+    visual_block = 16;
+    constexpr unsigned int all  = (insert|command|visual|visual_line|visual_block);
+    guint parse_mode ( const char *q )
+    {
+        guint retv = 0;
+        if ( q == NULL ) return 0;
+        gchar **modes = g_strsplit(q, "|",-1);
+        for ( unsigned int i = 0; modes != NULL && modes[i] != NULL ; i++ ) {
+            char *mode = modes[i];
+            if ( g_strcmp0(mode, "insert") == 0 ){
+                retv |= insert;
+            }
+            if ( g_strcmp0(mode, "!insert") == 0 ){
+                retv |= ~insert;
+            }
+            else if ( g_strcmp0(mode, "command") == 0 ){
+                retv |= command;
+            }
+            else if ( g_strcmp0(mode, "visual") == 0 ){
+                retv |= visual;
+            }
+            else if ( g_strcmp0(mode, "visual_line") == 0 ){
+                retv |= visual_line;
+            }
+            else if ( g_strcmp0(mode, "visual_block") == 0 ){
+                retv |= visual_block;
+            }
+            else if ( g_strcmp0(mode, "all") == 0 ) {
+                retv |= all;
+            }else {
+                fprintf(stderr, "Invalid mode entered.\n");
+            }
+        }
+        g_strfreev(modes);
+        if ( retv == 0 ){
+            fprintf(stderr, "No mode set for keybinding.\n");
+        }
+        return retv;
+    }
+    gchar *to_string ( const guint mode )
+    {
+        int first =1;
+        GString *str = g_string_new("");
+        if ( mode&insert ){
+            g_string_append(str, "|insert"+first);
+            first = 0;
+        }
+        if ( mode&command ){
+            g_string_append(str, "|command"+first);
+            first = 0;
+        }
+        if ( mode&visual ){
+            g_string_append(str, "|visual"+first);
+            first = 0;
+        }
+        if ( mode&visual_line){
+            g_string_append(str, "|visual line"+first);
+            first = 0;
+        }
+        if ( mode&visual_block){
+            g_string_append(str, "|visual block"+first);
+            first = 0;
+        }
+        if ( mode == all ) {
+            g_string_assign(str, "all");
+        }
+        gchar *retv = str->str;
+        g_string_free(str, FALSE);
+        return retv;
+    }
+}
+
+struct mode_indicator {
+    GtkWidget *label;
+    GtkWidget *msg_label;
+    guint msg_label_timeout;
+    struct config_info *config;
 };
 
 struct select_info {
-    vi_mode mode;
+    unsigned int mode;
     long begin_col;
     long begin_row;
     long origin_col;
     long origin_row;
+    mode_indicator    mode_ind;
 };
 
 struct url_data {
@@ -127,6 +204,7 @@ struct config_info {
     int tag;
     char *config_file;
     gdouble font_scale;
+    gboolean hide_overlay;
 };
 
 struct keybind_info {
@@ -144,6 +222,149 @@ struct draw_cb_info {
     hint_info *hints;
     gboolean filter_unmatched_urls;
 };
+
+enum class keybinding_cmd {
+    FIND_NEXT,
+    FIND_PREVIOUS,
+    SEARCH_FORWARD,
+    SEARCH_REVERSE,
+    EXIT_COMMAND_MODE,
+    TOGGLE_VISUAL_BLOCK,
+    MOVE_BACKWARD_BLANK_WORD,
+    MOVE_FORWARD_BLANK_WORD,
+    MOVE_HALF_UP,
+    MOVE_HALF_DOWN,
+    MOVE_FULL_UP,
+    MOVE_FULL_DOWN,
+    MOVE_WORD_BACK,
+    MOVE_WORD_FORWARD,
+    MOVE_LEFT,
+    MOVE_DOWN,
+    MOVE_UP,
+    MOVE_RIGHT,
+    CURSOR_COLUMN0,
+    CURSOR_COLUMN_MOVE_FIRST,
+    MOVE_EOL,
+    MOVE_FIRST_ROW,
+    MOVE_LAST_ROW,
+    TOGGLE_VISUAL,
+    TOGGLE_VISUAL_LINE,
+    COPY_CLIPBOARD,
+    SEARCH,
+    RSEARCH,
+    OPEN_SELECTION,
+    OPEN_SELECTION_EXIT_COMMAND,
+    FIND_URL,
+    ZOOM_IN,
+    ZOOM_OUT,
+    ZOOM_RESET,
+    TOGGLE_MODE_OVERLAY,
+    COMPLETE,
+    LAUNCH_IN_DIRECTORY,
+    COMMAND_MODE,
+    URL_HINT,
+    PASTE_CLIPBOARD,
+    RELOAD_CONFIG,
+    FULLSCREEN,
+};
+
+typedef struct _keybinding_key {
+    keybinding_cmd  cmd;
+    const char      *str;
+    const char      *str_key;
+}keybinding_key;
+
+typedef std::tuple<guint, guint, guint> keybinding_tuple;
+typedef std::pair<keybinding_cmd, guint> keybind_cmd_mode;
+
+std::map<std::pair<guint, guint>, std::pair<keybinding_cmd, guint>> keybinding_to_cmd;
+std::map<keybinding_cmd, keybinding_tuple> keybinding_from_cmd;
+
+static const char * binding_get_name(keybinding_cmd cmd);
+
+static inline void keybind_assign(keybinding_cmd cmd, keybinding_tuple bind) {
+    
+    keybinding_to_cmd[std::make_pair(std::get<0>(bind), std::get<1>(bind))] = std::make_pair(cmd, std::get<2>(bind));
+    keybinding_from_cmd[cmd] = bind;
+}
+
+static inline void keybind_clear(const keybinding_cmd cmd_key) {
+    std::tuple<guint, guint, guint> other_key = keybinding_from_cmd[cmd_key];
+
+    keybinding_from_cmd.erase(cmd_key);
+
+    keybinding_to_cmd.erase(std::make_pair(std::get<0>(other_key), std::get<1>(other_key)));
+}
+
+static inline keybinding_tuple keybind_get_mapping(keybinding_cmd cmd) {
+    return keybinding_from_cmd[cmd];
+}
+
+static inline bool keybind_exists(std::pair<guint, guint> bind) {
+    return keybinding_to_cmd.count(bind) == 1;
+}
+
+static inline std::pair<keybinding_cmd, guint> keybind_get_command(std::pair<guint, guint> bind) {
+    return keybinding_to_cmd[bind];
+}
+
+keybinding_key bindings[] = {
+    { keybinding_cmd::FIND_NEXT,                    "find-next",                 "n:!insert",                           },
+    { keybinding_cmd::FIND_PREVIOUS,                "find-previous",             "<Shift>N:!insert",                    },
+    { keybinding_cmd::SEARCH_FORWARD,               "search-forward",            "u:!insert",                           },
+    { keybinding_cmd::SEARCH_REVERSE,               "search-reverse",            "<Shift>U:!insert",                    },
+    { keybinding_cmd::EXIT_COMMAND_MODE,            "exit-mode",                 "<Control>bracketleft:!insert,Escape:!insert,q:!insert",        },
+    { keybinding_cmd::TOGGLE_VISUAL_BLOCK,          "toggle-visual-block",       "<Control>v:!insert",                  },
+    { keybinding_cmd::TOGGLE_MODE_OVERLAY,          "toggle-mode-overlay",       "<Control>o:!insert",                  },
+    { keybinding_cmd::MOVE_BACKWARD_BLANK_WORD,     "move-backword-black-word",  "<Control>Left:!insert,<Shift>W:!insert",      },
+    { keybinding_cmd::MOVE_FORWARD_BLANK_WORD,      "move-forward-black-word",   "<Control>Right:!insert,<Shift>B:!insert",     },
+    { keybinding_cmd::MOVE_HALF_UP,                 "move-half-up",              "<Control>u:!insert",                  },
+    { keybinding_cmd::MOVE_HALF_DOWN,               "move-half-down",            "<Control>d:!insert",                  },
+    { keybinding_cmd::MOVE_FULL_UP,                 "move-full-up",              "<Control>b:!insert",                  },
+    { keybinding_cmd::MOVE_FULL_DOWN,               "move-full-up",              "<Control>f:!insert",                  },
+    { keybinding_cmd::MOVE_WORD_BACK,               "move-word-back",            "<Shift>Left:!insert,b:!insert",               },
+    { keybinding_cmd::MOVE_WORD_FORWARD,            "move-word-forward",         "<Shift>Right:!insert,w:!insert",              },
+    { keybinding_cmd::MOVE_LEFT,                    "move-left",                 "Left:!insert,h:!insert",                      },
+    { keybinding_cmd::MOVE_DOWN,                    "move-down",                 "Down:!insert,j:!insert",                      },
+    { keybinding_cmd::MOVE_UP,                      "move-up",                   "Up:!insert,k:!insert",                        },
+    { keybinding_cmd::MOVE_RIGHT,                   "move-right",                "Right:!insert,l:!insert",                     },
+    { keybinding_cmd::CURSOR_COLUMN0,               "cursor-column0",            "0:!insert",                           },
+    { keybinding_cmd::CURSOR_COLUMN_MOVE_FIRST,     "cursor-column-move-first",  "asciicircum:!insert",                 },
+    { keybinding_cmd::MOVE_EOL,                     "move-eol",                  "dollar:!insert",                      },
+    { keybinding_cmd::MOVE_FIRST_ROW,               "move-first-row",            "g:!insert",                           },
+    { keybinding_cmd::MOVE_LAST_ROW,                "move-last-row",             "G:!insert",                           },
+    { keybinding_cmd::TOGGLE_VISUAL,                "toggle-visual",             "v:!insert",                           },
+    { keybinding_cmd::TOGGLE_VISUAL_LINE,           "toggle-visual-line",        "<Shift>V:!insert",                    },
+    { keybinding_cmd::COPY_CLIPBOARD,               "copy-clipboard",            "y:!insert,<Control><Shift>c:all",         },
+    { keybinding_cmd::FULLSCREEN,                   "fullscreen",                "F11:all",                         },
+    { keybinding_cmd::SEARCH,                       "search",                    "slash:!insert",                       },
+    { keybinding_cmd::RSEARCH,                      "rsearch",                   "question:!insert",                    },
+    { keybinding_cmd::OPEN_SELECTION,               "open-selection",            "o:!insert",                           },
+    { keybinding_cmd::OPEN_SELECTION_EXIT_COMMAND,  "open-selection-exit-command","Return:!insert",                     },
+    { keybinding_cmd::FIND_URL,                     "find-url",                  "x:!insert",                           },
+    { keybinding_cmd::ZOOM_IN,                      "zoom-in",                   "<Shift>plus:!insert,plus:!insert",            },
+    { keybinding_cmd::ZOOM_OUT,                     "zoom-out",                  "minus:!insert",                       },
+    { keybinding_cmd::ZOOM_RESET,                   "zoom-reset",                  "equal:!insert",                       },
+    { keybinding_cmd::COMPLETE,                     "complete",                  "<Control>Tab:all",                },
+    { keybinding_cmd::LAUNCH_IN_DIRECTORY,          "launch-in-directory",       "<Control><Shift>t:all",           },
+    { keybinding_cmd::COMMAND_MODE,                 "command-mode",              "<Control><Shift>space:all,<Control><Shift>nobreakspace:all",},
+    { keybinding_cmd::URL_HINT,                     "url-hint",                  "<Control><Shift>x:all",           },
+    { keybinding_cmd::PASTE_CLIPBOARD,              "paste-clipboard",           "<Control><Shift>v:all",           },
+    { keybinding_cmd::RELOAD_CONFIG,                "reload-config",             "<Control><Shift>R:all"},
+};
+
+static const char * binding_get_name(keybinding_cmd cmd) {
+    const size_t num_bindings = sizeof(bindings)/sizeof(keybinding_key);
+
+    for (int i = 0; i < num_bindings; ++i) {
+        auto kbnd = bindings[i];
+        if (kbnd.cmd == cmd) {
+            return kbnd.str;
+        }
+    }
+
+    return "unknown";
+}
 
 static void launch_browser(char *browser, char *url);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
@@ -252,6 +473,36 @@ static gboolean modify_key_feed(GdkEventKey *event, keybind_info *info,
         }
     }
     return FALSE;
+}
+
+static gboolean hide_popup( gpointer data )
+{
+    mode_indicator *ind = (mode_indicator*)data;
+    ind->msg_label_timeout = 0;
+    gtk_widget_hide ( (GtkWidget*)ind->msg_label);
+    return G_SOURCE_REMOVE ;
+}
+
+static void show_popup( VteTerminal *vte, mode_indicator *ind, const char *msg )
+{
+    if (ind->msg_label_timeout > 0){
+        g_source_remove(ind->msg_label_timeout);
+        ind->msg_label_timeout = 0;
+    }
+    const PangoFontDescription *pd = vte_terminal_get_font(vte);
+    gchar *font_str = pango_font_description_to_string(pd);
+    gchar *mmsg = g_markup_printf_escaped (
+                   "<span foreground='white' background='red' weight='bold' font='%s'> %s </span>",
+                   font_str,
+                    msg);
+    g_free(font_str);
+    gtk_label_set_markup(GTK_LABEL(ind->msg_label), mmsg);
+    g_free(mmsg);
+
+    if(!ind->config->hide_overlay) {
+        gtk_widget_show(ind->msg_label);
+    }
+    ind->msg_label_timeout = g_timeout_add_seconds(1, hide_popup, ind);
 }
 
 void launch_browser(char *browser, char *url) {
@@ -436,6 +687,27 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
 static void update_selection(VteTerminal *vte, const select_info *select) {
     vte_terminal_unselect_all(vte);
 
+    const PangoFontDescription *pd = vte_terminal_get_font(vte);
+    gchar *font_str = pango_font_description_to_string(pd);
+    gchar *markup = g_markup_printf_escaped ( "<span weight='bold' background='%s' foreground='white' font='%s'> %s </span>",
+            select->mode == vi_mode::command ? "black":"green",
+            font_str,
+            vi_mode::to_string(select->mode)
+            );
+    gtk_label_set_markup(GTK_LABEL(select->mode_ind.label), markup);
+    g_free(markup);
+    g_free(font_str);
+
+    if (select->mode_ind.config->hide_overlay) {
+        gtk_widget_hide(select->mode_ind.label);
+        gtk_widget_hide(select->mode_ind.msg_label);
+    } else {
+        gtk_widget_show(select->mode_ind.label);
+        if (select->mode_ind.msg_label_timeout > 0 ) {
+            gtk_widget_show(select->mode_ind.msg_label);
+        }
+    }
+
     if (select->mode == vi_mode::command) {
         return;
     }
@@ -484,9 +756,10 @@ static void exit_command_mode(VteTerminal *vte, select_info *select) {
     vte_terminal_connect_pty_read(vte);
     vte_terminal_unselect_all(vte);
     select->mode = vi_mode::insert;
+    gtk_widget_hide(select->mode_ind.label);
 }
 
-static void toggle_visual(VteTerminal *vte, select_info *select, vi_mode mode) {
+static void toggle_visual(VteTerminal *vte, select_info *select, unsigned int mode) {
     if (select->mode == mode) {
         select->mode = vi_mode::command;
     } else {
@@ -809,237 +1082,183 @@ gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
 
-    if (info->config.fullscreen && event->keyval == GDK_KEY_F11) {
-        info->fullscreen_toggle(info->window);
-        return TRUE;
-    }
+    auto bind = std::make_pair(modifiers, event->keyval);
+    if (keybind_exists(bind)) {
+        auto command_details = keybind_get_command(bind);
 
-    if (info->select.mode != vi_mode::insert) {
-        if (modifiers == GDK_CONTROL_MASK) {
-            switch (gdk_keyval_to_lower(event->keyval)) {
-                case GDK_KEY_bracketleft:
+        if ((info->select.mode & command_details.second) != 0) {
+            switch (command_details.first) {
+                case keybinding_cmd::FULLSCREEN:
+                    info->fullscreen_toggle(info->window);
+                    return TRUE;
+                case keybinding_cmd::FIND_NEXT:
+                    vte_terminal_search_find_next(vte);
+                    vte_terminal_copy_primary(vte);
+                    return TRUE;
+                case keybinding_cmd::FIND_PREVIOUS:
+                    vte_terminal_search_find_previous(vte);
+                    vte_terminal_copy_primary(vte);
+                    return TRUE;
+                case keybinding_cmd::SEARCH_FORWARD:
+                    search(vte, url_regex, false);
+                    return TRUE;
+                case keybinding_cmd::SEARCH_REVERSE:
+                    search(vte, url_regex, true);
+                    return TRUE;
+                case keybinding_cmd::EXIT_COMMAND_MODE:
                     exit_command_mode(vte, &info->select);
                     gtk_widget_hide(info->panel.da);
                     gtk_widget_hide(info->panel.entry);
                     info->panel.url_list.clear();
-                    break;
-                case GDK_KEY_v:
+                    return TRUE;
+                case keybinding_cmd::TOGGLE_VISUAL_BLOCK:
                     toggle_visual(vte, &info->select, vi_mode::visual_block);
-                    break;
-                case GDK_KEY_Left:
+                    return TRUE;
+                case keybinding_cmd::TOGGLE_MODE_OVERLAY:
+                    info->config.hide_overlay= ! info->config.hide_overlay;
+                    if (info->config.hide_overlay) {
+                        gtk_widget_hide(info->select.mode_ind.label);
+                        gtk_widget_hide(info->select.mode_ind.msg_label);
+                    } else {
+                        gtk_widget_show(info->select.mode_ind.label);
+                        if (info->select.mode_ind.msg_label_timeout > 0) {
+                            gtk_widget_show(info->select.mode_ind.msg_label);
+                        }
+                    }
+                    return TRUE;
+                case keybinding_cmd::MOVE_FORWARD_BLANK_WORD:
                     move_backward_blank_word(vte, &info->select);
-                    break;
-                case GDK_KEY_Right:
+                    return TRUE;
+                case keybinding_cmd::MOVE_BACKWARD_BLANK_WORD:
                     move_forward_blank_word(vte, &info->select);
-                    break;
-                case GDK_KEY_u:
+                    return TRUE;
+                case keybinding_cmd::MOVE_HALF_UP:
                     move(vte, &info->select, 0, -(vte_terminal_get_row_count(vte) / 2));
-                    break;
-                case GDK_KEY_d:
+                    return TRUE;
+                case keybinding_cmd::MOVE_HALF_DOWN:
                     move(vte, &info->select, 0, vte_terminal_get_row_count(vte) / 2);
-                    break;
-                case GDK_KEY_b:
+                    return TRUE;
+                case keybinding_cmd::MOVE_FULL_UP:
                     move(vte, &info->select, 0, -(vte_terminal_get_row_count(vte) - 1));
-                    break;
-                case GDK_KEY_f:
+                    return TRUE;
+                case keybinding_cmd::MOVE_FULL_DOWN:
                     move(vte, &info->select, 0, vte_terminal_get_row_count(vte) - 1);
-                    break;
-            }
-            return TRUE;
-        }
-        if (modifiers == GDK_SHIFT_MASK) {
-            switch (event->keyval) {
-                case GDK_KEY_Left:
+                    return TRUE;
+                case keybinding_cmd::MOVE_WORD_BACK:
                     move_backward_word(vte, &info->select);
                     return TRUE;
-                case GDK_KEY_Right:
+                case keybinding_cmd::MOVE_WORD_FORWARD:
                     move_forward_word(vte, &info->select);
                     return TRUE;
+                case keybinding_cmd::MOVE_LEFT:
+                    move(vte, &info->select, -1, 0);
+                    return TRUE;
+                case keybinding_cmd::MOVE_DOWN:
+                    move(vte, &info->select, 0, 1);
+                    return TRUE;
+                case keybinding_cmd::MOVE_UP:
+                    move(vte, &info->select, 0, -1);
+                    return TRUE;
+                case keybinding_cmd::MOVE_RIGHT:
+                    move(vte, &info->select, 1, 0);
+                    return TRUE;
+                case  keybinding_cmd::CURSOR_COLUMN0:
+                    set_cursor_column(vte, &info->select, 0);
+                    return TRUE;
+                case keybinding_cmd::CURSOR_COLUMN_MOVE_FIRST:
+                    set_cursor_column(vte, &info->select, 0);
+                    move_first(vte, &info->select, std::not1(std::ref(g_unichar_isspace)));
+                    return TRUE;
+                case keybinding_cmd::MOVE_EOL:
+                    move_to_eol(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::MOVE_FIRST_ROW:
+                    move_to_row_start(vte, &info->select, first_row(vte));
+                    return TRUE;
+                case keybinding_cmd::MOVE_LAST_ROW:
+                    move_to_row_start(vte, &info->select, last_row(vte));
+                    return TRUE;
+                case keybinding_cmd::TOGGLE_VISUAL:
+                    toggle_visual(vte, &info->select, vi_mode::visual);
+                    return TRUE;
+                case keybinding_cmd::TOGGLE_VISUAL_LINE:
+                    toggle_visual(vte, &info->select, vi_mode::visual_line);
+                    return TRUE;
+                case keybinding_cmd::COPY_CLIPBOARD:
+                    vte_terminal_copy_clipboard(vte);
+                    show_popup(vte, &(info->select.mode_ind), "yank");
+                    return TRUE;
+                case keybinding_cmd::SEARCH:
+                    overlay_show(&info->panel, overlay_mode::search, vte);
+                    return TRUE;
+                case keybinding_cmd::RSEARCH:
+                    overlay_show(&info->panel, overlay_mode::rsearch, vte);
+                    return TRUE;
+                case keybinding_cmd::OPEN_SELECTION:
+                    open_selection(info->config.browser, vte);
+                    return TRUE;
+                case keybinding_cmd::OPEN_SELECTION_EXIT_COMMAND:
+                    open_selection(info->config.browser, vte);
+                    exit_command_mode(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::FIND_URL:
+                    if (!info->config.browser)
+                        return TRUE;
+                    find_urls(vte, &info->panel);
+                    gtk_widget_show(info->panel.da);
+                    overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
+                    return TRUE;
+                case keybinding_cmd::ZOOM_IN:
+                    increase_font_scale(vte);
+                    return TRUE;
+                case keybinding_cmd::ZOOM_OUT:
+                    decrease_font_scale(vte);
+                    return TRUE;
+                case keybinding_cmd::ZOOM_RESET:
+                    reset_font_scale (vte, info->config.font_scale);
+                    return TRUE;
+                case keybinding_cmd::COMPLETE:
+                    overlay_show(&info->panel, overlay_mode::completion, vte);
+                    return TRUE;
+                case keybinding_cmd::LAUNCH_IN_DIRECTORY:
+                    launch_in_directory(vte);
+                    return TRUE;
+                case keybinding_cmd::COMMAND_MODE:
+                    enter_command_mode(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::URL_HINT:
+                    enter_command_mode(vte, &info->select);
+                    find_urls(vte, &info->panel);
+                    gtk_widget_show(info->panel.da);
+                    overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
+                    exit_command_mode(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::PASTE_CLIPBOARD:
+                    vte_terminal_paste_clipboard(vte);
+                    return TRUE;
+                case keybinding_cmd::RELOAD_CONFIG:
+                    reload_config();
+                    return TRUE;
+                default:
+                    break;
             }
         }
-        switch (event->keyval) {
-            case GDK_KEY_Escape:
-            case GDK_KEY_q:
-                exit_command_mode(vte, &info->select);
-                gtk_widget_hide(info->panel.da);
-                gtk_widget_hide(info->panel.entry);
-                info->panel.url_list.clear();
-                break;
-            case GDK_KEY_Left:
-            case GDK_KEY_h:
-                move(vte, &info->select, -1, 0);
-                break;
-            case GDK_KEY_Down:
-            case GDK_KEY_j:
-                move(vte, &info->select, 0, 1);
-                break;
-            case GDK_KEY_Up:
-            case GDK_KEY_k:
-                move(vte, &info->select, 0, -1);
-                break;
-            case GDK_KEY_Right:
-            case GDK_KEY_l:
-                move(vte, &info->select, 1, 0);
-                break;
-            case GDK_KEY_b:
-                move_backward_word(vte, &info->select);
-                break;
-            case GDK_KEY_B:
-                move_backward_blank_word(vte, &info->select);
-                break;
-            case GDK_KEY_w:
-                move_forward_word(vte, &info->select);
-                break;
-            case GDK_KEY_W:
-                move_forward_blank_word(vte, &info->select);
-                break;
-            case GDK_KEY_e:
-                move_forward_end_word(vte, &info->select);
-                break;
-            case GDK_KEY_E:
-                move_forward_end_blank_word(vte, &info->select);
-                break;
-            case GDK_KEY_0:
-            case GDK_KEY_Home:
-                set_cursor_column(vte, &info->select, 0);
-                break;
-            case GDK_KEY_asciicircum:
-                set_cursor_column(vte, &info->select, 0);
-                move_first(vte, &info->select, std::not1(std::ref(g_unichar_isspace)));
-                break;
-            case GDK_KEY_dollar:
-            case GDK_KEY_End:
-                move_to_eol(vte, &info->select);
-                break;
-            case GDK_KEY_g:
-                move_to_row_start(vte, &info->select, first_row(vte));
-                break;
-            case GDK_KEY_G:
-                move_to_row_start(vte, &info->select, last_row(vte));
-                break;
-            case GDK_KEY_H:
-                move_to_row_start(vte, &info->select, top_row(vte));
-                break;
-            case GDK_KEY_M:
-                move_to_row_start(vte, &info->select, middle_row(vte));
-                break;
-            case GDK_KEY_L:
-                move_to_row_start(vte, &info->select, bottom_row(vte));
-                break;
-            case GDK_KEY_v:
-                toggle_visual(vte, &info->select, vi_mode::visual);
-                break;
-            case GDK_KEY_V:
-                toggle_visual(vte, &info->select, vi_mode::visual_line);
-                break;
-            case GDK_KEY_y:
-#if VTE_CHECK_VERSION(0, 50, 0)
-                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
-#else
-                vte_terminal_copy_clipboard(vte);
-#endif
-                break;
-            case GDK_KEY_slash:
-                overlay_show(&info->panel, overlay_mode::search, vte);
-                break;
-            case GDK_KEY_question:
-                overlay_show(&info->panel, overlay_mode::rsearch, vte);
-                break;
-            case GDK_KEY_n:
-                vte_terminal_search_find_next(vte);
-                vte_terminal_copy_primary(vte);
-                break;
-            case GDK_KEY_N:
-                vte_terminal_search_find_previous(vte);
-                vte_terminal_copy_primary(vte);
-                break;
-            case GDK_KEY_u:
-                search(vte, url_regex, false);
-                break;
-            case GDK_KEY_U:
-                search(vte, url_regex, true);
-                break;
-            case GDK_KEY_o:
-                open_selection(info->config.browser, vte);
-                break;
-            case GDK_KEY_Return:
-                open_selection(info->config.browser, vte);
-                exit_command_mode(vte, &info->select);
-                break;
-            case GDK_KEY_x:
-                if (!info->config.browser)
-                    break;
-                find_urls(vte, &info->panel);
-                gtk_widget_show(info->panel.da);
-                overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
-                break;
-        }
+    }
+
+    if (info->select.mode != vi_mode::insert) {
+        // Absorb key presses that are not used in !insert mode.
         return TRUE;
     }
     if (modifiers == (GDK_CONTROL_MASK|GDK_SHIFT_MASK)) {
-        switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_plus:
-                increase_font_scale(vte);
-                return TRUE;
-            case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
-                return TRUE;
-            case GDK_KEY_t:
-                launch_in_directory(vte);
-                return TRUE;
-            case GDK_KEY_space:
-            case GDK_KEY_nobreakspace: // shift-space on some keyboard layouts
-                enter_command_mode(vte, &info->select);
-                return TRUE;
-            case GDK_KEY_x:
-                enter_command_mode(vte, &info->select);
-                find_urls(vte, &info->panel);
-                gtk_widget_show(info->panel.da);
-                overlay_show(&info->panel, overlay_mode::urlselect, nullptr);
-                exit_command_mode(vte, &info->select);
-                return TRUE;
-            case GDK_KEY_c:
-#if VTE_CHECK_VERSION(0, 50, 0)
-                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
-#else
-                vte_terminal_copy_clipboard(vte);
-#endif
-                return TRUE;
-            case GDK_KEY_v:
-                vte_terminal_paste_clipboard(vte);
-                return TRUE;
-            case GDK_KEY_r:
-                reload_config();
-                return TRUE;
-            case GDK_KEY_l:
-                vte_terminal_reset(vte, TRUE, TRUE);
-                return TRUE;
-            default:
-                if (modify_key_feed(event, info, modify_table))
-                    return TRUE;
-        }
+        if (modify_key_feed(event, info, modify_table))
+            return TRUE;
     } else if ((modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK)) ||
                (modifiers == (GDK_CONTROL_MASK|GDK_MOD1_MASK|GDK_SHIFT_MASK))) {
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
     } else if (modifiers == GDK_CONTROL_MASK) {
-        switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_Tab:
-                overlay_show(&info->panel, overlay_mode::completion, vte);
-                return TRUE;
-            case GDK_KEY_plus:
-                increase_font_scale(vte);
-                return TRUE;
-            case GDK_KEY_minus:
-                decrease_font_scale(vte);
-                return TRUE;
-            case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
-                return TRUE;
-            default:
-                if (modify_key_feed(event, info, modify_table))
-                    return TRUE;
-        }
+        if (modify_key_feed(event, info, modify_table))
+            return TRUE;
     }
     return FALSE;
 }
@@ -1417,6 +1636,53 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
 }
 
+static void parse_config_keybinding(keybinding_key *bind, const char *value, guint modifiers) {
+    guint kmod, kkey;
+    
+    // Clear existing.
+    keybind_clear(bind->cmd);
+
+    if(value) {
+        gchar **str_bindings = g_strsplit(value, ",", -1);
+        for( guint i =0; str_bindings != nullptr &&  str_bindings[i] != nullptr; i++)
+        {
+            gchar **sets = g_strsplit(str_bindings[i], ":", 2);
+            if (sets && sets[0] != NULL && sets[1] != NULL) {
+                gtk_accelerator_parse(sets[0], &kkey,  (GdkModifierType *)&kmod);
+                if((kmod&GDK_SHIFT_MASK) == GDK_SHIFT_MASK){
+                    kkey = gdk_keyval_to_upper(kkey);
+                }
+                if ( !(kmod == 0 && kkey == 0) ){
+                    guint mode = vi_mode::parse_mode(sets[1]);
+                    keybind_assign(bind->cmd, std::make_tuple(kmod & modifiers, kkey, mode));
+                } else {
+                    fprintf(stderr, "Failed to understand: %s\n", sets[0]);
+                }
+            } else {
+                fprintf(stderr, "Insufficient parameters. '%s'\n",str_bindings[i]);
+            }
+            g_strfreev(sets);
+        }
+        g_strfreev(str_bindings);
+    }
+}
+
+static void load_keybindings(GKeyFile *config) {
+    const guint modifiers = gtk_accelerator_get_default_mod_mask();
+    const size_t num_bindings = sizeof(bindings)/sizeof(keybinding_key);
+    for (gsize k=0; k < num_bindings; k++) {
+        char *val = config ?
+            g_key_file_get_string(config, "keybindings", bindings[k].str, NULL)
+            : NULL;
+        if(val) {
+            parse_config_keybinding(&(bindings[k]), val, modifiers);
+            g_free(val);
+        } else {
+            parse_config_keybinding(&(bindings[k]), bindings[k].str_key, modifiers);
+        }
+    }
+}
+
 static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar,
                         GtkWidget *hbox, config_info *info, char **icon,
                         bool *show_scrollbar) {
@@ -1455,6 +1721,9 @@ static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollba
 
     if (loaded) {
         set_config(window, vte, scrollbar, hbox, info, icon, show_scrollbar, config);
+    } else {
+        // Load the defaults
+        load_keybindings(NULL);
     }
     g_key_file_free(config);
 }
@@ -1577,6 +1846,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
     }
 
     load_theme(window, vte, config, info->hints);
+     
+    load_keybindings(config);
 }/*}}}*/
 
 static void exit_with_status(VteTerminal *, int status) {
@@ -1662,6 +1933,7 @@ int main(int argc, char **argv) {
 
     GtkWidget *panel_overlay = gtk_overlay_new();
     GtkWidget *hint_overlay = gtk_overlay_new();
+    GtkWidget *command_overlay = gtk_overlay_new();
 
     GtkWidget *vte_widget = vte_terminal_new();
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
@@ -1701,11 +1973,25 @@ int main(int argc, char **argv) {
          overlay_mode::hidden,
          std::vector<url_data>(),
          nullptr},
-        {vi_mode::insert, 0, 0, 0, 0},
+        {vi_mode::insert, 0, 0, 0, 0,
+
+            {// Mode indicator
+                gtk_label_new(""),
+                gtk_label_new(""),
+                0,
+                NULL
+            }
+        },
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file,1.0,FALSE},
+        /* Note to merger from throstur: I didn't bother checking this, 
+         * I don't know if 2nd to last param should be 1.0 or 0, seems to work fine like this
+//         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+         */
         gtk_window_fullscreen
     };
+
+    info.select.mode_ind.config = &(info.config);
 
     load_config(GTK_WINDOW(window), vte, scrollbar, hbox, &info.config,
                 icon ? nullptr : &icon, &show_scrollbar);
@@ -1734,8 +2020,18 @@ int main(int argc, char **argv) {
     gtk_widget_set_halign(info.panel.entry, GTK_ALIGN_START);
     gtk_widget_set_valign(info.panel.entry, GTK_ALIGN_END);
 
+    gtk_widget_set_halign(info.select.mode_ind.label, GTK_ALIGN_END);
+    gtk_widget_set_valign(info.select.mode_ind.label, GTK_ALIGN_END);
+    gtk_widget_set_halign(info.select.mode_ind.msg_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(info.select.mode_ind.msg_label, GTK_ALIGN_END);
+    gtk_overlay_add_overlay(GTK_OVERLAY(command_overlay), info.select.mode_ind.label);
+    gtk_overlay_add_overlay(GTK_OVERLAY(command_overlay), info.select.mode_ind.msg_label);
+
+    gtk_widget_hide(info.select.mode_ind.msg_label);
+
     gtk_container_add(GTK_CONTAINER(panel_overlay), hbox);
-    gtk_container_add(GTK_CONTAINER(hint_overlay), vte_widget);
+    gtk_container_add(GTK_CONTAINER(hint_overlay), command_overlay);
+    gtk_container_add(GTK_CONTAINER(command_overlay), vte_widget);
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
 
     if (!hold) {
