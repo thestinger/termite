@@ -286,7 +286,6 @@ static inline void keybind_assign(keybinding_cmd cmd, keybinding_tuple bind) {
     
     keybinding_to_cmd[std::make_pair(std::get<0>(bind), std::get<1>(bind))] = std::make_pair(cmd, std::get<2>(bind));
     keybinding_from_cmd[cmd] = bind;
-//    printf("keybd_assign: (%u %u %u) -> %s\n", std::get<0>(bind), std::get<1>(bind), std::get<2>(bind), binding_get_name(cmd));
 }
 
 static inline void keybind_clear(const keybinding_cmd cmd_key) {
