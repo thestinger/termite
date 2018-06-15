@@ -1085,7 +1085,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     auto bind = std::make_pair(modifiers, event->keyval);
     if (keybind_exists(bind)) {
         auto command_details = keybind_get_command(bind);
-        auto cmdname = binding_get_name(command_details.first);
 
         if ((info->select.mode & command_details.second) != 0) {
             switch (command_details.first) {
