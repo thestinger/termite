@@ -178,7 +178,7 @@ CONFIGURING KEYBINDINGS
 Keybindings can be changed in the configuration file in the ``[keybindings]``
 section by specifying the command followed by key combinations and the modes in which they apply:
 
-.. code:: ini
+.. code:: sh
     [keybindings]
     copy-clipboard = y:!insert,<Control><Shift>j:all
     paste-clipboard = p:!insert,<Control><Shift>k:all
@@ -188,7 +188,7 @@ section by specifying the command followed by key combinations and the modes in 
 To unbind a default keybinding, leave the option for that keybinding blank. 
 For example, to unbind F11 (bound to ``fullscreen`` by default):
 
-.. code:: ini
+.. code:: sh
     [keybindings]
     fullscreen=
 
