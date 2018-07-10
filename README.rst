@@ -178,7 +178,7 @@ CONFIGURING KEYBINDINGS
 Keybindings can be changed in the configuration file in the ``[keybindings]``
 section by specifying the command followed by key combinations and the modes in which they apply:
 
-.. code::ini
+.. code:: ini
     [keybindings]
     copy-clipboard = y:!insert,<Control><Shift>j:all
     paste-clipboard = p:!insert,<Control><Shift>k:all
