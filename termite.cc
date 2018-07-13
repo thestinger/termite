@@ -160,10 +160,10 @@ static void search(VteTerminal *vte, const char *pattern, bool reverse);
 static void overlay_show(search_panel_info *info, overlay_mode mode, VteTerminal *vte);
 static void get_vte_padding(VteTerminal *vte, int *left, int *top, int *right, int *bottom);
 static char *check_match(VteTerminal *vte, GdkEventButton *event);
-static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar, GtkWidget *hbox,
-                        config_info *info, char **icon, bool *show_scrollbar);
-static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar, GtkWidget *hbox,
-                       config_info *info, char **icon, bool *show_scrollbar,
+static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrolled_window, GtkWidget *hbox,
+                        config_info *info, char **icon);
+static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrolled_window, GtkWidget *hbox,
+                       config_info *info, char **icon,
                        GKeyFile *config);
 static long first_row(VteTerminal *vte);
 
@@ -1417,9 +1417,8 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     hints.roundness = get_config_double(config, "hints", "roundness").get_value_or(1.5);
 }
 
-static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar,
-                        GtkWidget *hbox, config_info *info, char **icon,
-                        bool *show_scrollbar) {
+static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrolled_window,
+                        GtkWidget *hbox, config_info *info, char **icon) {
     const std::string default_path = "/termite/config";
     GKeyFile *config = g_key_file_new();
     GError *error = nullptr;
@@ -1454,14 +1453,13 @@ static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollba
     }
 
     if (loaded) {
-        set_config(window, vte, scrollbar, hbox, info, icon, show_scrollbar, config);
+        set_config(window, vte, scrolled_window, hbox, info, icon, config);
     }
     g_key_file_free(config);
 }
 
-static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar, GtkWidget *hbox,
-                       config_info *info, char **icon, bool *show_scrollbar_ptr,
-                       GKeyFile *config) {
+static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrolled_window, GtkWidget *hbox,
+                       config_info *info, char **icon, GKeyFile *config) {
 
     auto cfg_bool = [config](const char *key, gboolean value) {
         return get_config<gboolean>(g_key_file_get_boolean,
@@ -1556,24 +1554,38 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
     }
 
     bool show_scrollbar = false;
+    GtkCornerType align_scrollbar = GTK_CORNER_TOP_LEFT;
+    bool overlay_scrollbar = false;
     if (auto s = get_config_string(config, "options", "scrollbar")) {
         // "off" is implicitly handled by default
         if (!g_ascii_strcasecmp(*s, "left")) {
             show_scrollbar = true;
-            gtk_box_reorder_child(GTK_BOX(hbox), scrollbar, 0);
+            align_scrollbar = GTK_CORNER_BOTTOM_RIGHT;
         } else if (!g_ascii_strcasecmp(*s, "right")) {
             show_scrollbar = true;
-            gtk_box_reorder_child(GTK_BOX(hbox), scrollbar, -1);
+        } else if (!g_ascii_strcasecmp(*s, "overlay_left")) {
+            show_scrollbar = true;
+            align_scrollbar = GTK_CORNER_BOTTOM_RIGHT;
+            overlay_scrollbar = true;
+        } else if (!g_ascii_strcasecmp(*s, "overlay_right")) {
+            show_scrollbar = true;
+            overlay_scrollbar = true;
         }
         g_free(*s);
     }
     if (show_scrollbar) {
-        gtk_widget_show(scrollbar);
+        gtk_scrolled_window_set_placement(GTK_SCROLLED_WINDOW(scrolled_window),
+                                          align_scrollbar);
+
+        gtk_scrolled_window_set_overlay_scrolling(GTK_SCROLLED_WINDOW(scrolled_window),
+                                                  overlay_scrollbar);
+
+        /* TODO consider GTK_POLICY_AUTOMATIC, but it has problems with `top` */
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                       GTK_POLICY_NEVER, GTK_POLICY_ALWAYS);
     } else {
-        gtk_widget_hide(scrollbar);
-    }
-    if (show_scrollbar_ptr != nullptr) {
-        *show_scrollbar_ptr = show_scrollbar;
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                       GTK_POLICY_NEVER, GTK_POLICY_NEVER);
     }
 
     load_theme(window, vte, config, info->hints);
@@ -1622,7 +1634,6 @@ int main(int argc, char **argv) {
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
-    bool show_scrollbar = false;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
@@ -1667,10 +1678,12 @@ int main(int argc, char **argv) {
     VteTerminal *vte = VTE_TERMINAL(vte_widget);
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(
+                                    gtk_scrollable_get_hadjustment(GTK_SCROLLABLE(vte_widget)),
+                                    gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte_widget)));
     gtk_style_context_add_class(gtk_widget_get_style_context(hbox),"termite");
-    GtkWidget *scrollbar = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte_widget)));
     gtk_box_pack_start(GTK_BOX(hbox), hint_overlay, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(hbox), scrollbar, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), vte_widget);
 
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
@@ -1707,12 +1720,11 @@ int main(int argc, char **argv) {
         gtk_window_fullscreen
     };
 
-    load_config(GTK_WINDOW(window), vte, scrollbar, hbox, &info.config,
-                icon ? nullptr : &icon, &show_scrollbar);
+    load_config(GTK_WINDOW(window), vte, scrolled_window, hbox, &info.config,
+                icon ? nullptr : &icon);
 
     reload_config = [&]{
-        load_config(GTK_WINDOW(window), vte, scrollbar, hbox, &info.config,
-                    nullptr, nullptr);
+        load_config(GTK_WINDOW(window), vte, scrolled_window, hbox, &info.config, nullptr);
     };
     signal(SIGUSR1, [](int){ reload_config(); });
 
@@ -1735,7 +1747,7 @@ int main(int argc, char **argv) {
     gtk_widget_set_valign(info.panel.entry, GTK_ALIGN_END);
 
     gtk_container_add(GTK_CONTAINER(panel_overlay), hbox);
-    gtk_container_add(GTK_CONTAINER(hint_overlay), vte_widget);
+    gtk_container_add(GTK_CONTAINER(hint_overlay), scrolled_window);
     gtk_container_add(GTK_CONTAINER(window), panel_overlay);
 
     if (!hold) {
@@ -1783,9 +1795,6 @@ int main(int argc, char **argv) {
     gtk_widget_show_all(window);
     gtk_widget_hide(info.panel.entry);
     gtk_widget_hide(info.panel.da);
-    if (!show_scrollbar) {
-        gtk_widget_hide(scrollbar);
-    }
 
     char **env = g_get_environ();
 

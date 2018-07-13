@@ -34,7 +34,7 @@ scrollback_lines = 10000
 # set size hints for the window
 #size_hints = false
 
-# "off", "left" or "right"
+# "off", "left", "right", "overlay_left" or "overlay_right"
 #scrollbar = off
 
 [colors]
