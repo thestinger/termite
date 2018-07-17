@@ -145,6 +145,8 @@ struct draw_cb_info {
     gboolean filter_unmatched_urls;
 };
 
+gboolean no_f11 = FALSE;
+
 static void launch_browser(char *browser, char *url);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
 static gboolean window_state_cb(GtkWindow *window, GdkEventWindowState *event, keybind_info *info);
@@ -809,7 +811,7 @@ gboolean window_state_cb(GtkWindow *, GdkEventWindowState *event, keybind_info *
 gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) {
     const guint modifiers = event->state & gtk_accelerator_get_default_mod_mask();
 
-    if (info->config.fullscreen && event->keyval == GDK_KEY_F11) {
+    if (!no_f11 && info->config.fullscreen && event->keyval == GDK_KEY_F11) {
         info->fullscreen_toggle(info->window);
         return TRUE;
     }
@@ -1632,6 +1634,7 @@ int main(int argc, char **argv) {
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
+        {"no-f11", 'f', 0, G_OPTION_ARG_NONE, &no_f11, "No F11 support for fullscreen", nullptr},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
