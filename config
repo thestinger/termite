@@ -1,6 +1,7 @@
 [options]
 #allow_bold = true
 #audible_bell = false
+#bold_is_bright = true
 #clickable_url = true
 #dynamic_title = true
 font = Monospace 9
