@@ -82,6 +82,9 @@ enum class overlay_mode {
     urlselect
 };
 
+gchar * vi_mode::parse_mode(const char *q);
+gchar * vi_mode::to_string(const guint mode);
+
 namespace vi_mode {
     constexpr unsigned int insert    = 1,
     command   = 2,
@@ -271,8 +274,6 @@ typedef std::pair<keybinding_cmd, guint> keybind_cmd_mode;
 std::map<std::pair<guint, guint>, std::pair<keybinding_cmd, guint>> keybinding_to_cmd;
 std::map<keybinding_cmd, keybinding_tuple> keybinding_from_cmd;
 
-static const char * binding_get_name(keybinding_cmd cmd);
-
 static inline void keybind_assign(keybinding_cmd cmd, keybinding_tuple bind) {
     
     keybinding_to_cmd[std::make_pair(std::get<0>(bind), std::get<1>(bind))] = std::make_pair(cmd, std::get<2>(bind));
@@ -309,6 +310,8 @@ keybinding_key bindings[] = {
     { keybinding_cmd::TOGGLE_MODE_OVERLAY,          "toggle-mode-overlay",       "<Control>o:!insert",                  },
     { keybinding_cmd::MOVE_BACKWARD_BLANK_WORD,     "move-backword-black-word",  "<Control>Left:!insert,<Shift>W:!insert",      },
     { keybinding_cmd::MOVE_FORWARD_BLANK_WORD,      "move-forward-black-word",   "<Control>Right:!insert,<Shift>B:!insert",     },
+    { keybinding_cmd::MOVE_FORWARD_END_WORD,        "move-forward-end-word",     "e:!insert",     },
+    { keybinding_cmd::MOVE_FORWARD_END_BLANK_WORD,  "move-forward-end-blank-word",   "E:!insert",     },
     { keybinding_cmd::MOVE_HALF_UP,                 "move-half-up",              "<Control>u:!insert",                  },
     { keybinding_cmd::MOVE_HALF_DOWN,               "move-half-down",            "<Control>d:!insert",                  },
     { keybinding_cmd::MOVE_FULL_UP,                 "move-full-up",              "<Control>b:!insert",                  },
@@ -343,19 +346,6 @@ keybinding_key bindings[] = {
     { keybinding_cmd::PASTE_CLIPBOARD,              "paste-clipboard",           "<Control><Shift>v:all",           },
     { keybinding_cmd::RELOAD_CONFIG,                "reload-config",             "<Control><Shift>R:all"},
 };
-
-static const char * binding_get_name(keybinding_cmd cmd) {
-    const size_t num_bindings = sizeof(bindings)/sizeof(keybinding_key);
-
-    for (int i = 0; i < num_bindings; ++i) {
-        auto kbnd = bindings[i];
-        if (kbnd.cmd == cmd) {
-            return kbnd.str;
-        }
-    }
-
-    return "unknown";
-}
 
 static void launch_browser(char *browser, char *url);
 static void window_title_cb(VteTerminal *vte, gboolean *dynamic_title);
@@ -720,23 +710,6 @@ static long last_row(VteTerminal *vte) {
     return (long)gtk_adjustment_get_upper(adjust) - 1;
 }
 
-static long top_row(VteTerminal *vte) {
-    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    return (long)gtk_adjustment_get_value(adjust);
-}
-
-static long middle_row(VteTerminal *vte) {
-    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    return (long)gtk_adjustment_get_value(adjust) +
-                (long)vte_terminal_get_row_count(vte) / 2;
-}
-
-static long bottom_row(VteTerminal *vte) {
-    GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
-    return (long)gtk_adjustment_get_value(adjust) +
-                (long)vte_terminal_get_row_count(vte) - 1;
-}
-
 static void update_scroll(VteTerminal *vte) {
     GtkAdjustment *adjust = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(vte));
     const double scroll_row = gtk_adjustment_get_value(adjust);
@@ -1055,6 +1028,12 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                     return TRUE;
                 case keybinding_cmd::MOVE_FORWARD_BLANK_WORD:
                     move_backward_blank_word(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::MOVE_FORWARD_END_WORD:
+                    move_forward_end_word(vte, &info->select);
+                    return TRUE;
+                case keybinding_cmd::MOVE_FORWARD_END_BLANK_WORD:
+                    move_forward_end_blank_word(vte, &info->select);
                     return TRUE;
                 case keybinding_cmd::MOVE_BACKWARD_BLANK_WORD:
                     move_forward_blank_word(vte, &info->select);
