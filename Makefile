@@ -1,8 +1,11 @@
 VERSION = $(shell git describe --tags)
-PREFIX = /usr/local
 GTK = gtk+-3.0
 VTE = vte-2.91
-TERMINFO = ${PREFIX}/share/terminfo
+PREFIX ?= /usr/local
+BINDIR ?= ${PREFIX}/bin
+DATADIR ?= ${PREFIX}/share
+MANDIR ?= ${DATADIR}/man
+TERMINFO ?= ${DATADIR}/terminfo
 
 CXXFLAGS := -std=c++11 -O3 \
 	    -Wall -Wextra -pedantic \
@@ -37,15 +40,15 @@ termite: termite.cc url_regex.hh util/clamp.hh util/maybe.hh util/memory.hh
 
 install: termite termite.desktop termite.terminfo
 	mkdir -p ${DESTDIR}${TERMINFO}
-	install -Dm755 termite ${DESTDIR}${PREFIX}/bin/termite
+	install -Dm755 termite ${DESTDIR}${BINDIR}/termite
 	install -Dm644 config ${DESTDIR}/etc/xdg/termite/config
-	install -Dm644 termite.desktop ${DESTDIR}${PREFIX}/share/applications/termite.desktop
-	install -Dm644 man/termite.1 ${DESTDIR}${PREFIX}/share/man/man1/termite.1
-	install -Dm644 man/termite.config.5 ${DESTDIR}${PREFIX}/share/man/man5/termite.config.5
+	install -Dm644 termite.desktop ${DESTDIR}${DATADIR}/applications/termite.desktop
+	install -Dm644 man/termite.1 ${DESTDIR}${MANDIR}/man1/termite.1
+	install -Dm644 man/termite.config.5 ${DESTDIR}${MANDIR}/man5/termite.config.5
 	tic -x -o ${DESTDIR}${TERMINFO} termite.terminfo
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/termite
+	rm -f ${DESTDIR}${BINDIR}/termite
 
 clean:
 	rm termite
