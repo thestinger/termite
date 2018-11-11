@@ -1509,7 +1509,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
                                         PCRE2_MULTILINE | PCRE2_NOTEMPTY,
                                         nullptr),
                 0);
-        vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
+        vte_terminal_match_set_cursor_name(vte, info->tag, "hand");
     } else if (info->tag != -1) {
         vte_terminal_match_remove(vte, info->tag);
         info->tag = -1;
