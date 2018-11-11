@@ -1477,6 +1477,9 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
 #if VTE_CHECK_VERSION (0, 49, 1)
     vte_terminal_set_allow_hyperlink(vte, cfg_bool("hyperlinks", FALSE));
 #endif
+#if VTE_CHECK_VERSION (0, 51, 2)
+    vte_terminal_set_bold_is_bright(vte, cfg_bool("bold_is_bright", TRUE));
+#endif
     info->dynamic_title = cfg_bool("dynamic_title", TRUE);
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
