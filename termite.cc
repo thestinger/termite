@@ -1401,6 +1401,9 @@ static void load_theme(GtkWindow *window, VteTerminal *vte, GKeyFile *config, hi
     if (auto color = get_config_color(config, "colors", "highlight")) {
         vte_terminal_set_color_highlight(vte, &*color);
     }
+    if (auto color = get_config_color(config, "colors", "highlight_foreground")) {
+        vte_terminal_set_color_highlight_foreground(vte, &*color);
+    }
 
     if (auto s = get_config_string(config, "hints", "font")) {
         hints.font = pango_font_description_from_string(*s);
