@@ -1030,7 +1030,13 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_plus:
                 increase_font_scale(vte);
                 return TRUE;
+            case GDK_KEY_KP_Add:
+                increase_font_scale(vte);
+                return TRUE;
             case GDK_KEY_minus:
+                decrease_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_KP_Subtract:
                 decrease_font_scale(vte);
                 return TRUE;
             case GDK_KEY_equal:
