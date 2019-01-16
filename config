@@ -2,6 +2,8 @@
 #allow_bold = true
 #audible_bell = false
 #bold_is_bright = true
+#cell_height_scale = 1.0
+#cell_width_scale = 1.0
 #clickable_url = true
 #dynamic_title = true
 font = Monospace 9
