@@ -1479,6 +1479,8 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
 #endif
 #if VTE_CHECK_VERSION (0, 51, 2)
     vte_terminal_set_bold_is_bright(vte, cfg_bool("bold_is_bright", TRUE));
+    vte_terminal_set_cell_height_scale(vte, get_config_double(config, "options", "cell_height_scale").get_value_or(1.0));
+    vte_terminal_set_cell_width_scale(vte, get_config_double(config, "options", "cell_width_scale").get_value_or(1.0));
 #endif
     info->dynamic_title = cfg_bool("dynamic_title", TRUE);
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
@@ -1521,12 +1523,6 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
         pango_font_description_free(font);
         g_free(*s);
     }
-
-#if VTE_CHECK_VERSION (0, 51, 2)
-    if (auto d = get_config_double(config, "options", "line_height_scale")) {
-        vte_terminal_set_cell_height_scale(vte, *d);
-    }
-#endif
 
     if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
         vte_terminal_set_scrollback_lines(vte, *i);
