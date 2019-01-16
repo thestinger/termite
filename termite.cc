@@ -1522,6 +1522,12 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
         g_free(*s);
     }
 
+#if VTE_CHECK_VERSION (0, 51, 2)
+    if (auto d = get_config_double(config, "options", "line_height_scale")) {
+        vte_terminal_set_cell_height_scale(vte, *d);
+    }
+#endif
+
     if (auto i = get_config_integer(config, "options", "scrollback_lines")) {
         vte_terminal_set_scrollback_lines(vte, *i);
     }
