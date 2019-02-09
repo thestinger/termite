@@ -82,10 +82,10 @@ enum class overlay_mode {
     urlselect
 };
 
-gchar * vi_mode::parse_mode(const char *q);
-gchar * vi_mode::to_string(const guint mode);
 
 namespace vi_mode {
+    guint parse_mode (const char *);
+    gchar *to_string(guint);
     constexpr unsigned int insert    = 1,
     command   = 2,
     visual    = 4,
@@ -225,7 +225,10 @@ enum class keybinding_cmd {
     EXIT_COMMAND_MODE,
     TOGGLE_VISUAL_BLOCK,
     MOVE_BACKWARD_BLANK_WORD,
+    MOVE_BACKWARD_END_BLANK_WORD,
     MOVE_FORWARD_BLANK_WORD,
+    MOVE_FORWARD_END_WORD,
+    MOVE_FORWARD_END_BLANK_WORD,
     MOVE_HALF_UP,
     MOVE_HALF_DOWN,
     MOVE_FULL_UP,
@@ -310,8 +313,8 @@ keybinding_key bindings[] = {
     { keybinding_cmd::TOGGLE_MODE_OVERLAY,          "toggle-mode-overlay",       "<Control>o:!insert",                  },
     { keybinding_cmd::MOVE_BACKWARD_BLANK_WORD,     "move-backword-black-word",  "<Control>Left:!insert,<Shift>W:!insert",      },
     { keybinding_cmd::MOVE_FORWARD_BLANK_WORD,      "move-forward-black-word",   "<Control>Right:!insert,<Shift>B:!insert",     },
-    { keybinding_cmd::MOVE_FORWARD_END_WORD,        "move-forward-end-word",     "e:!insert",     },
-    { keybinding_cmd::MOVE_FORWARD_END_BLANK_WORD,  "move-forward-end-blank-word",   "E:!insert",     },
+    { keybinding_cmd::MOVE_FORWARD_END_WORD,        "move-forward-end-word",     "e:!insert",                           },
+    { keybinding_cmd::MOVE_FORWARD_END_BLANK_WORD,  "move-forward-end-blank-word","E:!insert",                          },
     { keybinding_cmd::MOVE_HALF_UP,                 "move-half-up",              "<Control>u:!insert",                  },
     { keybinding_cmd::MOVE_HALF_DOWN,               "move-half-down",            "<Control>d:!insert",                  },
     { keybinding_cmd::MOVE_FULL_UP,                 "move-full-up",              "<Control>b:!insert",                  },
@@ -1091,7 +1094,11 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                     toggle_visual(vte, &info->select, vi_mode::visual_line);
                     return TRUE;
                 case keybinding_cmd::COPY_CLIPBOARD:
+#if VTE_CHECK_VERSION(0, 50, 0)
+                    vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
+#else
                     vte_terminal_copy_clipboard(vte);
+#endif
                     return TRUE;
                 case keybinding_cmd::SEARCH:
                     overlay_show(&info->panel, overlay_mode::search, vte);
