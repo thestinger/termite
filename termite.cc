@@ -126,6 +126,7 @@ struct config_info {
     gboolean fullscreen;
     int tag;
     char *config_file;
+    char *extra_config;
     gdouble font_scale;
 };
 
@@ -1455,6 +1456,27 @@ static void load_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollba
                        error->message);
     }
 
+    if (info->extra_config) {
+        GKeyFile *extra_config = g_key_file_new();
+        gboolean extra_loaded = FALSE;
+        extra_loaded = g_key_file_load_from_file(extra_config,
+                                                 info->extra_config,
+                                                 G_KEY_FILE_NONE, &error);
+        if (!loaded)
+            g_printerr("%s parsing failed: %s\n", info->config_file,
+                       error->message);
+        else {
+            gchar *group, **groups = g_key_file_get_groups (extra_config, NULL);
+            while ( (group = *groups++) != NULL ) {
+                gchar *key, **keys = g_key_file_get_keys (extra_config, group, NULL, NULL);
+                while ( (key = *keys++) != NULL ) {
+                    gchar* val = g_key_file_get_value (extra_config, group, key, NULL);
+                    g_key_file_set_value (config, group, key, val);
+                }
+            }
+        }
+    }
+
     if (loaded) {
         set_config(window, vte, scrollbar, hbox, info, icon, show_scrollbar, config);
     }
@@ -1627,7 +1649,7 @@ int main(int argc, char **argv) {
     gboolean version = FALSE, hold = FALSE;
 
     GOptionContext *context = g_option_context_new(nullptr);
-    char *role = nullptr, *execute = nullptr, *config_file = nullptr;
+    char *role = nullptr, *execute = nullptr, *config_file = nullptr, *extra_config = nullptr;
     char *title = nullptr, *icon = nullptr;
     bool show_scrollbar = false;
     const GOptionEntry entries[] = {
@@ -1638,6 +1660,7 @@ int main(int argc, char **argv) {
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
+        {"exconf", 'C', 0, G_OPTION_ARG_STRING, &extra_config, "Path to extra config file", "ECONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
@@ -1710,7 +1733,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, extra_config, 0},
         gtk_window_fullscreen
     };
 
