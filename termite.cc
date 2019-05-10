@@ -999,14 +999,6 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     auto bind = std::make_pair(modifiers, event->keyval);
     if (keybind_exists(bind)) {
         auto command_details = keybind_get_command(bind);
-        /*
-=======
-    if (info->config.fullscreen && event->keyval == GDK_KEY_F11 && !modifiers) {
-        info->fullscreen_toggle(info->window);
-        return TRUE;
-    }
->>>>>>> thestinger/master
-*/
 
         if ((info->select.mode & command_details.second) != 0) {
             switch (command_details.first) {
@@ -1176,30 +1168,8 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
     } else if (modifiers == GDK_CONTROL_MASK) {
-<<<<<<< HEAD
         if (modify_key_feed(event, info, modify_table))
             return TRUE;
-=======
-        switch (gdk_keyval_to_lower(event->keyval)) {
-            case GDK_KEY_Tab:
-                overlay_show(&info->panel, overlay_mode::completion, vte);
-                return TRUE;
-            case GDK_KEY_plus:
-            case GDK_KEY_KP_Add:
-                increase_font_scale(vte);
-                return TRUE;
-            case GDK_KEY_minus:
-            case GDK_KEY_KP_Subtract:
-                decrease_font_scale(vte);
-                return TRUE;
-            case GDK_KEY_equal:
-                reset_font_scale(vte, info->config.font_scale);
-                return TRUE;
-            default:
-                if (modify_key_feed(event, info, modify_table))
-                    return TRUE;
-        }
->>>>>>> thestinger/master
     }
     return FALSE;
 }
