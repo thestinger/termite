@@ -999,6 +999,14 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
     auto bind = std::make_pair(modifiers, event->keyval);
     if (keybind_exists(bind)) {
         auto command_details = keybind_get_command(bind);
+        /*
+=======
+    if (info->config.fullscreen && event->keyval == GDK_KEY_F11 && !modifiers) {
+        info->fullscreen_toggle(info->window);
+        return TRUE;
+    }
+>>>>>>> thestinger/master
+*/
 
         if ((info->select.mode & command_details.second) != 0) {
             switch (command_details.first) {
@@ -1168,8 +1176,30 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
         if (modify_key_feed(event, info, modify_meta_table))
             return TRUE;
     } else if (modifiers == GDK_CONTROL_MASK) {
+<<<<<<< HEAD
         if (modify_key_feed(event, info, modify_table))
             return TRUE;
+=======
+        switch (gdk_keyval_to_lower(event->keyval)) {
+            case GDK_KEY_Tab:
+                overlay_show(&info->panel, overlay_mode::completion, vte);
+                return TRUE;
+            case GDK_KEY_plus:
+            case GDK_KEY_KP_Add:
+                increase_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_minus:
+            case GDK_KEY_KP_Subtract:
+                decrease_font_scale(vte);
+                return TRUE;
+            case GDK_KEY_equal:
+                reset_font_scale(vte, info->config.font_scale);
+                return TRUE;
+            default:
+                if (modify_key_feed(event, info, modify_table))
+                    return TRUE;
+        }
+>>>>>>> thestinger/master
     }
     return FALSE;
 }
@@ -1657,6 +1687,11 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
 #if VTE_CHECK_VERSION (0, 49, 1)
     vte_terminal_set_allow_hyperlink(vte, cfg_bool("hyperlinks", FALSE));
 #endif
+#if VTE_CHECK_VERSION (0, 51, 2)
+    vte_terminal_set_bold_is_bright(vte, cfg_bool("bold_is_bright", TRUE));
+    vte_terminal_set_cell_height_scale(vte, get_config_double(config, "options", "cell_height_scale").get_value_or(1.0));
+    vte_terminal_set_cell_width_scale(vte, get_config_double(config, "options", "cell_width_scale").get_value_or(1.0));
+#endif
     info->dynamic_title = cfg_bool("dynamic_title", TRUE);
     info->urgent_on_bell = cfg_bool("urgent_on_bell", TRUE);
     info->clickable_url = cfg_bool("clickable_url", TRUE);
@@ -1686,7 +1721,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
                                         PCRE2_MULTILINE | PCRE2_NOTEMPTY,
                                         nullptr),
                 0);
-        vte_terminal_match_set_cursor_type(vte, info->tag, GDK_HAND2);
+        vte_terminal_match_set_cursor_name(vte, info->tag, "hand");
     } else if (info->tag != -1) {
         vte_terminal_match_remove(vte, info->tag);
         info->tag = -1;

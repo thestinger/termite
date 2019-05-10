@@ -12,6 +12,8 @@ Allow the output of bold characters when the bold escape sequence
 appears
 .IP \fIaudible_bell\fR
 Have the terminal beep on the terminal bell.
+.IP \fIbold_is_bright\fR
+Display bold text in bright colors.
 .IP \fIbrowser\fR
 Set the default browser for opening links. If its not set,
 \fI$BROWSER\fR is read. If that's not set, url hints will be disabled.
@@ -39,6 +41,10 @@ The font description for the terminal's font.
 Enables entering fullscreen mode by pressing F11.
 .IP \fIicon_name\fR
 The name of the icon to be used for the terminal process.
+.IP \fIcell_height_scale\fR
+Scale the height of character cells. Valid values range from 1.0 to 2.0.
+.IP \fIcell_width_scale\fR
+Scale the width of character cells. Valid values range from 1.0 to 2.0.
 .IP \fImodify_other_keys\fR
 Emit escape sequences for extra keys, like the \fBmodifyOtherKeys\fR
 resource for \fBxterm\fR(1).
