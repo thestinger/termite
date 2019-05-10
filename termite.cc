@@ -441,7 +441,7 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
     }
 
     const long n_columns = vte_terminal_get_column_count(vte);
-    long cursor_col, cursor_row;
+    long cursor_col, cursor_row, selection_x_end;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
     vte_terminal_set_selection_block_mode(vte, select->mode == vi_mode::visual_block);
@@ -450,22 +450,38 @@ static void update_selection(VteTerminal *vte, const select_info *select) {
         const long begin = select->begin_row * n_columns + select->begin_col;
         const long end = cursor_row * n_columns + cursor_col;
         if (begin < end) {
+            selection_x_end = cursor_col;
+#if VTE_CHECK_VERSION(0, 55, 0)
+            selection_x_end += 1;
+#endif
             vte_terminal_select_text(vte, select->begin_col, select->begin_row,
-                                     cursor_col, cursor_row);
+                                     selection_x_end, cursor_row);
         } else {
+            selection_x_end = select->begin_col;
+#if VTE_CHECK_VERSION(0, 55, 0)
+            selection_x_end += 1;
+#endif
             vte_terminal_select_text(vte, cursor_col, cursor_row,
-                                     select->begin_col, select->begin_row);
+                                     selection_x_end, select->begin_row);
         }
     } else if (select->mode == vi_mode::visual_line) {
+        selection_x_end = n_columns - 1;
+#if VTE_CHECK_VERSION(0, 55, 0)
+        selection_x_end += 1;
+#endif
         vte_terminal_select_text(vte, 0,
                                  std::min(select->begin_row, cursor_row),
-                                 n_columns - 1,
+                                 selection_x_end,
                                  std::max(select->begin_row, cursor_row));
     } else if (select->mode == vi_mode::visual_block) {
+        selection_x_end = std::max(select->begin_col, cursor_col);
+#if VTE_CHECK_VERSION(0, 55, 0)
+        selection_x_end += 1;
+#endif
         vte_terminal_select_text(vte,
                                  std::min(select->begin_col, cursor_col),
                                  std::min(select->begin_row, cursor_row),
-                                 std::max(select->begin_col, cursor_col),
+                                 selection_x_end,
                                  std::max(select->begin_row, cursor_row));
     }
 
