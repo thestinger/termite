@@ -47,8 +47,6 @@ INSERT MODE
 +----------------------+---------------------------------------------+
 | ``ctrl-shift-u``     | unicode input (standard GTK binding)        |
 +----------------------+---------------------------------------------+
-| ``ctrl-shift-e``     | emoji (standard GTK binding)                |
-+----------------------+---------------------------------------------+
 | ``ctrl-tab``         | start scrollback completion                 |
 +----------------------+---------------------------------------------+
 | ``ctrl-shift-space`` | start selection mode                        |
