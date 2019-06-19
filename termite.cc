@@ -626,6 +626,10 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
         return;
     }
 
+    // sanitize cursor_col, if the user moved the cursor using free movement beyond the end of
+    // the line input the matching be off for one 'word'.
+    cursor_col = length;
+
     bool in_word = false;
 
     long i = length - 1;
