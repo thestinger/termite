@@ -628,8 +628,8 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
 
     bool in_word = false;
 
-    for (long i = length - 2; i > 0; i--) {
-        cursor_col--;
+    long i = length - 1;
+    for (; i > 0; i--) {
         if (!is_word(codepoints[i - 1])) {
             if (in_word) {
                 break;
@@ -638,6 +638,7 @@ static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
             in_word = true;
         }
     }
+    cursor_col = std::max<long>(cursor_col - (length - i), 0);
     vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
     update_selection(vte, select);
 
