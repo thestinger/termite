@@ -1024,6 +1024,9 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
                 return TRUE;
+            case GDK_KEY_s:
+                vte_terminal_paste_primary(vte);
+                return TRUE;
             case GDK_KEY_r:
                 reload_config();
                 return TRUE;
