@@ -1644,13 +1644,14 @@ int main(int argc, char **argv) {
 
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
-    char *title = nullptr, *icon = nullptr;
+    char *title = nullptr, *icon = nullptr, *name = nullptr;
     bool show_scrollbar = false;
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
+        {"name", 'n', 0, G_OPTION_ARG_STRING, &name, "Application name", "NAME"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
@@ -1698,6 +1699,10 @@ int main(int argc, char **argv) {
     if (role) {
         gtk_window_set_role(GTK_WINDOW(window), role);
         g_free(role);
+    }
+
+    if (name) {
+        gtk_window_set_wmclass(GTK_WINDOW(window), name, "termite");
     }
 
     char **command_argv;
