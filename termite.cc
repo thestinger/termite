@@ -1646,7 +1646,7 @@ int main(int argc, char **argv) {
     gboolean greedy = FALSE;
 
     // Arguments that aren't part of any options
-    gchar **args;
+    gchar **args = nullptr;
 
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
@@ -1708,8 +1708,8 @@ int main(int argc, char **argv) {
         g_free(role);
     }
 
-    char **command_argv;
-    char *default_argv[] = {nullptr, nullptr};
+    gchar **command_argv;
+    gchar *default_argv[] = {nullptr, nullptr};
 
     if (greedy && !execute) {
         g_printerr("You need to supply a command with -e to redirect arguments.\n");
@@ -1731,7 +1731,6 @@ int main(int argc, char **argv) {
             // Concatenate both arrays of arguments passed to exec
             // and leftover termite arguments
             gchar **total_arguments = (gchar**) g_malloc(sizeof(gchar*) * (leftover_arguments_length + argcp + 1));
-            printf("Total arguments: %d\n", leftover_arguments_length + argcp);
 
             for (int i = 0; i < argcp; i++) {
                 total_arguments[i] = g_strdup(argvp[i]);
