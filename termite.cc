@@ -1642,6 +1642,12 @@ int main(int argc, char **argv) {
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
+    // Whether we should redirect leftover arguments to the command on -e
+    gboolean greedy = FALSE;
+
+    // Arguments that aren't part of any options
+    gchar **args;
+
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
@@ -1649,12 +1655,14 @@ int main(int argc, char **argv) {
     const GOptionEntry entries[] = {
         {"version", 'v', 0, G_OPTION_ARG_NONE, &version, "Version info", nullptr},
         {"exec", 'e', 0, G_OPTION_ARG_STRING, &execute, "Command to execute", "COMMAND"},
+        {"greedy", 'x', 0, G_OPTION_ARG_NONE, &greedy, "Redirect unused termite arguments to exec's COMMAND"},
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
+        {G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &args, nullptr, nullptr},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
     };
     g_option_context_add_main_entries(context, entries, nullptr);
@@ -1701,17 +1709,47 @@ int main(int argc, char **argv) {
     }
 
     char **command_argv;
-    char *default_argv[2] = {nullptr, nullptr};
+    char *default_argv[] = {nullptr, nullptr};
+
+    if (greedy && !execute) {
+        g_printerr("You need to supply a command with -e to redirect arguments.\n");
+        return EXIT_FAILURE;
+    }
 
     if (execute) {
         int argcp;
-        char **argvp;
+        gchar **argvp;
         g_shell_parse_argv(execute, &argcp, &argvp, &error);
         if (error) {
             g_printerr("failed to parse command: %s\n", error->message);
             return EXIT_FAILURE;
         }
-        command_argv = argvp;
+
+        if (greedy) {
+            int leftover_arguments_length = g_strv_length(args);
+            
+            // Concatenate both arrays of arguments passed to exec
+            // and leftover termite arguments
+            gchar **total_arguments = (gchar**) g_malloc(sizeof(gchar*) * (leftover_arguments_length + argcp + 1));
+            printf("Total arguments: %d\n", leftover_arguments_length + argcp);
+
+            for (int i = 0; i < argcp; i++) {
+                total_arguments[i] = g_strdup(argvp[i]);
+            }
+            for (int i = 0; i < leftover_arguments_length; i++) {
+                total_arguments[i + argcp] = g_strdup(args[i]);
+            }
+            // Null-terminate the array
+            total_arguments[leftover_arguments_length + argcp] = nullptr;
+
+            // Free the now unused parsed arguments
+            g_strfreev(argvp);
+
+            command_argv = total_arguments;
+        } else {
+            command_argv = argvp;
+        }
+
     } else {
         default_argv[0] = get_user_shell_with_fallback();
         command_argv = default_argv;
@@ -1847,6 +1885,11 @@ int main(int argc, char **argv) {
                           (width - padding_left - padding_right) / char_width,
                           (height - padding_top - padding_bottom) / char_height);
 
+    if (command_argv != default_argv) {
+        g_strfreev(command_argv);
+    }
+
+    g_strfreev(args);
     g_strfreev(env);
 
     gtk_main();
