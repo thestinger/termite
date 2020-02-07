@@ -40,6 +40,11 @@ scrollback_lines = 10000
 # "off", "left" or "right"
 #scrollbar = off
 
+# Enable smart copy. ^C will copy if text has been selected. ^V will paste. It
+# is no longer possible to send a ^V to the running program when this option is
+# enabled.
+#smart_copy = false
+
 [colors]
 # If both of these are unset, cursor falls back to the foreground color,
 # and cursor_foreground falls back to the background color.

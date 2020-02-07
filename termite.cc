@@ -122,8 +122,7 @@ struct config_info {
     hint_info hints;
     char *browser;
     gboolean dynamic_title, urgent_on_bell, clickable_url, size_hints;
-    gboolean filter_unmatched_urls, modify_other_keys;
-    gboolean fullscreen;
+    gboolean filter_unmatched_urls, modify_other_keys, fullscreen, smart_copy;
     int tag;
     char *config_file;
     gdouble font_scale;
@@ -431,6 +430,15 @@ static gboolean draw_cb(const draw_cb_info *info, cairo_t *cr) {
     }
 
     return FALSE;
+}
+
+static void copy_selection(VteTerminal *vte) {
+#if VTE_CHECK_VERSION(0, 50, 0)
+    vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
+#else
+    vte_terminal_copy_clipboard(vte);
+#endif
+    vte_terminal_unselect_all(vte);
 }
 
 static void update_selection(VteTerminal *vte, const select_info *select) {
@@ -949,11 +957,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 toggle_visual(vte, &info->select, vi_mode::visual_line);
                 break;
             case GDK_KEY_y:
-#if VTE_CHECK_VERSION(0, 50, 0)
-                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
-#else
-                vte_terminal_copy_clipboard(vte);
-#endif
+                copy_selection(vte);
                 break;
             case GDK_KEY_slash:
                 overlay_show(&info->panel, overlay_mode::search, vte);
@@ -1015,11 +1019,7 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
                 exit_command_mode(vte, &info->select);
                 return TRUE;
             case GDK_KEY_c:
-#if VTE_CHECK_VERSION(0, 50, 0)
-                vte_terminal_copy_clipboard_format(vte, VTE_FORMAT_TEXT);
-#else
-                vte_terminal_copy_clipboard(vte);
-#endif
+                copy_selection(vte);
                 return TRUE;
             case GDK_KEY_v:
                 vte_terminal_paste_clipboard(vte);
@@ -1054,6 +1054,18 @@ gboolean key_press_cb(VteTerminal *vte, GdkEventKey *event, keybind_info *info) 
             case GDK_KEY_equal:
                 reset_font_scale(vte, info->config.font_scale);
                 return TRUE;
+            case GDK_KEY_c:
+                if (info->config.smart_copy && vte_terminal_get_has_selection(vte)) {
+                    copy_selection(vte);
+                    return TRUE;
+                }
+                return FALSE;
+            case GDK_KEY_v:
+                if (info->config.smart_copy) {
+                    vte_terminal_paste_clipboard(vte);
+                    return TRUE;
+                }
+                return FALSE;
             default:
                 if (modify_key_feed(event, info, modify_table))
                     return TRUE;
@@ -1507,6 +1519,7 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
     info->filter_unmatched_urls = cfg_bool("filter_unmatched_urls", TRUE);
     info->modify_other_keys = cfg_bool("modify_other_keys", FALSE);
     info->fullscreen = cfg_bool("fullscreen", TRUE);
+    info->smart_copy = cfg_bool("smart_copy", FALSE);
     info->font_scale = vte_terminal_get_font_scale(vte);
 
     g_free(info->browser);
@@ -1726,7 +1739,7 @@ int main(int argc, char **argv) {
          nullptr},
         {vi_mode::insert, 0, 0, 0, 0},
         {{nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0},
-         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, -1, config_file, 0},
+         nullptr, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, -1, config_file, 0},
         gtk_window_fullscreen
     };
 
