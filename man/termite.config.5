@@ -1,71 +1,133 @@
-.TH termite.config 5 "2014-08-24" "termite.config" "Termite Config"
+.TH termite.config 5 "2020-05-07" "termite.config" "Termite Config"
 .SH NAME
 termite.conf \- Termite configuration file
 .SH SYNOPSIS
-\fI$XDG_CONFIG_HOME/termite/config\fR
+\fI$XDG_CONFIG_HOME/termite/config\fR, \fI$XDG_CONFIG_DIRS/termite/config\fR
 .SH DESCRIPTION
-The configuration file format for the \fBtermite\fR
-.SH OPTIONS
+\fBtermite\fP looks for the configuration file in the following order, and uses
+the first file found:
+\fI"$XDG_CONFIG_HOME/termite/config"\fP,
+\fI"~/.config/termite/config"\fP,
+\fI"$XDG_CONFIG_DIRS/termite/config"\fP and \fI"/etc/xdg/termite/config"\fR.
+.PP
+The configuration file for \fBtermite\fR is split into three different
+sections: "[options]", "[colors]" and "[hints]".
+.SH [OPTIONS] SECTION
 .PP
 .IP \fIallow_bold\fR
-Allow the output of bold characters when the bold escape sequence
-appears
+Allows the output of bold characters. (default: true)
 .IP \fIaudible_bell\fR
-Have the terminal beep on the terminal bell.
+Have the terminal beep on the terminal bell. (default: false)
 .IP \fIbold_is_bright\fR
-Display bold text in bright colors.
+Display bold text in bright colors. (default: true)
 .IP \fIbrowser\fR
-Set the default browser for opening links. If its not set,
-\fI$BROWSER\fR is read. If that's not set, url hints will be disabled.
+Set the default browser for opening links. If it's not set, the \fI$BROWSER\fR
+environment variable is used. If that's not set either, \fBxdg-open\fR(1)
+is used as a fallback.
 .IP \fIclickable_url\fR
-Auto-detected URLs can be clicked on to open them in your browser. Only
-enabled if a browser is configured or detected.
+Whether auto-detected URLs can be clicked on to open them in your browser.
+(default: true)
 .IP \fIhyperlinks\fR
 Enable support for applications to mark text as hyperlinks. Requires
-clickable_url to be set.
+clickable_url to be set. (default: false)
 .IP \fIcursor_blink\fR
-Specify the how the terminal's cursor should behave. Accepts
-\fBsystem\fR to respect the gtk global configuration, \fBon\fR and
-\fBoff\fR to explicitly enable or disable them.
+Specify how the terminal's cursor should behave. Valid options are
+\fBsystem\fR to respect the GTK global configuration, \fBon\fR and
+\fBoff\fR to explicitly enable or disable them. (default: system)
 .IP \fIcursor_shape\fR
-Specify how the cursor should look. Accepts \fBblock\fR, \fBibeam\fR and
-\fBunderline\fR.
+Specify how the cursor should look. Valid options are \fBblock\fR,
+\fBibeam\fR and \fBunderline\fR. (default: block)
 .IP \fIdynamic_title\fR
-Settings dynamic title allows the terminal and the shell to update the
-terminal's title.
+Allows the shell and terminal applications to update the terminal's title.
+(default: true)
 .IP \fIfilter_unmatched_urls\fR
 Whether to hide url hints not matching input in url hints mode.
+(default: true)
 .IP \fIfont\fR
-The font description for the terminal's font.
+The Pango font description for the terminal's font.
 .IP \fIfullscreen\fR
-Enables entering fullscreen mode by pressing F11.
+Enables entering fullscreen mode by pressing F11. (default: true)
 .IP \fIicon_name\fR
-The name of the icon to be used for the terminal process.
+The name of the icon to be used for the terminal process. (default: none)
 .IP \fIcell_height_scale\fR
 Scale the height of character cells. Valid values range from 1.0 to 2.0.
+(default: 1.0)
 .IP \fIcell_width_scale\fR
 Scale the width of character cells. Valid values range from 1.0 to 2.0.
+(default: 1.0)
 .IP \fImodify_other_keys\fR
 Emit escape sequences for extra keys, like the \fBmodifyOtherKeys\fR
-resource for \fBxterm\fR(1).
+resource for \fBxterm\fR(1). (default: false)
 .IP \fImouse_autohide\fR
-Automatically hide the mouse pointer when you start typing.
+Automatically hide the mouse pointer when you start typing. (default: false)
 .IP \fIscrollback_lines\fR
 Set the number of lines to limit the terminal's scrollback. Setting
 the number of lines to 0 disables this feature, a negative value makes
 the scrollback "infinite".
 .IP \fIscrollbar\fR
-Specify scrollbar visibility and position. Accepts \fBoff\fR, \fBleft\fR and
-\fBright\fR.
+Specify scrollbar visibility and position. Valid options are \fBoff\fR,
+\fBleft\fR and \fBright\fR. (default: off)
 .IP \fIscroll_on_keystroke\fR
-Scroll to the bottom automatically when a key is pressed.
+Scroll to the bottom automatically when a key is pressed. (default: true)
 .IP \fIscroll_on_output\fR
-Scroll to the bottom when the shell generates output.
+Scroll to the bottom when the shell generates output. (default: false)
 .IP \fIsearch_wrap\fR
-Search from top again when you hit the bottom.
+Search from top again when you hit the bottom. (default: true)
 .IP \fIsize_hints\fR
-Enable size hints. Locks the terminal resizing to increments of the
-terminal's cell size. Requires a window manager that respects scroll
-hints.
+Locks the terminal resizing to increments of the terminal's cell size.
+Requires a window manager that respects size hints. (default: false)
 .IP \fIurgent_on_bell\fR
-Sets the window as urgent on the terminal bell.
+Sets the window as urgent on the terminal bell. (default: true)
+.SH [COLORS] SECTION
+All options accept RGB values in either "#RRGGBB" or "rgb(RRR,GGG,BBB)"
+formats.
+.PP
+.IP \fIforeground\fR
+Sets the foreground color.
+.IP \fIforeground_bold\fR
+Sets the foreground color when the text is bold. Requires the \fIallow_bold\fR
+option to be enabled.
+.IP \fIbackground\fR
+Sets the background color. This particular option also allows for transparency
+using the "rgba(RRR,GGG,BBB,A.AA)" format, where A.AA is the alpha value
+(1.00 is opaque, 0.00 is transparent). On X11, this requires a compositor.
+.IP \fIcursor\fR
+Sets the cursor color.
+.IP \fIcursor_foreground\fR
+Sets the color for text under the cursor. Only visible when \fIcursor_shape\fR
+is set to \fBblock\fR.
+.IP \fIhighlight\fR
+Sets the highlight color. If unset, highlighting will reverse foreground and
+background.
+.IP \fIcolor0,\ color1,\ color2\ ...\ color15\ ...\ color254\fR
+Sets each individual color. Traditional terminal color schemes change up to
+color15, but you may change up to color254 if you wish to do so. Note that
+certain applications such as \fBchafa\fR(1) expect colors above color15 to be
+untouched.
+.SH [HINTS] SECTION
+.PP
+.IP \fIfont\fR
+The Pango font description for the hint's font.
+.IP \fIpadding\fR
+How many pixels of spacing to have between the hint text and the hint border.
+(default: 2)
+.IP \fIborder_width\fR
+How many pixels should the hint border have. (default: 1)
+.IP \fIroundness\fR
+How many pixels to use for the hint's corner radius. (default: 1.5)
+.PP
+The following options accept RGB values with the same formats as the options
+in the [colors] section:
+.IP \fIforeground\fR
+Sets the color for the hint text. (default: #FFFFFF)
+.IP \fIbackground\fR
+Sets the color for the hint background. (default: #000000)
+.IP \fIactive_foreground\fR
+Sets the color for the hint text when it matches the input. The entire hint text
+will use this color, not just the matched section. (default: #E68080)
+.IP \fIactive_background\fR
+Sets the color for the hint background when it matches the input. (default: #000000)
+.IP \fIborder\fR
+Sets the color for the hint border. (default: #FFFFFF)
+.SH SEE ALSO
+\fBtermite\fR(1)
