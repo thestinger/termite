@@ -6,3 +6,4 @@ Icon=utilities-terminal
 Type=Application
 Categories=GTK;System;TerminalEmulator;
 StartupNotify=true
+GenericName=Terminal Emulator
