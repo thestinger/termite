@@ -1694,9 +1694,10 @@ int main(int argc, char **argv) {
     GtkWidget *window;
 
 #ifdef GDK_WINDOWING_X11
+    int def_width=800, def_height=600;
     if (embed_id) {
         window = gtk_plug_new (embed_id);
-        gtk_window_set_default_size (GTK_WINDOW (window), 800, 600);
+        gtk_window_set_default_size (GTK_WINDOW (window), def_width, def_height);
     }else
 #endif
         window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1858,8 +1859,13 @@ int main(int argc, char **argv) {
     int width, height, padding_left, padding_top, padding_right, padding_bottom;
     const long char_width = vte_terminal_get_char_width(vte);
     const long char_height = vte_terminal_get_char_height(vte);
-
-    gtk_window_get_size(GTK_WINDOW(window), &width, &height);
+#ifdef GDK_WINDOWING_X11
+    if(embed_id){
+        width=def_width;
+        height=def_height;
+    }else
+#endif
+        gtk_window_get_size(GTK_WINDOW(window), &width, &height);
     get_vte_padding(vte, &padding_left, &padding_top, &padding_right, &padding_bottom);
     vte_terminal_set_size(vte,
                           (width - padding_left - padding_right) / char_width,
