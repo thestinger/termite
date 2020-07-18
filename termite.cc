@@ -30,6 +30,7 @@
 #include <string>
 
 #include <gtk/gtk.h>
+#include <gtk/gtkx.h>
 #include <vte/vte.h>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
@@ -1641,6 +1642,7 @@ int main(int argc, char **argv) {
     const char *const term = "xterm-termite";
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
+    gint embed_id = 0;
 
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
@@ -1653,6 +1655,7 @@ int main(int argc, char **argv) {
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
+        {"window-id", 'w', 0, G_OPTION_ARG_INT, &embed_id, "embedd termite into window-id", "PARENTWIN"},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
         {nullptr, 0, 0, G_OPTION_ARG_NONE, nullptr, nullptr, nullptr}
@@ -1681,7 +1684,13 @@ int main(int argc, char **argv) {
         g_free(directory);
     }
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *window;
+    if (embed_id) {
+        window = gtk_plug_new (embed_id);
+        gtk_window_set_default_size (GTK_WINDOW (window), 800, 600);
+    }else{
+        window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    }
 
     GtkWidget *panel_overlay = gtk_overlay_new();
     GtkWidget *hint_overlay = gtk_overlay_new();
