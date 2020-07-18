@@ -37,6 +37,7 @@
 
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
+#include <gtk/gtkx.h>
 #endif
 
 #include "url_regex.hh"
@@ -1642,6 +1643,10 @@ int main(int argc, char **argv) {
     char *directory = nullptr;
     gboolean version = FALSE, hold = FALSE;
 
+#ifdef GDK_WINDOWING_X11
+    gint embed_id = 0;
+#endif
+
     GOptionContext *context = g_option_context_new(nullptr);
     char *role = nullptr, *execute = nullptr, *config_file = nullptr;
     char *title = nullptr, *icon = nullptr;
@@ -1652,6 +1657,11 @@ int main(int argc, char **argv) {
         {"role", 'r', 0, G_OPTION_ARG_STRING, &role, "The role to use", "ROLE"},
         {"title", 't', 0, G_OPTION_ARG_STRING, &title, "Window title", "TITLE"},
         {"directory", 'd', 0, G_OPTION_ARG_STRING, &directory, "Change to directory", "DIRECTORY"},
+
+#ifdef GDK_WINDOWING_X11
+        {"window-id", 'w', 0, G_OPTION_ARG_INT, &embed_id, "embedd termite into window-id", "PARENTWIN"},
+#endif
+
         {"hold", 0, 0, G_OPTION_ARG_NONE, &hold, "Remain open after child process exits", nullptr},
         {"config", 'c', 0, G_OPTION_ARG_STRING, &config_file, "Path of config file", "CONFIG"},
         {"icon", 'i', 0, G_OPTION_ARG_STRING, &icon, "Icon", "ICON"},
@@ -1681,7 +1691,15 @@ int main(int argc, char **argv) {
         g_free(directory);
     }
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    GtkWidget *window;
+
+#ifdef GDK_WINDOWING_X11
+    if (embed_id) {
+        window = gtk_plug_new (embed_id);
+        gtk_window_set_default_size (GTK_WINDOW (window), 800, 600);
+    }else
+#endif
+        window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
     GtkWidget *panel_overlay = gtk_overlay_new();
     GtkWidget *hint_overlay = gtk_overlay_new();
