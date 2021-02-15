@@ -560,13 +560,24 @@ static void move(VteTerminal *vte, select_info *select, long col, long row) {
 
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
+    long new_cursor_col;
+    long new_cursor_row;
+    
+    new_cursor_col=cursor_col+col;
+    new_cursor_row =cursor_row+row;
+    if((new_cursor_col>end_col) | (new_cursor_col<0)){
+
+        new_cursor_row += (long)floor((double)new_cursor_col/(double)end_col);
+        new_cursor_col = (new_cursor_col+end_col+1)%(end_col+1);
+
+    }
 
     VteCursorBlinkMode mode = vte_terminal_get_cursor_blink_mode(vte);
     vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
 
     vte_terminal_set_cursor_position(vte,
-                                     clamp(cursor_col + col, 0l, end_col),
-                                     clamp(cursor_row + row, first_row(vte), last_row(vte)));
+                                     clamp(new_cursor_col, 0l, end_col),
+                                     clamp(new_cursor_row, first_row(vte), last_row(vte)));
 
     update_scroll(vte);
     update_selection(vte, select);
@@ -610,38 +621,61 @@ static bool is_word_char(gunichar c) {
 
 template<typename F>
 static void move_backward(VteTerminal *vte, select_info *select, F is_word) {
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+    const long begin_row = first_row(vte);
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    auto content = get_text_range(vte, cursor_row, 0, cursor_row, cursor_col);
-
-    if (!content) {
-        return;
-    }
-
-    long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
-
-    if (!codepoints) {
-        return;
-    }
-
+    bool prev_line = true;
     bool in_word = false;
+    while(prev_line){
+        prev_line = false;
 
-    for (long i = length - 2; i > 0; i--) {
-        cursor_col--;
-        if (!is_word(codepoints[i - 1])) {
-            if (in_word) {
+        auto content = get_text_range(vte, cursor_row, 0, cursor_row, cursor_col);
+
+        if (!content) {
+            return;
+        }
+
+        long length;
+        gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
+
+        if (!codepoints) {
+            return;
+        }
+
+
+        for (long i = length - 2; true; i--) {
+            cursor_col--;
+            if(i<=0){
+                g_printerr("cursor_row=%ld\n", cursor_row);
+                prev_line=true;
                 break;
             }
-        } else {
-            in_word = true;
+            if (!is_word(codepoints[i /*- 1*/])) {
+                if (in_word) {
+                    break;
+                }
+            } else {
+                in_word = true;
+            }
         }
+        if(prev_line){
+            cursor_row--;
+            if(cursor_row <= begin_row(vte) ){
+                prev_line=false;
+            }else
+
+                cursor_col=end_col;
+        }
+        g_free(codepoints);
     }
-    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
+    vte_terminal_set_cursor_position(vte,
+                                     clamp(cursor_col, 0l, end_col),
+                                     clamp(cursor_row, first_row(vte), last_row(vte)));
+    update_scroll(vte);
     update_selection(vte, select);
 
-    g_free(codepoints);
 }
 
 static void move_backward_word(VteTerminal *vte, select_info *select) {
@@ -715,54 +749,83 @@ static void move_to_eol(VteTerminal *vte, select_info *select) {
 
 template<typename F>
 static void move_forward(VteTerminal *vte, select_info *select, F is_word, bool goto_word_end) {
+    const long end_col = vte_terminal_get_column_count(vte) - 1;
+    const long end_row = last_row(vte);
+
+    g_printerr("move_forward");
     long cursor_col, cursor_row;
     vte_terminal_get_cursor_position(vte, &cursor_col, &cursor_row);
 
-    const long end_col = vte_terminal_get_column_count(vte) - 1;
+    bool next_line = true;
+    while(next_line){
+        next_line = false;
 
-    auto content = get_text_range(vte, cursor_row, cursor_col, cursor_row, end_col);
 
-    if (!content) {
-        return;
-    }
+        auto content = get_text_range(vte, cursor_row, cursor_col, cursor_row, end_col);
 
-    long length;
-    gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
+        if (!content) {
+            return;
+        }
 
-    if (!codepoints) {
-        return;
-    }
+        long length;
+        gunichar *codepoints = g_utf8_to_ucs4(content.get(), -1, nullptr, &length, nullptr);
 
-    // prevent going past the end (get_text_range adds a \n)
-    if (codepoints[length - 1] == '\n') {
-        length--;
-    }
+        if (!codepoints) {
+            return;
+        }
 
-    bool end_of_word = false;
+        // prevent going past the end (get_text_range adds a \n)
+        if (codepoints[length - 1] == '\n') {
+            length--;
+        }
 
-    if (!goto_word_end) {
-        for (long i = 1; i < length; i++) {
-            if (is_word(codepoints[i - 1])) {
-                if (end_of_word) {
+        bool end_of_word = false;
+
+        if (!goto_word_end) {
+            for (long i = 1; true; i++) {
+                if (is_word(codepoints[i - 1])) {
+                    if (end_of_word) {
+                        break;
+                    }
+                } else {
+                    end_of_word = true;
+                }
+                cursor_col++;
+                if(i>=length){
+                    next_line = true;
                     break;
                 }
-            } else {
-                end_of_word = true;
             }
-            cursor_col++;
+        } else {
+            for (long i = 2; true; i++) {
+                cursor_col++;
+                if (is_word(codepoints[i - 1]) && !is_word(codepoints[i])) {
+                    break;
+                }
+                if(i>length){
+                    next_line = true;
+                    break;
+                }
+            }
         }
-    } else {
-        for (long i = 2; i <= length; i++) {
-            cursor_col++;
-            if (is_word(codepoints[i - 1]) && !is_word(codepoints[i])) {
+        if(next_line){
+            cursor_row++;
+            if(cursor_row>end_row)
                 break;
-            }
+            else
+                cursor_col=0;
         }
+        g_free(codepoints);
     }
-    vte_terminal_set_cursor_position(vte, cursor_col, cursor_row);
+    VteCursorBlinkMode mode = vte_terminal_get_cursor_blink_mode(vte);
+    vte_terminal_set_cursor_blink_mode(vte, VTE_CURSOR_BLINK_OFF);
+
+    vte_terminal_set_cursor_position(vte,
+                                     clamp(cursor_col, 0l, end_col),
+                                     clamp(cursor_row, first_row(vte), end_row));
+    update_scroll(vte);
     update_selection(vte, select);
 
-    g_free(codepoints);
 }
 
 static void move_forward_end_word(VteTerminal *vte, select_info *select) {
