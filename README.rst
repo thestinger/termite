@@ -209,5 +209,4 @@ On other systems:
 
 ::
 
-    wget https://raw.githubusercontent.com/thestinger/termite/master/termite.terminfo
-    tic -x termite.terminfo
+    curl https://raw.githubusercontent.com/thestinger/termite/master/termite.terminfo | tic -x -
