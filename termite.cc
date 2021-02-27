@@ -1535,6 +1535,10 @@ static void set_config(GtkWindow *window, VteTerminal *vte, GtkWidget *scrollbar
         info->tag = -1;
     }
 
+    if (auto s = get_config_string(config, "options", "word_char_exceptions")) {
+        vte_terminal_set_word_char_exceptions(vte, *s);
+    }
+
     if (auto s = get_config_string(config, "options", "font")) {
         PangoFontDescription *font = pango_font_description_from_string(*s);
         vte_terminal_set_font(vte, font);
