@@ -1,3 +1,41 @@
+TERMITE IS OBSOLETED BY ALACRITTY
+=================================
+
+You should use `Alacritty <https://github.com/alacritty/alacritty>`_ instead
+of Termite. It has a keyboard-based selection mode inspired by Termite and
+Alacritty 0.8 adds a generic regex hints mode comparable to Termite's URL
+hints mode. The user interface is very much in the same spirit as Termite
+including a very minimal user interface delegating handling tabs and splits to
+a window manager like i3. Alacritty is dramatically faster than VTE along with
+being significantly more robust and secure. It's written in a modern, safe
+programming language (Rust) and uses OpenGL for efficient rendering.
+
+If you've packaged Termite in a repository, we would highly appreciate if you
+could communicate our recommendation to end users as part of phasing out and
+retiring the package. Alacritty is the only proper replacement for Termite and
+it took until the 0.8 release currently available as a release candidate for us
+to be able to wholeheartedly recommend it.
+
+We strongly recommend against trying to continue the development of Termite
+with a fork. You should contribute to Alacritty instead. VTE is a terrible base
+for building a modern, fast and safe terminal emulator. It's slow, brittle and
+difficult to improve. VTE is treated as simply being the GNOME Terminal widget
+rather than a library truly intended to be useful to others. They've gone out
+of the way to keep useful APIs private due to hostility towards implementing
+any kind of user interface beyond what they provide. In 2012, we submitted a
+`tiny patch exposing the APIs needed for the keyboard text selection, hints
+mode and other features <https://bugzilla.gnome.org/show_bug.cgi?id=679658>`_.
+Despite support from multiple other projects, the patch was rejected. It's now
+almost a decade later and no progress has been made. There is no implementation
+of these kinds of features in VTE and it's unlikely they'll be provided either
+internally or as flexible APIs. This is the tip of the iceberg when it comes to
+their hostility towards other projects using VTE as a library. GTK and most of
+the GNOME project are much of the same. Avoid them and don't make the mistake
+of thinking their libraries are meant for others to use.
+
+INTRODUCTION
+============
+
 A keyboard-centric VTE-based terminal, aimed at use within a window manager
 with tiling and/or tabbing support.
 
